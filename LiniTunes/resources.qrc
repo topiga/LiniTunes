@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/iDevice_120x120.png</file>
+        <file>images/iDevice_30x30.png</file>
+        <file>images/iDevice_45x45.png</file>
+        <file>images/iDevice_60x60.png</file>
+        <file>images/iDevice_90x90.png</file>
+        <file>main.qml</file>
+        <file>test.qml</file>
+        <file>general.qml</file>
+    </qresource>
+</RCC>
