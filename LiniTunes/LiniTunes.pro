@@ -1,6 +1,7 @@
 QT += quick
 
 SOURCES += \
+        idevice.cpp \
         main.cpp
 
 resources.files = main.qml 
@@ -25,4 +26,10 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
+    files.qml \
+    general.qml \
+    idevices.qml \
     test.qml
+
+HEADERS += \
+    idevice.h
