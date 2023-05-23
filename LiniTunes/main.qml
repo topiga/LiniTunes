@@ -33,35 +33,51 @@ Window {
             width: button_idevice.width
 
             states: [ State {
-                name: "button_general"
-                PropertyChanges {
-                    clicked_rect {
-                        y: button_general.y
-                        x: button_general.x
-                        height: button_general.height
-                        width: button_general.width
+                    name: "button_general"
+                    PropertyChanges {
+                        clicked_rect {
+                            y: button_general.y
+                            x: button_general.x
+                            height: button_general.height
+                            width: button_general.width
+                        }
                     }
-                }
-            },
-            State {
-                name: "button_idevice"
-                PropertyChanges {
-                    clicked_rect {
-                        y: button_idevice.y
-                        x: button_idevice.x
-                        height: button_idevice.height
-                        width: button_idevice.width
+                },
+                State {
+                    name: "button_idevice"
+                    PropertyChanges {
+                        clicked_rect {
+                            y: button_idevice.y
+                            x: button_idevice.x
+                            height: button_idevice.height
+                            width: button_idevice.width
+                        }
                     }
-                }
-            } ]
+                },
+                State {
+                    name: "button_files"
+                    PropertyChanges {
+                        clicked_rect {
+                            y: button_files.y
+                            x: button_files.x
+                            height: button_files.height
+                            width: button_files.width
+                        }
+                    }
+                } ]
             transitions: [ Transition {
-                to: "button_general"
-                NumberAnimation { properties: "y, x, height, width"; duration: 100; easing.type: Easing.InOutExpo }
-            },
-            Transition {
-                to: "button_idevice"
-                NumberAnimation { properties: "y, x, height, width"; duration: 100; easing.type: Easing.InOutExpo }
-            }]
+                    to: "button_general"
+                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.InOutExpo }
+                },
+                Transition {
+                    to: "button_idevice"
+                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.InOutExpo }
+                },
+                Transition {
+                    to: "button_files"
+                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.InOutExpo }
+                }
+            ]
         }
         Rectangle {
             id: button_idevice
@@ -78,7 +94,7 @@ Window {
             }
             Image {
                 id: img_idevice
-                source: "/images/iDevice_90x90.png"
+                source: "/images/iDevice/iDevice_90x90.png"
                 anchors {
                     left: parent.left
                     verticalCenter: parent.verticalCenter
@@ -107,6 +123,7 @@ Window {
                 anchors.fill: parent
                 onClicked: {
                     clicked_rect.state = "button_idevice"
+                    main_page.source = "/idevices.qml"
                 }
             }
         }
@@ -122,10 +139,21 @@ Window {
                 leftMargin: 15
                 rightMargin: 15
             }
+            Image {
+                id: img_general
+                source: "/images/General/General_30x30.png"
+                width: 25
+                height: 25
+                anchors {
+                    left: parent.left
+                    verticalCenter: parent.verticalCenter
+                    leftMargin: 8
+                }
+            }
             Text {
                 text: "General"
                 anchors {
-                    left: parent. left
+                    left: img_general.right
                     leftMargin: 5
                     verticalCenter: parent.verticalCenter
                 }
@@ -141,6 +169,53 @@ Window {
                 anchors.fill: parent
                 onClicked: {
                     clicked_rect.state = "button_general"
+                    main_page.source = "/general.qml"
+                }
+            }
+        }
+        Rectangle {
+            id: button_files
+            height: 38
+            radius: 5
+            color: "#00000000"
+            anchors {
+                left: parent.left
+                top: button_general.bottom
+                right: parent.right
+                leftMargin: 15
+                rightMargin: 15
+            }
+            Image {
+                id: img_files
+                source: "/images/Files/Files_30x30.png"
+                width: 25
+                height: 25
+                anchors {
+                    left: parent.left
+                    verticalCenter: parent.verticalCenter
+                    leftMargin: 8
+                }
+            }
+            Text {
+                text: "Files"
+                anchors {
+                    left: img_files.right
+                    leftMargin: 5
+                    verticalCenter: parent.verticalCenter
+                }
+                font {
+                    family: "Helvetica"
+                    pointSize: 10
+                    weight: Font.DemiBold
+                }
+                color: color_text
+            }
+            MouseArea {
+                id: m_button_files
+                anchors.fill: parent
+                onClicked: {
+                    clicked_rect.state = "button_files"
+                    main_page.source = "/files.qml"
                 }
             }
         }
