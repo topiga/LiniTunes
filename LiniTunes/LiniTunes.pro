@@ -33,3 +33,5 @@ DISTFILES += \
 
 HEADERS += \
     idevice.h
+
+unix:!macx: LIBS += -limobiledevice-1.0
