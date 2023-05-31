@@ -3,6 +3,7 @@
 
 #include <QLocale>
 #include <QTranslator>
+#include <idevice.h>
 
 int main(int argc, char *argv[])
 {
@@ -17,8 +18,10 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
     QQmlApplicationEngine engine;
+
+    iDevice *Device = new iDevice();
+
     const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
@@ -26,6 +29,8 @@ int main(int argc, char *argv[])
             QCoreApplication::exit(-1);
     }, Qt::QueuedConnection);
     engine.load(url);
+
+    delete Device;
 
     return app.exec();
 }
