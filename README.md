@@ -14,3 +14,7 @@ Looks like this for now :
 ![image](https://github.com/topiga/LiniTunes/assets/38886040/c5f873c8-7876-4a36-8175-77a63421cecf)
 
 This project is under the GPLv3 licence.
+
+## Thanks to 
+ - [@nikias](https://github.com/nikias) for [libimobiledevice](https://github.com/libimobiledevice/libimobiledevice)
+ - Apple for iOS, iPadOS, etc
