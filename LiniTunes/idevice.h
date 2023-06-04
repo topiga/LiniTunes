@@ -3,16 +3,20 @@
 
 #include <QObject>
 #include <libimobiledevice/libimobiledevice.h>
+#include <libimobiledevice/lockdown.h>
 
 class iDevice : public QObject
 {
     Q_OBJECT
 public:
     explicit iDevice(QObject *parent = nullptr);
-    static char *uuid;
+    ~iDevice();
+    char* udid;
+    char* device_name = NULL;
 
 private:
-    idevice_t device = NULL;
+    idevice_t _device = NULL;
+    lockdownd_client_t _client = NULL;
 
 signals:
 
