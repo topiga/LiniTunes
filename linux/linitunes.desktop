@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=LiniTunes
+Comment=LiniTunes is not iTunes
+Exec=linitunes
+Categories=Office;
