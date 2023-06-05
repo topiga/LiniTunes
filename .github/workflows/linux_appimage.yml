@@ -1,0 +1,72 @@
+name: Linux AppImage
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+    - '*'
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SOURCE_DIR:   ${{ github.workspace }}
+  QT_VERSION:   6.5.1
+  ARTIFACT:     LiniTunes.AppImage
+  
+jobs:
+  build:
+    runs-on:  ubuntu-20.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version:      ${{ env.QT_VERSION }}
+          host:         linux
+          target:       desktop
+          dir:          ${{ runner.temp }}
+          modules:      qtcharts
+          setup-python: true
+
+      - name: Install libimobiledevice with dpkg
+        run:  sudo apt-get install -y libimobiledevice6 usbmuxd libimobiledevice-utils
+
+      - name: Create build directory
+        run:  mkdir ${{ runner.temp }}/build
+
+      - name: Build
+        working-directory: ${{ runner.temp }}/build
+        run:  |
+              qmake -r ${SOURCE_DIR}/linitunes.pro
+              make -j2
+
+      - name: AppImage
+        working-directory: ${{ env.SOURCE_DIR }}/build
+        run: |
+          wget -O deploy.AppImage https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x deploy.AppImage
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/6.5.1/gcc_64/lib/
+          cp ${{ env.SOURCE_DIR }}/linux/* .
+          ./deploy.AppImage linitunes.desktop -appimage -no-translations -qmldir=${{ env.SOURCE_DIR }} -extra-plugins=renderers
+          mv Qt_planets_app*.AppImage ${{ env.ARTIFACT }} 
+          
+      - name: Save artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: ${{ runner.temp }}/build/package/${{ env.ARTIFACT }}
+      
+      - name: Linux artefact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: ${{ env.SOURCE_DIR }}/build/${{ env.ARTIFACT }}
