@@ -46,7 +46,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.SOURCE_DIR }}/build
         run:  |
-              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/bin/qmake -r ${{ env.SOURCE_DIR }}/LiniTunes/LiniTunes.pro
+              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake -r ${{ env.SOURCE_DIR }}/LiniTunes/LiniTunes.pro
               make -j2
 
       - name: AppImage
