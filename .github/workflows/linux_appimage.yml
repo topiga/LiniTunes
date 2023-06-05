@@ -38,7 +38,7 @@ jobs:
           setup-python: true
 
       - name: Install libimobiledevice with dpkg
-        run:  sudo apt-get install -y libimobiledevice6 usbmuxd libimobiledevice-utils
+        run:  sudo apt-get install -y libimobiledevice6 usbmuxd libimobiledevice-utils libimobiledevice-dev
 
       - name: Create build directory
         run:  mkdir ${{ env.SOURCE_DIR }}/build
