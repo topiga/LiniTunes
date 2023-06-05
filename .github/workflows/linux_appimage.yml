@@ -46,7 +46,7 @@ jobs:
       - name: Build
         working-directory: ${{ runner.temp }}/build
         run:  |
-              qmake -r ${SOURCE_DIR}/linitunes.pro
+              qmake -r ${SOURCE_DIR}/LiniTunes.pro
               make -j2
 
       - name: AppImage
@@ -58,13 +58,7 @@ jobs:
           cp ${{ env.SOURCE_DIR }}/linux/* .
           ./deploy.AppImage linitunes.desktop -appimage -no-translations -qmldir=${{ env.SOURCE_DIR }} -extra-plugins=renderers
           mv Qt_planets_app*.AppImage ${{ env.ARTIFACT }} 
-          
-      - name: Save artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ env.ARTIFACT }}
-          path: ${{ runner.temp }}/build/package/${{ env.ARTIFACT }}
-      
+
       - name: Linux artefact
         uses: actions/upload-artifact@v3.1.2
         with:
