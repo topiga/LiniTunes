@@ -2,6 +2,8 @@
 #define IDEVICE_H
 
 #include <QObject>
+#include <QString>
+
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <plist/plist++.h>
@@ -10,22 +12,28 @@ class iDevice : public QObject
 {
     Q_OBJECT
 public:
+
+    Q_PROPERTY(QString device_name READ device_name NOTIFY deviceNameChanged);
+
     explicit iDevice(QObject *parent = nullptr);
     ~iDevice();
-    char* udid = NULL;
-    char* device_name = NULL;
-    char* product_type = NULL;
-    char* software_version = NULL;
-    char* serial = NULL;
-    uint64_t ecid = NULL;
-    char* model = NULL;
+    QString device_name();
 
 private:
     idevice_t _device = NULL;
     lockdownd_client_t _client = NULL;
-    void get_basic_info();
+    char* _device_name = NULL;
+    char* _udid = NULL;
+    char* _product_type = NULL;
+    char* _software_version = NULL;
+    char* _serial = NULL;
+    uint64_t _ecid;
+    char* _model = NULL;
+
+    void _get_basic_info();
 
 signals:
+    void deviceNameChanged();
 
 };
 

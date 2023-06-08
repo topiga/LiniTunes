@@ -2,5 +2,6 @@
 Type=Application
 Name=LiniTunes
 Comment=LiniTunes is not iTunes
-Exec=linitunes
+Exec=LiniTunes
+Icon=linitunes
 Categories=Office;

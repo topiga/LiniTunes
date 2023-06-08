@@ -34,6 +34,27 @@ DISTFILES += \
 HEADERS += \
     idevice.h
 
-unix:!macx: LIBS += -limobiledevice-1.0
-unix:!macx: LIBS += -lplist++-2.0
-unix:!macx: LIBS += -lplist-2.0
+unix:!macx {
+    LIBS += -limobiledevice-1.0
+    LIBS += -lplist++-2.0
+    LIBS += -lplist-2.0
+    isEmpty(PREFIX) {
+            PREFIX = /usr/local
+    }
+
+    target.path = $$PREFIX/bin
+
+    shortcutfiles.files = ../linux/linitunes.desktop
+    shortcutfiles.path = $$PREFIX/share/applications/
+    data.files += images/linitunes.png
+    data.path = $$PREFIX/share/pixmaps/
+
+    INSTALLS += shortcutfiles
+    INSTALLS += data
+    INSTALLS += target
+
+    DISTFILES += \
+        ../linux/linitunes.desktop \
+        images/linitunes.png
+
+}
