@@ -60,6 +60,7 @@ jobs:
           chmod +x linuxdeploy*.AppImage
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$${{ runner.temp }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
           export QMAKE=${{ runner.temp }}/Qt/6.5.1/gcc_64/bin/qmake
+          export QML_SOURCES_PATHS=${{ env.SOURCE_DIR }}/LiniTunes/
           ./linuxdeploy-x86_64.AppImage --appdir AppDir -e LiniTunes -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop --plugin qt --output appimage
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }} 
 
