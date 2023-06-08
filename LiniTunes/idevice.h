@@ -6,7 +6,7 @@
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
-#include <plist/plist++.h>
+#include <plist/plist.h>
 
 class iDevice : public QObject
 {
