@@ -49,7 +49,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.SOURCE_DIR }}/build
         run:  |
-              ${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake -r ${{ env.SOURCE_DIR }}/LiniTunes/LiniTunes.pro
+              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake -r ${{ env.SOURCE_DIR }}/LiniTunes/LiniTunes.pro
               make -j2
 
       - name: AppImage
@@ -58,8 +58,8 @@ jobs:
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
-          export QMAKE=${{ github.workspace }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$${{ runner.temp }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
+          export QMAKE=${{ runner.temp }}/Qt/6.5.1/gcc_64/bin/qmake
           ./linuxdeploy-x86_64.AppImage --appdir AppDir -e LiniTunes -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop --plugin qt --output appimage
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }} 
 
