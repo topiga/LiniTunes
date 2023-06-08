@@ -1,4 +1,5 @@
 import QtQuick 2.0
+import QtQuick.Controls 2.0
 
 Item {
     Rectangle {
@@ -9,5 +10,8 @@ Item {
             right: parent.right
         }
         color: "#FFFFFF"
+        Label {
+            id: device_name
+        }
     }
 }

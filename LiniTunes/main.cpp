@@ -1,5 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QFileInfo>
+#include <QIcon>
 
 #include <QLocale>
 #include <QTranslator>
@@ -19,6 +21,8 @@ int main(int argc, char *argv[])
         }
     }
     QQmlApplicationEngine engine;
+    QFileInfo fi(app.applicationDirPath() + "/../share/pixmaps/linitunes.png");
+    QGuiApplication::setWindowIcon(QIcon(fi.absoluteFilePath()));
 
     iDevice *Device = new iDevice();
 
