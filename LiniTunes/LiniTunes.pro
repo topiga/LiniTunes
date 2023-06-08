@@ -36,7 +36,6 @@ HEADERS += \
 
 unix:!macx {
     LIBS += -limobiledevice-1.0
-    LIBS += -lplist++-2.0
     LIBS += -lplist-2.0
     isEmpty(PREFIX) {
             PREFIX = /usr/local
