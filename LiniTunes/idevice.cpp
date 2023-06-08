@@ -5,7 +5,7 @@ iDevice::iDevice(QObject *parent)
 {
     idevice_t device = NULL;
     lockdownd_client_t client = NULL;
-    char* udid;
+    char* udid = NULL;
     char* device_name = NULL;
 
     /* Try to connect to first USB device */
@@ -14,16 +14,15 @@ iDevice::iDevice(QObject *parent)
         return;
     }
 
-    /* Retrieve the udid of the connected device */
-    if (idevice_get_udid(device, &udid) != IDEVICE_E_SUCCESS) {
-        printf("ERROR: Unable to get the device UDID.\n");
-        idevice_free(device);
-        return;
-    }
-
     // Create a lockdown client
     if (lockdownd_client_new_with_handshake(device, &client, "Example") != LOCKDOWN_E_SUCCESS) {
         printf("Failed to create lockdown client\n");
+        return;
+    }
+
+    // Get device udid
+    if (lockdownd_get_device_udid(client, &udid) != LOCKDOWN_E_SUCCESS) {
+        printf("Failed to get the device UDID.\n");
         return;
     }
 
@@ -42,6 +41,60 @@ iDevice::iDevice(QObject *parent)
     this->udid = udid;
     this->device_name = device_name;
 
+    get_basic_info();
+}
+
+void iDevice::get_basic_info() {
+    {
+        plist_t tmp_producttype = NULL;
+        if (lockdownd_get_value(_client, NULL, "ProductType", &tmp_producttype) != LOCKDOWN_E_SUCCESS) {
+            printf("Failed to get device product type\n");
+        } else {
+            plist_get_string_val(tmp_producttype, &this->product_type);
+            printf("ProductType: %s\n", this->product_type);
+        }
+        plist_free(tmp_producttype);
+    }
+    {
+        plist_t tmp_version = NULL;
+        if (lockdownd_get_value(_client, NULL, "HumanReadableProductVersionString", &tmp_version) != LOCKDOWN_E_SUCCESS) {
+            printf("Failed to get device software version\n");
+        } else {
+            plist_get_string_val(tmp_version, &this->software_version);
+            printf("HumanReadableProductVersionString: %s\n", this->software_version);
+        }
+        plist_free(tmp_version);
+    }
+    {
+        plist_t tmp_serial = NULL;
+        if (lockdownd_get_value(_client, NULL, "SerialNumber", &tmp_serial) != LOCKDOWN_E_SUCCESS) {
+            printf("Failed to get device serial number\n");
+        } else {
+            plist_get_string_val(tmp_serial, &this->serial);
+            printf("SerialNumber: %s\n", this->serial);
+        }
+        plist_free(tmp_serial);
+    }
+    {
+        plist_t tmp_ecid = NULL;
+        if (lockdownd_get_value(_client, NULL, "UniqueChipID", &tmp_ecid) != LOCKDOWN_E_SUCCESS) {
+            printf("Failed to get device ECID\n");
+        } else {
+            plist_get_uint_val(tmp_ecid, &this->ecid);
+            printf("UniqueChipID: %lu\n", this->ecid);
+        }
+        plist_free(tmp_ecid);
+    }
+    {
+        plist_t tmp_model = NULL;
+        if (lockdownd_get_value(_client, NULL, "ModelNumber", &tmp_model) != LOCKDOWN_E_SUCCESS) {
+            printf("Failed to get device model number\n");
+        } else {
+            plist_get_string_val(tmp_model, &this->model);
+            printf("ModelNumber: %s\n", this->model);
+        }
+        plist_free(tmp_model);
+    }
 }
 
 iDevice::~iDevice() {
@@ -60,5 +113,21 @@ iDevice::~iDevice() {
     if (this->udid) {
         free(this->udid);
         printf("Udid freed\n");
+    }
+    if (this->udid) {
+        free(this->serial);
+        printf("Serial freed\n");
+    }
+    if (this->model) {
+        free(this->model);
+        printf("model freed\n");
+    }
+    if (this->software_version) {
+        free(this->software_version);
+        printf("software version freed\n");
+    }
+    if (this->product_type) {
+        free(this->product_type);
+        printf("product type freed\n");
     }
 }
