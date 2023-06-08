@@ -35,3 +35,5 @@ HEADERS += \
     idevice.h
 
 unix:!macx: LIBS += -limobiledevice-1.0
+unix:!macx: LIBS += -lplist++-2.0
+unix:!macx: LIBS += -lplist-2.0
