@@ -29,7 +29,7 @@ private:
     char* _serial = NULL;
     uint64_t _ecid;
     char* _model = NULL;
-
+    uint64_t _capacity;
     void _get_basic_info();
 
 signals:
