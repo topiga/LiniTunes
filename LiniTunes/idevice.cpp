@@ -87,13 +87,32 @@ void iDevice::_get_basic_info() {
     }
     {
         plist_t tmp_model = NULL;
-        if (lockdownd_get_value(_client, NULL, "ModelNumber", &tmp_model) == LOCKDOWN_E_SUCCESS) {
-            plist_get_string_val(tmp_model, &this->_model);
-            printf("ModelNumber: %s\n", this->_model);
+        plist_t tmp_region = NULL;
+        char* tmp_model_ch = NULL;
+        char* tmp_region_ch = NULL;
+        if ((lockdownd_get_value(_client, NULL, "ModelNumber", &tmp_model) == LOCKDOWN_E_SUCCESS) && (lockdownd_get_value(_client, NULL, "RegionInfo", &tmp_region) == LOCKDOWN_E_SUCCESS)) {
+            plist_get_string_val(tmp_model, &tmp_model_ch);
+            plist_get_string_val(tmp_region, &tmp_region_ch);
+            _model = (char*) malloc(strlen(tmp_model_ch)+strlen(tmp_region_ch));
+            strcpy(_model, tmp_model_ch);
+            strcat(_model, tmp_region_ch);
+            printf("Full Model number: %s\n", this->_model);
         } else {
             printf("Failed to get device model number\n");
         }
         plist_free(tmp_model);
+        plist_free(tmp_region);
+        free(tmp_model_ch);
+        free(tmp_region_ch);
+    }
+    {
+        plist_t tmp_capacity = NULL;
+        if (lockdownd_get_value(_client, "com.apple.disk_usage", "TotalDiskCapacity", &tmp_capacity) == LOCKDOWN_E_SUCCESS) {
+            plist_get_uint_val(tmp_capacity, &this->_capacity);
+            printf("Device storage capacity: %lu\n", this->_capacity);
+        } else {
+            printf("Failed to get device capacity\n");
+        }
     }
 }
 
@@ -103,35 +122,37 @@ QString iDevice::device_name() {
 
 iDevice::~iDevice() {
     if (this->_client) {
-        lockdownd_client_free(this->_client);
-        printf("Client freed\n");
+        if (lockdownd_client_free(this->_client) != LOCKDOWN_E_SUCCESS) {
+            printf("Error! Client not freed\n");
+        }
     }
     if (this->_device) {
-        idevice_free(this->_device);
-        printf("Device freed\n");
+        if (idevice_free(this->_device) != IDEVICE_E_SUCCESS) {
+            printf("Error! Device not freed\n");
+        }
     }
     if (this->_device_name) {
         free(this->_device_name);
-        printf("Name freed\n");
+        //printf("Name freed\n");
     }
     if (this->_udid) {
         free(this->_udid);
-        printf("Udid freed\n");
+        //printf("Udid freed\n");
     }
     if (this->_serial) {
         free(this->_serial);
-        printf("Serial freed\n");
+        //printf("Serial freed\n");
     }
     if (this->_model) {
         free(this->_model);
-        printf("model freed\n");
+        //printf("model freed\n");
     }
     if (this->_software_version) {
         free(this->_software_version);
-        printf("software version freed\n");
+        //printf("software version freed\n");
     }
     if (this->_product_type) {
         free(this->_product_type);
-        printf("product type freed\n");
+        //printf("product type freed\n");
     }
 }
