@@ -29,7 +29,9 @@ private:
     char* _serial = NULL;
     uint64_t _ecid;
     char* _model = NULL;
-    uint64_t _capacity;
+    uint64_t _storage_capacity;
+    uint64_t _battery_capacity;
+    bool _battery_charging;
     void _get_basic_info();
 
 signals:
