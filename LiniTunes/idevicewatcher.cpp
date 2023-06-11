@@ -3,11 +3,9 @@
 iDeviceWatcher::iDeviceWatcher(QObject *parent)
     : QObject{parent}
 {
-
-    int err = usbmuxd_events_subscribe((usbmuxd_subscription_context_t*) usbmuxd_context, deviceChanged, (void*) NULL);
-    if (err != 0) {
-        printf("Not subscribed to usbmuxd\n");
-        printf("Error code : %d\n", err);
+    usbmuxd_context = (usbmuxd_subscription_context_t*) malloc(sizeof(usbmuxd_subscription_context_t));
+    if (usbmuxd_events_subscribe(usbmuxd_context, (usbmuxd_event_cb_t) deviceChanged, NULL) != 0) {
+        printf("Error! Not subscribed to usbmuxd\n");
     }
 }
 
