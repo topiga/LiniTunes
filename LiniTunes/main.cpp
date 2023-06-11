@@ -6,6 +6,7 @@
 #include <QLocale>
 #include <QTranslator>
 #include <idevice.h>
+#include <idevicewatcher.h>
 
 int main(int argc, char *argv[])
 {
@@ -24,7 +25,7 @@ int main(int argc, char *argv[])
     QFileInfo fi(app.applicationDirPath() + "/../share/pixmaps/linitunes.png");
     QGuiApplication::setWindowIcon(QIcon(fi.absoluteFilePath()));
 
-    iDevice *Device = new iDevice();
+    iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
 
     const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -34,7 +35,7 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-    delete Device;
+    delete DeviceWatcher;
 
     return app.exec();
 }
