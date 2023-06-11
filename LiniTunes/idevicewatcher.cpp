@@ -9,7 +9,7 @@ iDeviceWatcher::iDeviceWatcher(QObject *parent)
     }
 }
 
-usbmuxd_event_cb_t iDeviceWatcher::deviceChanged(const usbmuxd_event_t *event, void *user_data)
+void iDeviceWatcher::deviceChanged(const usbmuxd_event_t *event, void *user_data)
 {
-    printf("Device changed");
+    printf("Device changed\n");
 }
