@@ -100,12 +100,32 @@ void iDevice::_get_basic_info() {
         free(tmp_region_ch);
     }
     {
-        plist_t tmp_capacity = NULL;
-        if (lockdownd_get_value(_client, "com.apple.disk_usage", "TotalDiskCapacity", &tmp_capacity) == LOCKDOWN_E_SUCCESS) {
-            plist_get_uint_val(tmp_capacity, &this->_capacity);
-            qDebug("Device storage capacity: %lu", this->_capacity);
+        plist_t tmp_storage_capacity = NULL;
+        if (lockdownd_get_value(_client, "com.apple.disk_usage", "TotalDiskCapacity", &tmp_storage_capacity) == LOCKDOWN_E_SUCCESS) {
+            plist_get_uint_val(tmp_storage_capacity, &this->_storage_capacity);
+            printf("Device storage capacity: %lu\n", this->_storage_capacity);
         } else {
-            qDebug("Failed to get device capacity");
+            printf("Failed to get device capacity\n");
+        }
+    }
+    {
+        plist_t tmp_battery_capacity = NULL;
+        if (lockdownd_get_value(_client, "com.apple.mobile.battery", "BatteryCurrentCapacity", &tmp_battery_capacity) == LOCKDOWN_E_SUCCESS) {
+            plist_get_uint_val(tmp_battery_capacity, &this->_battery_capacity);
+            printf("Device battery capacity: %lu\n", this->_battery_capacity);
+        } else {
+            printf("Failed to get device capacity\n");
+        }
+    }
+    {
+        plist_t tmp_battery_charging = NULL;
+        uint8_t tmp_battery_charging_bool;
+        if (lockdownd_get_value(_client, "com.apple.mobile.battery", "BatteryIsCharging", &tmp_battery_charging) == LOCKDOWN_E_SUCCESS) {
+            plist_get_bool_val(tmp_battery_charging, &tmp_battery_charging_bool);
+            _battery_charging = (bool) tmp_battery_charging_bool;
+            printf("Is device charging: %x\n", _battery_charging);
+        } else {
+            printf("Failed to get device capacity\n");
         }
     }
 }
