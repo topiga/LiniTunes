@@ -15,9 +15,10 @@ public:
 
     Q_PROPERTY(QString device_name READ device_name NOTIFY deviceNameChanged);
 
-    explicit iDevice(QObject *parent = nullptr);
+    explicit iDevice(char* udid = NULL, QObject *parent = nullptr);
     ~iDevice();
     QString device_name();
+    std::string udid_str();
 
 private:
     idevice_t _device = NULL;

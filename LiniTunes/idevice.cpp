@@ -1,39 +1,33 @@
 #include "idevice.h"
 
-iDevice::iDevice(QObject *parent)
+iDevice::iDevice(char* tmp_udid, QObject *parent)
     : QObject{parent}
 {
-    idevice_t device = NULL;
+    idevice_t device;
     lockdownd_client_t client = NULL;
-    char* udid = NULL;
     char* device_name = NULL;
+    char* udid = tmp_udid;
 
     /* Try to connect to first USB device */
-    if (idevice_new_with_options(&device, NULL, IDEVICE_LOOKUP_USBMUX) != IDEVICE_E_SUCCESS) {
-        printf("ERROR: No device found!\n");
+    if (idevice_new(&device, udid) != IDEVICE_E_SUCCESS) {
+        qDebug("ERROR: No device found!");
         return;
     }
 
     // Create a lockdown client
     if (lockdownd_client_new_with_handshake(device, &client, "Example") != LOCKDOWN_E_SUCCESS) {
-        printf("Failed to create lockdown client\n");
-        return;
-    }
-
-    // Get device udid
-    if (lockdownd_get_device_udid(client, &udid) != LOCKDOWN_E_SUCCESS) {
-        printf("Failed to get the device UDID.\n");
+        qDebug("Failed to create lockdown client");
         return;
     }
 
     // Retrieve the device's name
     if (lockdownd_get_device_name(client, &device_name) != LOCKDOWN_E_SUCCESS) {
-        printf("Failed to get device name\n");
+        qDebug("Failed to get device name");
         return;
     }
 
-    printf("Connected with UDID: %s\n", udid);
-    printf("Device name: %s\n", device_name);
+    qDebug("Connected with UDID: %s", udid);
+    qDebug("Device name: %s", device_name);
 
     // Assign
     this->_device = device;
@@ -49,9 +43,9 @@ void iDevice::_get_basic_info() {
         plist_t tmp_producttype = NULL;
         if (lockdownd_get_value(_client, NULL, "ProductType", &tmp_producttype) == LOCKDOWN_E_SUCCESS) {
             plist_get_string_val(tmp_producttype, &this->_product_type);
-            printf("ProductType: %s\n", this->_product_type);
+            qDebug("ProductType: %s", this->_product_type);
         } else {
-            printf("Failed to get device product type\n");
+            qDebug("Failed to get device product type");
         }
         plist_free(tmp_producttype);
     }
@@ -59,9 +53,9 @@ void iDevice::_get_basic_info() {
         plist_t tmp_version = NULL;
         if (lockdownd_get_value(_client, NULL, "HumanReadableProductVersionString", &tmp_version) == LOCKDOWN_E_SUCCESS) {
             plist_get_string_val(tmp_version, &this->_software_version);
-            printf("HumanReadableProductVersionString: %s\n", this->_software_version);
+            qDebug("HumanReadableProductVersionString: %s", this->_software_version);
         } else {
-            printf("Failed to get device software version\n");
+            qDebug("Failed to get device software version");
         }
         plist_free(tmp_version);
     }
@@ -69,9 +63,9 @@ void iDevice::_get_basic_info() {
         plist_t tmp_serial = NULL;
         if (lockdownd_get_value(_client, NULL, "SerialNumber", &tmp_serial) == LOCKDOWN_E_SUCCESS) {
             plist_get_string_val(tmp_serial, &this->_serial);
-            printf("SerialNumber: %s\n", this->_serial);
+            qDebug("SerialNumber: %s", this->_serial);
         } else {
-            printf("Failed to get device serial number\n");
+            qDebug("Failed to get device serial number");
         }
         plist_free(tmp_serial);
     }
@@ -79,9 +73,9 @@ void iDevice::_get_basic_info() {
         plist_t tmp_ecid = NULL;
         if (lockdownd_get_value(_client, NULL, "UniqueChipID", &tmp_ecid) == LOCKDOWN_E_SUCCESS) {
             plist_get_uint_val(tmp_ecid, &this->_ecid);
-            printf("UniqueChipID: %lu\n", this->_ecid);
+            qDebug("UniqueChipID: %lu", this->_ecid);
         } else {
-            printf("Failed to get device ECID\n");
+            qDebug("Failed to get device ECID");
         }
         plist_free(tmp_ecid);
     }
@@ -96,9 +90,9 @@ void iDevice::_get_basic_info() {
             _model = (char*) malloc(strlen(tmp_model_ch)+strlen(tmp_region_ch));
             strcpy(_model, tmp_model_ch);
             strcat(_model, tmp_region_ch);
-            printf("Full Model number: %s\n", this->_model);
+            qDebug("Full Model number: %s", this->_model);
         } else {
-            printf("Failed to get device model number\n");
+            qDebug("Failed to get device model number");
         }
         plist_free(tmp_model);
         plist_free(tmp_region);
@@ -109,9 +103,9 @@ void iDevice::_get_basic_info() {
         plist_t tmp_capacity = NULL;
         if (lockdownd_get_value(_client, "com.apple.disk_usage", "TotalDiskCapacity", &tmp_capacity) == LOCKDOWN_E_SUCCESS) {
             plist_get_uint_val(tmp_capacity, &this->_capacity);
-            printf("Device storage capacity: %lu\n", this->_capacity);
+            qDebug("Device storage capacity: %lu", this->_capacity);
         } else {
-            printf("Failed to get device capacity\n");
+            qDebug("Failed to get device capacity");
         }
     }
 }
@@ -120,15 +114,19 @@ QString iDevice::device_name() {
     return QString(_device_name);
 }
 
+std::string iDevice::udid_str() {
+    return _udid;
+}
+
 iDevice::~iDevice() {
     if (this->_client) {
         if (lockdownd_client_free(this->_client) != LOCKDOWN_E_SUCCESS) {
-            printf("Error! Client not freed\n");
+            qDebug("Error! Client not freed");
         }
     }
     if (this->_device) {
         if (idevice_free(this->_device) != IDEVICE_E_SUCCESS) {
-            printf("Error! Device not freed\n");
+            qDebug("Error! Device not freed");
         }
     }
     if (this->_device_name) {
