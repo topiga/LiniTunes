@@ -165,5 +165,6 @@
         <file>images/Devices/Watch5,3.png</file>
         <file>images/Devices/Watch5,4.png</file>
         <file>images/linitunes.png</file>
+        <file>images/linitunes.svg</file>
     </qresource>
 </RCC>
