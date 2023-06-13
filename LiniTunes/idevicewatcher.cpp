@@ -9,23 +9,22 @@ iDeviceWatcher::iDeviceWatcher(QObject *parent)
     }
 }
 
-void iDeviceWatcher::CB_devicesChanged(const usbmuxd_event_t *event, iDeviceWatcher *user_data)
+void iDeviceWatcher::CB_devicesChanged(const usbmuxd_event_t *event, iDeviceWatcher *device_watcher)
 {
-    //user_data->updateDevices(event->device.udid);
     QString udid = event->device.udid;
     usbmuxd_device_info_t* device = (usbmuxd_device_info_t*) malloc(sizeof(usbmuxd_device_info_t));
     qDebug("udid: %s", udid.toLatin1().data());
-    qDebug("Vector capacity %lld",user_data->Devices.capacity());
+    qDebug("Vector capacity %lld",device_watcher->Devices.capacity());
     if (event->event == 1) {
         qDebug("Device connected");
-        user_data->Devices.append(new iDevice(udid.toLatin1().data()));
+        device_watcher->Devices.append(new iDevice(udid.toLatin1().data()));
         qDebug("Device stored with udid %s", udid.toLatin1().data());
     } else if (event->event == 2) {
-        for (qsizetype i = 0; i < user_data->Devices.size(); i++) {
-            if (user_data->Devices.at(i)->udid_str().compare(udid)) {
+        for (qsizetype i = 0; i < device_watcher->Devices.size(); i++) {
+            if (device_watcher->Devices.at(i)->udid_str().compare(udid)) {
                 qDebug("Device disconnected");
-                user_data->Devices.removeAt(i);
-                user_data->Devices.squeeze();
+                device_watcher->Devices.removeAt(i);
+                device_watcher->Devices.squeeze();
                 break;
             }
         }

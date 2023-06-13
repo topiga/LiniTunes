@@ -15,7 +15,7 @@ public:
     ~iDeviceWatcher();
     QVector<iDevice*> Devices;
     usbmuxd_subscription_context_t *usbmuxd_context;
-    static void CB_devicesChanged(const usbmuxd_event_t *event, iDeviceWatcher *user_data);
+    static void CB_devicesChanged(const usbmuxd_event_t *event, iDeviceWatcher *device_watcher);
 };
 
 #endif // IDEVICEWATCHER_H
