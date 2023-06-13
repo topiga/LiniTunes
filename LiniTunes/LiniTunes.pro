@@ -1,4 +1,4 @@
-QT += quick svg
+QT += quick
 
 SOURCES += \
         idevice.cpp \
