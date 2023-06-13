@@ -1,6 +1,5 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QFileInfo>
 #include <QIcon>
 
 #include <QLocale>
@@ -11,6 +10,7 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    QGuiApplication::setWindowIcon(QIcon(":/images/linitunes.png"));
 
     iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
 
@@ -24,8 +24,6 @@ int main(int argc, char *argv[])
         }
     }
     QQmlApplicationEngine engine;
-//    QFileInfo fi(app.applicationDirPath() + "/../share/pixmaps/linitunes.png");
-//    QGuiApplication::setWindowIcon(QIcon(fi.absoluteFilePath()));
 
 
     const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);

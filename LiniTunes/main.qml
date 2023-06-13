@@ -100,13 +100,21 @@ Window {
                     verticalCenter: parent.verticalCenter
                     leftMargin: 3
                 }
+                width: 90
+                height: 90
+                sourceSize.width: 90
+                sourceSize.height: 90
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
             }
             Text {
+                id: device_name
                 text: "No device connected"
                 anchors {
                     left: img_idevice.right
                     top: parent.top
                     right: parent.right
+                    rightMargin: 5
                     leftMargin: 3
                     topMargin: 10
                 }
@@ -116,7 +124,42 @@ Window {
                     pointSize: 13
                 }
                 color: color_text
-                wrapMode: Text.WordWrap
+                maximumLineCount: 2
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+            }
+            Rectangle {
+                id: storage_capacity
+                radius: 5
+                color: "#00000000"
+                width: storage_capacity_text.width +8
+                height: storage_capacity_text.height
+                antialiasing: true
+                border {
+                    width: 1
+                    color: color_text
+                }
+                anchors {
+                    left: img_idevice.right
+                    top: device_name.bottom
+                    topMargin: 3
+                }
+                visible: false
+                Text {
+                    id: storage_capacity_text
+                    text: qsTr("64GB")
+                    font {
+                        bold: false
+                        family: "Helvetica"
+                        pointSize: 8
+                    }
+                    anchors {
+                        verticalCenter: storage_capacity.verticalCenter
+                        horizontalCenter: storage_capacity.horizontalCenter
+                    }
+                    color: color_text
+                    wrapMode: Text.WordWrap
+                }
             }
             MouseArea {
                 id: m_idevice
