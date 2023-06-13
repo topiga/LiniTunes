@@ -15,7 +15,7 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
     }
 
     // Create a lockdown client
-    if (lockdownd_client_new_with_handshake(device, &client, "Example") != LOCKDOWN_E_SUCCESS) {
+    if (lockdownd_client_new_with_handshake(device, &client, "LiniTunes") != LOCKDOWN_E_SUCCESS) {
         qDebug("Failed to create lockdown client");
         return;
     }
@@ -35,7 +35,7 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
     this->_udid = udid;
     this->_device_name = device_name;
 
-    _get_basic_info();
+//    _get_basic_info();
 }
 
 void iDevice::_get_basic_info() {
@@ -103,18 +103,18 @@ void iDevice::_get_basic_info() {
         plist_t tmp_storage_capacity = NULL;
         if (lockdownd_get_value(_client, "com.apple.disk_usage", "TotalDiskCapacity", &tmp_storage_capacity) == LOCKDOWN_E_SUCCESS) {
             plist_get_uint_val(tmp_storage_capacity, &this->_storage_capacity);
-            printf("Device storage capacity: %lu\n", this->_storage_capacity);
+            qDebug("Device storage capacity: %lu", this->_storage_capacity);
         } else {
-            printf("Failed to get device capacity\n");
+            qDebug("Failed to get device capacity");
         }
     }
     {
         plist_t tmp_battery_capacity = NULL;
         if (lockdownd_get_value(_client, "com.apple.mobile.battery", "BatteryCurrentCapacity", &tmp_battery_capacity) == LOCKDOWN_E_SUCCESS) {
             plist_get_uint_val(tmp_battery_capacity, &this->_battery_capacity);
-            printf("Device battery capacity: %lu\n", this->_battery_capacity);
+            qDebug("Device battery capacity: %lu", this->_battery_capacity);
         } else {
-            printf("Failed to get device capacity\n");
+            qDebug("Failed to get device capacity");
         }
     }
     {
@@ -122,10 +122,10 @@ void iDevice::_get_basic_info() {
         uint8_t tmp_battery_charging_bool;
         if (lockdownd_get_value(_client, "com.apple.mobile.battery", "BatteryIsCharging", &tmp_battery_charging) == LOCKDOWN_E_SUCCESS) {
             plist_get_bool_val(tmp_battery_charging, &tmp_battery_charging_bool);
-            _battery_charging = (bool) tmp_battery_charging_bool;
-            printf("Is device charging: %x\n", _battery_charging);
+//            _battery_charging = (bool) tmp_battery_charging_bool;
+            qDebug("Is device charging: %x", tmp_battery_charging_bool);
         } else {
-            printf("Failed to get device capacity\n");
+            qDebug("Failed to get device capacity");
         }
     }
 }
@@ -134,8 +134,8 @@ QString iDevice::device_name() {
     return QString(_device_name);
 }
 
-std::string iDevice::udid_str() {
-    return _udid;
+QString iDevice::udid_str() {
+    return QString::fromLatin1(_udid);
 }
 
 iDevice::~iDevice() {

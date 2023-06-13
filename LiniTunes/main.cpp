@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
+    iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
+
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
     for (const QString &locale : uiLanguages) {
@@ -22,10 +24,9 @@ int main(int argc, char *argv[])
         }
     }
     QQmlApplicationEngine engine;
-    QFileInfo fi(app.applicationDirPath() + "/../share/pixmaps/linitunes.png");
-    QGuiApplication::setWindowIcon(QIcon(fi.absoluteFilePath()));
+//    QFileInfo fi(app.applicationDirPath() + "/../share/pixmaps/linitunes.png");
+//    QGuiApplication::setWindowIcon(QIcon(fi.absoluteFilePath()));
 
-    iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
 
     const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -35,7 +36,6 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-    delete DeviceWatcher;
-
     return app.exec();
+    delete DeviceWatcher;
 }

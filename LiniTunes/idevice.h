@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QString>
+#include <string.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
@@ -17,8 +18,8 @@ public:
 
     explicit iDevice(char* udid = NULL, QObject *parent = nullptr);
     ~iDevice();
+    QString udid_str();
     QString device_name();
-    std::string udid_str();
 
 private:
     idevice_t _device = NULL;
