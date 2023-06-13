@@ -35,7 +35,7 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
     this->_udid = udid;
     this->_device_name = device_name;
 
-//    _get_basic_info();
+    _get_basic_info();
 }
 
 void iDevice::_get_basic_info() {
