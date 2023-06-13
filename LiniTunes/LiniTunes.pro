@@ -2,6 +2,7 @@ QT += quick
 
 SOURCES += \
         idevice.cpp \
+        idevicewatcher.cpp \
         main.cpp
 
 resources.files = main.qml 
@@ -32,11 +33,13 @@ DISTFILES += \
     test.qml
 
 HEADERS += \
-    idevice.h
+    idevice.h \
+    idevicewatcher.h
 
 unix:!macx {
     LIBS += -limobiledevice-1.0
     LIBS += -lplist-2.0
+    LIBS += -lusbmuxd-2.0
     isEmpty(PREFIX) {
             PREFIX = /usr/local
     }

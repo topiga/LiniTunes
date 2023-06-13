@@ -5,11 +5,14 @@
 #include <QLocale>
 #include <QTranslator>
 #include <idevice.h>
+#include <idevicewatcher.h>
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QGuiApplication::setWindowIcon(QIcon(":/images/linitunes.png"));
+
+    iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -22,7 +25,6 @@ int main(int argc, char *argv[])
     }
     QQmlApplicationEngine engine;
 
-    iDevice *Device = new iDevice();
 
     const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -32,7 +34,6 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-    delete Device;
-
     return app.exec();
+    delete DeviceWatcher;
 }
