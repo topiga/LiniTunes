@@ -1,6 +1,5 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QFileInfo>
 #include <QIcon>
 
 #include <QLocale>
@@ -10,6 +9,7 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    QGuiApplication::setWindowIcon(QIcon(":/images/linitunes.png"));
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -21,8 +21,6 @@ int main(int argc, char *argv[])
         }
     }
     QQmlApplicationEngine engine;
-    QFileInfo fi(app.applicationDirPath() + "/../share/pixmaps/linitunes.png");
-    QGuiApplication::setWindowIcon(QIcon(fi.absoluteFilePath()));
 
     iDevice *Device = new iDevice();
 
