@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QString>
-#include <string.h>
 
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
