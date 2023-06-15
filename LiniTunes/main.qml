@@ -1,14 +1,15 @@
 import QtQuick 2.0
-
+import QtQuick.Controls 2.0
 
 Window {
+    id: root
     minimumWidth: 960
     minimumHeight: 600
     width: 960
     height: 600
     visible: true
     title: qsTr("LiniTunes")
-    color: "#00000000"
+    color: color_app
     property string color_sidebar: "#f6f6f6"
     property string color_text: "#2c2c2c"
     property string color_button_sidebar: "#e0e0e0"
@@ -106,6 +107,14 @@ Window {
                 sourceSize.height: 90
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
+                Connections {
+                    target: DeviceWatcher
+                    function onCurrentDeviceChanged() {
+                        if (img_idevice.source != DeviceWatcher.device_image) {
+                            img_idevice.source = DeviceWatcher.device_image
+                        }
+                    }
+                }
             }
             Text {
                 id: device_name
@@ -127,12 +136,24 @@ Window {
                 maximumLineCount: 2
                 wrapMode: Text.Wrap
                 elide: Text.ElideRight
+                Connections {
+                    target: DeviceWatcher
+                    function onCurrentDeviceChanged() {
+                        if (DeviceWatcher.device_connected) {
+                            if (device_name.text != DeviceWatcher.device_name) {
+                                device_name.text = DeviceWatcher.device_name
+                            }
+                        } else {
+                            device_name.text = "No device connected"
+                        }
+                    }
+                }
             }
             Rectangle {
                 id: storage_capacity
                 radius: 5
                 color: "#00000000"
-                width: storage_capacity_text.width +8
+                width: storage_capacity_text.width + 8
                 height: storage_capacity_text.height
                 antialiasing: true
                 border {
@@ -147,7 +168,6 @@ Window {
                 visible: false
                 Text {
                     id: storage_capacity_text
-                    text: qsTr("64GB")
                     font {
                         bold: false
                         family: "Helvetica"
@@ -159,6 +179,17 @@ Window {
                     }
                     color: color_text
                     wrapMode: Text.WordWrap
+                    Connections {
+                        target: DeviceWatcher
+                        function onCurrentDeviceChanged() {
+                            if (DeviceWatcher.device_connected) {
+                                storage_capacity_text.text = DeviceWatcher.storage_capacity
+                                storage_capacity.visible = true
+                            } else {
+                                storage_capacity.visible = false
+                            }
+                        }
+                    }
                 }
             }
             MouseArea {
@@ -271,6 +302,17 @@ Window {
             right: parent.right
             left: sidebar.right
         }
-        source: "/test.qml"
+        asynchronous: true
+
+        // Allow loaded pages to access the main.qml properties
+        property alias rootWindow: root
+        Connections {
+            target: DeviceWatcher
+            function onUdidListChanged() {
+                if (main_page.source == "") {
+                    main_page.source = "/test.qml"
+                }
+            }
+        }
     }
 }

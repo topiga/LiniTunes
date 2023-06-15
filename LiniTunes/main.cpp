@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QIcon>
+#include <QQmlContext>
 
 #include <QLocale>
 #include <QTranslator>
@@ -11,8 +12,6 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QGuiApplication::setWindowIcon(QIcon(":/images/linitunes.png"));
-
-    iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -25,6 +24,9 @@ int main(int argc, char *argv[])
     }
     QQmlApplicationEngine engine;
 
+    iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
+    engine.rootContext()->setContextProperty("DeviceWatcher", DeviceWatcher);
+//    engine.rootContext()->setContextProperty("Devices", DeviceWatcher->Devices);
 
     const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -33,6 +35,12 @@ int main(int argc, char *argv[])
             QCoreApplication::exit(-1);
     }, Qt::QueuedConnection);
     engine.load(url);
+
+    // We need to connect the dots right after the QML,
+    // or the devices might not be recognized.
+    if (DeviceWatcher->begin() != 0) {
+        app.quit();
+    }
 
     return app.exec();
     delete DeviceWatcher;

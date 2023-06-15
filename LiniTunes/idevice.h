@@ -12,13 +12,16 @@ class iDevice : public QObject
 {
     Q_OBJECT
 public:
-
-    Q_PROPERTY(QString device_name READ device_name NOTIFY deviceNameChanged);
-
-    explicit iDevice(char* udid = NULL, QObject *parent = nullptr);
+    explicit iDevice(char* udid, QObject *parent = nullptr);
     ~iDevice();
-    QString udid_str();
+
+    // Values
+    QString udid();
+    QString ecid();
+    QString product_type();
     QString device_name();
+    QString storage_capacity();
+    QString device_class();
 
 private:
     idevice_t _device = NULL;
@@ -26,6 +29,7 @@ private:
     char* _device_name = NULL;
     char* _udid = NULL;
     char* _product_type = NULL;
+    char* _device_class = NULL;
     char* _software_version = NULL;
     char* _serial = NULL;
     uint64_t _ecid;
