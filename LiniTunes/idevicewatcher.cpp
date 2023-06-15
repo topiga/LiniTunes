@@ -46,12 +46,22 @@ void iDeviceWatcher::updateLists() {
     this->_product_type_list.clear();
     this->_device_name_list.clear();
     this->_storage_capacity_list.clear();
+    this->_device_image_list.clear();
     for (qsizetype i = 0; i < this->Devices.size(); i++) {
         this->_udid_list.append(this->Devices.at(i)->udid());
         this->_ecid_list.append(this->Devices.at(i)->ecid());
         this->_product_type_list.append(this->Devices.at(i)->product_type());
         this->_device_name_list.append(this->Devices.at(i)->device_name());
         this->_storage_capacity_list.append(this->Devices.at(i)->storage_capacity());
+        if (QFile::exists(":/images/Devices/"+this->Devices.at(i)->product_type()+".png")) {
+            this->_device_image_list.append(QString("/images/Devices/"+this->Devices.at(i)->product_type()+".png"));
+        } else if (QFile::exists(":/images/Devices/"+this->Devices.at(i)->device_class()+"Generic.png")) {
+            this->_device_image_list.append(QString("/images/Devices/"+this->Devices.at(i)->device_class()+"Generic.png"));
+        } else if (QFile::exists(":/images/Devices/Generic.png")) {
+            this->_device_image_list.append(QString("/images/Devices/Generic.png"));
+        } else {
+            this->_device_image_list.append(QString("/images/iDevice/iDevice_90x90.png"));
+        }
     }
     if (this->Devices.isEmpty()) {
         this->CurrentDevice = NULL;

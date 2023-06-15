@@ -1,5 +1,6 @@
-import QtQuick 2.0
-import QtQuick.Controls 2.0
+import QtQuick
+import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 
 Window {
     id: root
@@ -27,7 +28,7 @@ Window {
         Rectangle {
             id: clicked_rect
             color: color_button_sidebar
-            radius: 5
+            radius: 10
             x: button_idevice.x
             y: button_idevice.y
             height: button_idevice.height
@@ -105,7 +106,7 @@ Window {
                 height: 90
                 sourceSize.width: 90
                 sourceSize.height: 90
-                fillMode: Image.PreserveAspectCrop
+                fillMode: Image.PreserveAspectFit
                 smooth: true
                 Connections {
                     target: DeviceWatcher
@@ -195,9 +196,13 @@ Window {
             MouseArea {
                 id: m_idevice
                 anchors.fill: parent
+                onDoubleClicked: {
+                    clicked_rect.state = "button_idevice"
+                    popup_devices.open()
+                }
                 onClicked: {
                     clicked_rect.state = "button_idevice"
-                    main_page.source = "/idevices.qml"
+//                    main_page.source = "/idevices.qml"
                 }
             }
         }
@@ -290,6 +295,129 @@ Window {
                 onClicked: {
                     clicked_rect.state = "button_files"
                     main_page.source = "/files.qml"
+                }
+            }
+        }
+    }
+    Popup {
+        id: popup_devices
+        width: 260
+        height: 140
+        background: Rectangle {
+            border.color: color_app
+            radius: 10
+        }
+        Overlay.modal: Rectangle {
+                opacity: 0
+                color: "#B0f6f6f6"
+            } // couleur de fond popup
+        anchors.centerIn: Overlay.overlay // milieu de la fenetre
+        modal: true
+        Column {
+            id: grid_devices
+            spacing: 15
+            anchors {
+                fill: parent
+            }
+            Repeater {
+                id: popup_device_list
+                delegate: Rectangle {
+                    property string device_name: ""
+                    property string device_storage_capacity: ""
+                    property string device_image: ""
+                    height: 100
+                    width: 230
+                    radius: 10
+                    color: color_sidebar
+                    Image {
+                        id: popup_img_idevice
+                        source: device_image
+                        anchors {
+                            left: parent.left
+                            verticalCenter: parent.verticalCenter
+                            leftMargin: 3
+                        }
+                        width: 90
+                        height: 90
+                        sourceSize.width: 90
+                        sourceSize.height: 90
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+                    Text {
+                        id: popup_device_name
+                        text: device_name
+                        anchors {
+                            left: popup_img_idevice.right
+                            top: parent.top
+                            right: parent.right
+                            rightMargin: 5
+                            leftMargin: 3
+                            topMargin: 10
+                        }
+                        font {
+                            bold: true
+                            family: "Helvetica"
+                            pointSize: 13
+                        }
+                        color: color_text
+                        maximumLineCount: 2
+                        wrapMode: Text.Wrap
+                        elide: Text.ElideRight
+                    }
+                    Rectangle {
+                        id: popup_storage_capacity
+                        radius: 5
+                        color: "#00000000"
+                        width: popup_storage_capacity_text.width + 8
+                        height: popup_storage_capacity_text.height
+                        antialiasing: true
+                        border {
+                            width: 1
+                            color: color_text
+                        }
+                        anchors {
+                            left: popup_img_idevice.right
+                            top: popup_device_name.bottom
+                            topMargin: 3
+                        }
+                        Text {
+                            id: popup_storage_capacity_text
+                            text: device_storage_capacity
+                            font {
+                                bold: false
+                                family: "Helvetica"
+                                pointSize: 8
+                            }
+                            anchors {
+                                verticalCenter: popup_storage_capacity.verticalCenter
+                                horizontalCenter: popup_storage_capacity.horizontalCenter
+                            }
+                            color: color_text
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                    MouseArea {
+                        id: popup_m_idevice
+                        anchors.fill: parent
+                        onClicked: {
+                        }
+                    }
+                }
+            }
+            Connections {
+                target: DeviceWatcher
+                function onUdidListChanged() {
+                    if (DeviceWatcher.device_connected) {
+                        popup_device_list.model = DeviceWatcher.udid_list.length
+                        for (let i = 0; i < DeviceWatcher.udid_list.length; i++) {
+                            popup_device_list.itemAt(i).device_name = DeviceWatcher.device_name_list[i]
+                            popup_device_list.itemAt(i).device_storage_capacity = DeviceWatcher.storage_capacity_list[i]
+                            popup_device_list.itemAt(i).device_image = DeviceWatcher.device_image_list[i]
+                        }
+                    } else {
+                        popup_devices.close()
+                    }
                 }
             }
         }
