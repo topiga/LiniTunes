@@ -16,8 +16,9 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QStringList udid_list READ udid_list NOTIFY udidListChanged)
     Q_PROPERTY(QStringList ecid_list READ ecid_list NOTIFY ecidListChanged)
     Q_PROPERTY(QStringList product_type_list READ product_type_list NOTIFY productTypeListChanged)
-    Q_PROPERTY(QStringList device_name_list READ device_name_list NOTIFY storageCapacityListChanged)
+    Q_PROPERTY(QStringList device_name_list READ device_name_list NOTIFY deviceNameListChanged)
     Q_PROPERTY(QStringList storage_capacity_list READ storage_capacity_list NOTIFY storageCapacityListChanged)
+    Q_PROPERTY(QStringList device_image_list READ device_image_list NOTIFY deviceImageListChanged)
     // For the current one
     Q_PROPERTY(QString udid READ udid NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString ecid READ ecid NOTIFY currentDeviceChanged)
@@ -66,6 +67,7 @@ signals:
     void deviceNameListChanged();
     void storageCapacityListChanged();
     void currentDeviceChanged();
+    void deviceImageListChanged();
 
 private:
     QStringList _udid_list;
