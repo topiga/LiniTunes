@@ -6,10 +6,10 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
     idevice_t device;
     lockdownd_client_t client = NULL;
     char* device_name = NULL;
-    char* udid = tmp_udid;
+    char* udid = NULL;
 
     /* Try to connect to first USB device */
-    if (idevice_new(&device, udid) != IDEVICE_E_SUCCESS) {
+    if (idevice_new(&device, tmp_udid) != IDEVICE_E_SUCCESS) {
         qDebug("ERROR: No device found!");
         return;
     }
@@ -23,6 +23,11 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
     // Retrieve the device's name
     if (lockdownd_get_device_name(client, &device_name) != LOCKDOWN_E_SUCCESS) {
         qDebug("Failed to get device name");
+        return;
+    }
+
+    if (lockdownd_get_device_udid(client, &udid) != LOCKDOWN_E_SUCCESS) {
+        qDebug("Failed to get device udid");
         return;
     }
 
@@ -40,14 +45,24 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
 
 void iDevice::_get_basic_info() {
     {
-        plist_t tmp_producttype = NULL;
-        if (lockdownd_get_value(_client, NULL, "ProductType", &tmp_producttype) == LOCKDOWN_E_SUCCESS) {
-            plist_get_string_val(tmp_producttype, &this->_product_type);
+        plist_t tmp_product_type = NULL;
+        if (lockdownd_get_value(_client, NULL, "ProductType", &tmp_product_type) == LOCKDOWN_E_SUCCESS) {
+            plist_get_string_val(tmp_product_type, &this->_product_type);
             qDebug("ProductType: %s", this->_product_type);
         } else {
             qDebug("Failed to get device product type");
         }
-        plist_free(tmp_producttype);
+        plist_free(tmp_product_type);
+    }
+    {
+        plist_t tmp_device_class = NULL;
+        if (lockdownd_get_value(_client, NULL, "DeviceClass", &tmp_device_class) == LOCKDOWN_E_SUCCESS) {
+            plist_get_string_val(tmp_device_class, &this->_device_class);
+            qDebug("DeviceClass: %s", this->_device_class);
+        } else {
+            qDebug("Failed to get device device class");
+        }
+        plist_free(tmp_device_class);
     }
     {
         plist_t tmp_version = NULL;
@@ -129,16 +144,45 @@ void iDevice::_get_basic_info() {
         }
     }
 }
+QString iDevice::udid() {
+    return QString(_udid);
+}
+
+QString iDevice::ecid() {
+    return QString::number(_ecid);
+}
+
+QString iDevice::product_type() {
+    return QString(_product_type);
+}
+
+QString iDevice::device_class() {
+    return QString(_device_class);
+}
 
 QString iDevice::device_name() {
     return QString(_device_name);
 }
 
-QString iDevice::udid_str() {
-    return QString::fromLatin1(_udid);
+QString iDevice::storage_capacity() {
+    if (_storage_capacity>=1000000000000) {
+        return QString(QString::number(_storage_capacity%1000000000000)+"TB");
+    }
+    if (_storage_capacity>=1000000000) {
+        return QString(QString::number(_storage_capacity/1000000000)+"GB");
+    }
+    if (_storage_capacity>=1000000) {
+        return QString(QString::number(_storage_capacity/1000000)+"MB");
+    }
+    if (_storage_capacity>=1000) {
+        return QString(QString::number(_storage_capacity/1000)+"kB");
+    }
+    return QString::number(_storage_capacity);
 }
 
+
 iDevice::~iDevice() {
+    qDebug("Called");
     if (this->_client) {
         if (lockdownd_client_free(this->_client) != LOCKDOWN_E_SUCCESS) {
             qDebug("Error! Client not freed");

@@ -25,10 +25,6 @@
         <file>images/Devices/AppleTV6,2.png</file>
         <file>images/Devices/AudioAccessory1,1.png</file>
         <file>images/Devices/AudioAccessory1,2.png</file>
-        <file>images/Devices/Generic1,1.png</file>
-        <file>images/Devices/GenericPad1,1.png</file>
-        <file>images/Devices/GenericPhone1,1.png</file>
-        <file>images/Devices/GenericWatch1,1.png</file>
         <file>images/Devices/iPad1,1.png</file>
         <file>images/Devices/iPad2,1.png</file>
         <file>images/Devices/iPad2,2.png</file>
@@ -165,5 +161,9 @@
         <file>images/Devices/Watch5,3.png</file>
         <file>images/Devices/Watch5,4.png</file>
         <file>images/linitunes.png</file>
+        <file>images/Devices/Generic.png</file>
+        <file>images/Devices/iPadGeneric.png</file>
+        <file>images/Devices/iPhoneGeneric.png</file>
+        <file>images/Devices/WatchGeneric.png</file>
     </qresource>
 </RCC>
