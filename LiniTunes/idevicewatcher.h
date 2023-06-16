@@ -13,6 +13,7 @@ class iDeviceWatcher : public QObject
 {
     Q_OBJECT
     // For all devices
+    Q_PROPERTY(QStringList serial_list READ serial_list NOTIFY serialListChanged)
     Q_PROPERTY(QStringList udid_list READ udid_list NOTIFY udidListChanged)
     Q_PROPERTY(QStringList ecid_list READ ecid_list NOTIFY ecidListChanged)
     Q_PROPERTY(QStringList product_type_list READ product_type_list NOTIFY productTypeListChanged)
@@ -44,6 +45,7 @@ public:
 
     // QML values
     void updateLists();
+    QStringList serial_list() { return _serial_list; }
     QStringList udid_list() { return _udid_list; }
     QStringList ecid_list() { return _ecid_list; }
     QStringList product_type_list() { return _product_type_list; }
@@ -52,6 +54,7 @@ public:
     QStringList device_image_list() { return _device_image_list; }
 
     // For the current device
+    QString serial() { return CurrentDevice->serial(); }
     QString udid() { return CurrentDevice->udid(); }
     QString ecid() { return CurrentDevice->ecid(); }
     QString product_type() { return CurrentDevice->product_type(); }
@@ -61,6 +64,7 @@ public:
     bool device_connected();
 
 signals:
+    void serialListChanged();
     void udidListChanged();
     void ecidListChanged();
     void productTypeListChanged();
@@ -70,6 +74,7 @@ signals:
     void deviceImageListChanged();
 
 private:
+    QStringList _serial_list;
     QStringList _udid_list;
     QStringList _ecid_list;
     QStringList _product_type_list;

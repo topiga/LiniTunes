@@ -332,7 +332,7 @@ Window {
             Repeater {
                 id: popup_device_list
                 delegate: Rectangle {
-                    property string device_udid: ""
+                    property string device_ecid: ""
                     property string device_name: ""
                     property string device_storage_capacity: ""
                     property string device_image: ""
@@ -418,7 +418,7 @@ Window {
                             parent.color = color_sidebar
                         }
                         onClicked: {
-                            DeviceWatcher.switchCurrentDevice(parent.device_udid)
+                            DeviceWatcher.switchCurrentDevice(parent.device_ecid)
                             popup_devices.close()
                         }
                     }
@@ -426,22 +426,22 @@ Window {
             }
             Connections {
                 target: DeviceWatcher
-                function onUdidListChanged() {
+                function onEcidListChanged() {
                     if (DeviceWatcher.device_connected) {
-                        popup_device_list.model = DeviceWatcher.udid_list.length
-                        for (let i = 0; i < DeviceWatcher.udid_list.length; i++) {
-                            popup_device_list.itemAt(i).device_udid = DeviceWatcher.udid_list[i]
+                        popup_device_list.model = DeviceWatcher.ecid_list.length
+                        for (let i = 0; i < DeviceWatcher.ecid_list.length; i++) {
+                            popup_device_list.itemAt(i).device_ecid = DeviceWatcher.ecid_list[i]
                             popup_device_list.itemAt(i).device_name = DeviceWatcher.device_name_list[i]
                             popup_device_list.itemAt(i).device_storage_capacity = DeviceWatcher.storage_capacity_list[i]
                             popup_device_list.itemAt(i).device_image = DeviceWatcher.device_image_list[i]
                         }
                     } else {
-                        popup_device_list.model = DeviceWatcher.udid_list.length
+                        popup_device_list.model = DeviceWatcher.ecid_list.length
                         popup_devices.close()
                     }
-                    if (DeviceWatcher.udid_list.length > 2) {
+                    if (DeviceWatcher.ecid_list.length > 2) {
                         grid_devices.columns = 2
-                        grid_devices.rows = Math.round(DeviceWatcher.udid_list.length/2)
+                        grid_devices.rows = Math.round(DeviceWatcher.ecid_list.length/2)
                     }
                 }
             }
@@ -461,7 +461,7 @@ Window {
         property alias rootWindow: root
         Connections {
             target: DeviceWatcher
-            function onUdidListChanged() {
+            function onEdidListChanged() {
                 if (main_page.source == "") {
                     main_page.source = "/test.qml"
                 }

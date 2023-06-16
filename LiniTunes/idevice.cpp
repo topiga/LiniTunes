@@ -41,6 +41,7 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
     this->_device_name = device_name;
 
     _get_basic_info();
+    this->device_connected = true;
 }
 
 void iDevice::_get_basic_info() {
@@ -70,7 +71,12 @@ void iDevice::_get_basic_info() {
             plist_get_string_val(tmp_version, &this->_software_version);
             qDebug("HumanReadableProductVersionString: %s", this->_software_version);
         } else {
-            qDebug("Failed to get device software version");
+            if (lockdownd_get_value(_client, NULL, "ProductVersion", &tmp_version) == LOCKDOWN_E_SUCCESS) {
+                plist_get_string_val(tmp_version, &this->_software_version);
+                qDebug("ProductVersion: %s", this->_software_version);
+            } else {
+                qDebug("Failed to get device software version");
+            }
         }
         plist_free(tmp_version);
     }
@@ -143,25 +149,6 @@ void iDevice::_get_basic_info() {
             qDebug("Failed to get device capacity");
         }
     }
-}
-QString iDevice::udid() {
-    return QString(_udid);
-}
-
-QString iDevice::ecid() {
-    return QString::number(_ecid);
-}
-
-QString iDevice::product_type() {
-    return QString(_product_type);
-}
-
-QString iDevice::device_class() {
-    return QString(_device_class);
-}
-
-QString iDevice::device_name() {
-    return QString(_device_name);
 }
 
 QString iDevice::storage_capacity() {
