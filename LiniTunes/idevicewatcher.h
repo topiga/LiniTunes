@@ -40,7 +40,7 @@ public:
     usbmuxd_subscription_context_t *usbmuxd_context;
 
     // Choose the main device in QML
-    Q_INVOKABLE qint8 switchCurrentDevice(QString udid = NULL);
+    Q_INVOKABLE void switchCurrentDevice(QString udid = NULL);
 
     // QML values
     void updateLists();

@@ -73,22 +73,22 @@ void iDeviceWatcher::updateLists() {
     emit udidListChanged();
 }
 
-qint8 iDeviceWatcher::switchCurrentDevice(QString udid)
+void iDeviceWatcher::switchCurrentDevice(QString udid)
 {
     if (udid.isEmpty()) {
         CurrentDevice = NULL;
-        return 0;
+        return;
         emit currentDeviceChanged();
     }
     for (qsizetype i = 0; i < this->Devices.size(); i++) {
-        if (this->Devices.at(i)->udid().compare(udid)) {
+        if (QString::compare(this->Devices.at(i)->udid(), udid) == 0) {
             CurrentDevice = this->Devices.at(i);
             emit currentDeviceChanged();
-            return 0;
+            return;
         }
     }
     qDebug("Error! No device matching this udid");
-    return 1;
+    return;
 }
 
 QString iDeviceWatcher::device_image()
