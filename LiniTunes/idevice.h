@@ -16,12 +16,14 @@ public:
     ~iDevice();
 
     // Values
-    QString udid();
-    QString ecid();
-    QString product_type();
-    QString device_name();
-    QString storage_capacity();
-    QString device_class();
+    QString serial() { return QString(_serial); }
+    QString udid() { return QString(_udid); }
+    QString ecid() { return QString::number(_ecid); }
+    QString product_type() { return QString(_product_type); }
+    QString device_name() { return QString(_device_class); }
+    QString storage_capacity() { return QString(_device_name); }
+    QString device_class() { return QString(_device_class); }
+    bool device_connected = false;
 
 private:
     idevice_t _device = NULL;

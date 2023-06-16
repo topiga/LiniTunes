@@ -22,7 +22,13 @@ void iDeviceWatcher::CB_devicesChanged(const usbmuxd_event_t *event, iDeviceWatc
     qDebug("Vector size %lld",device_watcher->Devices.size());
     if (event->event == 1) {
         qDebug("Device connected");
-        device_watcher->Devices.append(new iDevice(udid.toLatin1().data()));
+        iDevice *new_device = new iDevice(udid.toLatin1().data());
+        if (!new_device->device_connected) {
+            qDebug("Please approuve this computer and reconnect your device");
+            delete new_device;
+            return;
+        }
+        device_watcher->Devices.append(new_device);
         qDebug("Device stored with udid %s", udid.toLatin1().data());
     } else if (event->event == 2) {
         for (qsizetype i = 0; i < device_watcher->Devices.size(); i++) {
@@ -41,6 +47,7 @@ void iDeviceWatcher::CB_devicesChanged(const usbmuxd_event_t *event, iDeviceWatc
 }
 
 void iDeviceWatcher::updateLists() {
+    this->_serial_list.clear();
     this->_udid_list.clear();
     this->_ecid_list.clear();
     this->_product_type_list.clear();
@@ -48,6 +55,7 @@ void iDeviceWatcher::updateLists() {
     this->_storage_capacity_list.clear();
     this->_device_image_list.clear();
     for (qsizetype i = 0; i < this->Devices.size(); i++) {
+        this->_serial_list.append(this->Devices.at(i)->serial());
         this->_udid_list.append(this->Devices.at(i)->udid());
         this->_ecid_list.append(this->Devices.at(i)->ecid());
         this->_product_type_list.append(this->Devices.at(i)->product_type());
@@ -70,7 +78,7 @@ void iDeviceWatcher::updateLists() {
         this->CurrentDevice = this->Devices.at(0);
         emit currentDeviceChanged();
     }
-    emit udidListChanged();
+    emit ecidListChanged();
 }
 
 void iDeviceWatcher::switchCurrentDevice(QString udid)
