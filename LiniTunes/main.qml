@@ -69,15 +69,15 @@ Window {
                 } ]
             transitions: [ Transition {
                     to: "button_general"
-                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.InOutExpo }
+                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.OutQuart }
                 },
                 Transition {
                     to: "button_idevice"
-                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.InOutExpo }
+                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.OutQuart }
                 },
                 Transition {
                     to: "button_files"
-                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.InOutExpo }
+                    NumberAnimation { properties: "y, x, height, width"; duration: 130; easing.type: Easing.OutQuart }
                 }
             ]
         }
@@ -106,7 +106,7 @@ Window {
                 height: 90
                 sourceSize.width: 90
                 sourceSize.height: 90
-                fillMode: Image.PreserveAspectFit
+                fillMode: Image.PreserveAspectCrop
                 smooth: true
                 Connections {
                     target: DeviceWatcher
@@ -301,27 +301,38 @@ Window {
     }
     Popup {
         id: popup_devices
-        width: 260
-        height: 140
+        width: 500
+        padding: 10
         background: Rectangle {
             border.color: color_app
             radius: 10
         }
-        Overlay.modal: Rectangle {
-                opacity: 0
-                color: "#B0f6f6f6"
-            } // couleur de fond popup
+        property real radius_blur: 1
+        Overlay.modal: FastBlur {
+            source: root.contentItem
+            radius: popup_devices.radius_blur
+        }
         anchors.centerIn: Overlay.overlay // milieu de la fenetre
         modal: true
-        Column {
+        enter: Transition {
+            NumberAnimation { property: "radius_blur"; from: 0.0; to: 1.0 }
+                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0 }
+            }
+        exit: Transition {
+            NumberAnimation { property: "radius_blur"; from: 1.0; to: 0.0 }
+                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0 }
+        }
+        Grid {
             id: grid_devices
             spacing: 15
             anchors {
                 fill: parent
             }
+            ScrollBar.vertical: ScrollBar { }
             Repeater {
                 id: popup_device_list
                 delegate: Rectangle {
+                    property string device_udid: ""
                     property string device_name: ""
                     property string device_storage_capacity: ""
                     property string device_image: ""
@@ -341,7 +352,7 @@ Window {
                         height: 90
                         sourceSize.width: 90
                         sourceSize.height: 90
-                        fillMode: Image.PreserveAspectFit
+                        fillMode: Image.PreserveAspectCrop
                         smooth: true
                     }
                     Text {
@@ -400,7 +411,15 @@ Window {
                     MouseArea {
                         id: popup_m_idevice
                         anchors.fill: parent
+                        onPressed: {
+                            parent.color = color_button_sidebar
+                        }
+                        onReleased: {
+                            parent.color = color_sidebar
+                        }
                         onClicked: {
+                            DeviceWatcher.switchCurrentDevice(parent.device_udid)
+                            popup_devices.close()
                         }
                     }
                 }
@@ -411,12 +430,18 @@ Window {
                     if (DeviceWatcher.device_connected) {
                         popup_device_list.model = DeviceWatcher.udid_list.length
                         for (let i = 0; i < DeviceWatcher.udid_list.length; i++) {
+                            popup_device_list.itemAt(i).device_udid = DeviceWatcher.udid_list[i]
                             popup_device_list.itemAt(i).device_name = DeviceWatcher.device_name_list[i]
                             popup_device_list.itemAt(i).device_storage_capacity = DeviceWatcher.storage_capacity_list[i]
                             popup_device_list.itemAt(i).device_image = DeviceWatcher.device_image_list[i]
                         }
                     } else {
+                        popup_device_list.model = DeviceWatcher.udid_list.length
                         popup_devices.close()
+                    }
+                    if (DeviceWatcher.udid_list.length > 2) {
+                        grid_devices.columns = 2
+                        grid_devices.rows = Math.round(DeviceWatcher.udid_list.length/2)
                     }
                 }
             }
