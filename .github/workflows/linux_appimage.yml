@@ -34,7 +34,7 @@ jobs:
           host:         linux
           target:       desktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qt5compat
+          modules:      qtcharts qt5compat qtshadertools
           setup-python: true
 
       - name: Install libimobiledevice with dpkg
