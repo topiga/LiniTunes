@@ -461,9 +461,9 @@ Window {
         property alias rootWindow: root
         Connections {
             target: DeviceWatcher
-            function onEdidListChanged() {
+            function onEcidListChanged() {
                 if (main_page.source == "") {
-                    main_page.source = "/test.qml"
+                    main_page.source = "/idevices.qml"
                 }
             }
         }
