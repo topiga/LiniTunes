@@ -20,7 +20,7 @@ public:
     QString udid() { return QString(_udid); }
     QString ecid() { return QString::number(_ecid); }
     QString product_type() { return QString(_product_type); }
-    QString device_name() { return QString(_device_class); }
+    QString device_name() { return QString(_device_name); }
     QString storage_capacity();
     QString device_class() { return QString(_device_class); }
     bool device_connected = false;
