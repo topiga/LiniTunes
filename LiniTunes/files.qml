@@ -8,6 +8,6 @@ Item {
             bottom: parent.bottom
             right: parent.right
         }
-        color: "#FFFFFF"
+        color: rootWindow.color_app
     }
 }

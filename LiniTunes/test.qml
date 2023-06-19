@@ -8,12 +8,12 @@ Item {
             bottom: parent.bottom
             right: parent.right
         }
-        color: "#FFFFFF"
+        color: rootWindow.color_app
     }
     Text {
         id: hello_test
         text: qsTr("Hello, LiniTunes")
-        color: "#2C2C2C"
+        color: rootWindow.color_text
         anchors {
             verticalCenter: parent.verticalCenter
             horizontalCenter: parent.horizontalCenter
