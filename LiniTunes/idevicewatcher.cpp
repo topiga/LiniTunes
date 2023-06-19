@@ -81,15 +81,15 @@ void iDeviceWatcher::updateLists() {
     emit ecidListChanged();
 }
 
-void iDeviceWatcher::switchCurrentDevice(QString udid)
+void iDeviceWatcher::switchCurrentDevice(QString ecid)
 {
-    if (udid.isEmpty()) {
+    if (ecid.isEmpty()) {
         CurrentDevice = NULL;
         return;
         emit currentDeviceChanged();
     }
     for (qsizetype i = 0; i < this->Devices.size(); i++) {
-        if (QString::compare(this->Devices.at(i)->udid(), udid) == 0) {
+        if (QString::compare(this->Devices.at(i)->ecid(), ecid) == 0) {
             CurrentDevice = this->Devices.at(i);
             emit currentDeviceChanged();
             return;

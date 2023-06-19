@@ -1,19 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>images/iDevice/iDevice_120x120.png</file>
-        <file>images/iDevice/iDevice_30x30.png</file>
-        <file>images/iDevice/iDevice_45x45.png</file>
-        <file>images/iDevice/iDevice_60x60.png</file>
-        <file>images/iDevice/iDevice_90x90.png</file>
-        <file>images/Files/Files_30x30.png</file>
-        <file>images/Files/Files_45x45.png</file>
-        <file>images/Files/Files_60x60.png</file>
-        <file>images/Files/Files_90x90.png</file>
-        <file>images/General/General_30x30.png</file>
-        <file>images/General/General_45x45.png</file>
-        <file>images/General/General_60x60.png</file>
-        <file>images/General/General_90x90.png</file>
-        <file>images/General/General_120x120.png</file>
         <file>files.qml</file>
         <file>general.qml</file>
         <file>idevices.qml</file>
@@ -165,5 +151,18 @@
         <file>images/Devices/iPadGeneric.png</file>
         <file>images/Devices/iPhoneGeneric.png</file>
         <file>images/Devices/WatchGeneric.png</file>
+        <file>images/Files/Files_black_30x30.png</file>
+        <file>images/Files/Files_dark_30x30.png</file>
+        <file>images/Files/Files_light_30x30.png</file>
+        <file>images/Files/Files_white_30x30.png</file>
+        <file>images/iDevice/iDevice_black_90x90.png</file>
+        <file>images/iDevice/iDevice_dark_90x90.png</file>
+        <file>images/iDevice/iDevice_light_90x90.png</file>
+        <file>images/iDevice/iDevice_white_90x90.png</file>
+        <file>images/General/General_black_30x30.png</file>
+        <file>images/General/General_dark_30x30.png</file>
+        <file>images/General/General_light_30x30.png</file>
+        <file>images/General/General_white_30x30.png</file>
+        <file>Stroke.qml</file>
     </qresource>
 </RCC>

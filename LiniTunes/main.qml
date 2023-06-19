@@ -9,13 +9,23 @@ Window {
     width: 960
     height: 600
     visible: true
-    title: qsTr("LiniTunes")
+    title: "LiniTunes"
     color: color_app
-    property string color_sidebar: "#f6f6f6"
-    property string color_text: "#2c2c2c"
-    property string color_button_sidebar: "#e0e0e0"
-    property string color_app: "#ffffff"
+
+    // colors
+    property string color_sidebar: "#353535"
+    property string color_text: "#EFEFEF"
+    property string color_button_sidebar: "#4B4B4B"
+    property string color_app: "#303030"
+    property string color_stroke: "#252525"
+    property string color_between: "#3A3A3A"
     property string color_badge: "#dddddd"
+
+    // icons
+    property string icon_idevice: "/images/iDevice/iDevice_light_90x90.png"
+    property string icon_files: "/images/Files/Files_light_30x30.png"
+    property string icon_general: "/images/General/General_light_30x30.png"
+
     Rectangle {
         id: sidebar
         anchors {
@@ -24,7 +34,17 @@ Window {
             bottom: parent.bottom
         }
         width: 250
-        color: "#f6f6f6"
+        color: color_sidebar
+
+        Rectangle {
+            color: "#252525"
+            width: 1
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                right: parent.right
+            }
+        }
         Rectangle {
             id: clicked_rect
             color: color_button_sidebar
@@ -84,7 +104,7 @@ Window {
         Rectangle {
             id: button_idevice
             height: 100
-            radius: 5
+            radius: 10
             color: "#00000000"
             anchors {
                 left: parent.left
@@ -96,11 +116,10 @@ Window {
             }
             Image {
                 id: img_idevice
-                source: "/images/iDevice/iDevice_90x90.png"
+                source: icon_idevice
                 anchors {
                     left: parent.left
                     verticalCenter: parent.verticalCenter
-                    leftMargin: 3
                 }
                 width: 90
                 height: 90
@@ -125,7 +144,6 @@ Window {
                     top: parent.top
                     right: parent.right
                     rightMargin: 5
-                    leftMargin: 3
                     topMargin: 10
                 }
                 font {
@@ -202,7 +220,7 @@ Window {
                 }
                 onClicked: {
                     clicked_rect.state = "button_idevice"
-//                    main_page.source = "/idevices.qml"
+                    main_page.source = "/idevices.qml"
                 }
             }
         }
@@ -217,10 +235,11 @@ Window {
                 right: parent.right
                 leftMargin: 15
                 rightMargin: 15
+                topMargin: 5
             }
             Image {
                 id: img_general
-                source: "/images/General/General_30x30.png"
+                source: icon_general
                 width: 25
                 height: 25
                 anchors {
@@ -263,10 +282,11 @@ Window {
                 right: parent.right
                 leftMargin: 15
                 rightMargin: 15
+                topMargin: 2
             }
             Image {
                 id: img_files
-                source: "/images/Files/Files_30x30.png"
+                source: icon_files
                 width: 25
                 height: 25
                 anchors {
@@ -305,9 +325,10 @@ Window {
         padding: 10
         background: Rectangle {
             border.color: color_app
+            color: color_between
             radius: 10
         }
-        property real radius_blur: 1
+        property real radius_blur: 3.0
         Overlay.modal: FastBlur {
             source: root.contentItem
             radius: popup_devices.radius_blur
@@ -315,12 +336,12 @@ Window {
         anchors.centerIn: Overlay.overlay // milieu de la fenetre
         modal: true
         enter: Transition {
-            NumberAnimation { property: "radius_blur"; from: 0.0; to: 1.0 }
-                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0 }
+            NumberAnimation { property: "radius_blur"; duration: 130; from: 0.0; to: 3.0 }
+                NumberAnimation { property: "opacity"; duration: 130; from: 0.0; to: 1.0 }
             }
         exit: Transition {
-            NumberAnimation { property: "radius_blur"; from: 1.0; to: 0.0 }
-                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0 }
+            NumberAnimation { property: "radius_blur"; duration: 130; from: 3.0; to: 0.0 }
+                NumberAnimation { property: "opacity"; duration: 130; from: 1.0; to: 0.0 }
         }
         Grid {
             id: grid_devices
@@ -346,7 +367,6 @@ Window {
                         anchors {
                             left: parent.left
                             verticalCenter: parent.verticalCenter
-                            leftMargin: 3
                         }
                         width: 90
                         height: 90
@@ -363,7 +383,6 @@ Window {
                             top: parent.top
                             right: parent.right
                             rightMargin: 5
-                            leftMargin: 3
                             topMargin: 10
                         }
                         font {
