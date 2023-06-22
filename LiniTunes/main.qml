@@ -49,10 +49,10 @@ Window {
             id: clicked_rect
             color: color_button_sidebar
             radius: 10
-            x: button_idevice.x
-            y: button_idevice.y
-            height: button_idevice.height
-            width: button_idevice.width
+            x: button_general.x
+            y: button_general.y
+            height: button_general.height
+            width: button_general.width
 
             states: [ State {
                     name: "button_general"
@@ -215,12 +215,17 @@ Window {
                 id: m_idevice
                 anchors.fill: parent
                 onDoubleClicked: {
-                    clicked_rect.state = "button_idevice"
-                    popup_devices.open()
+                    if (DeviceWatcher.device_connected) {
+                        clicked_rect.state = "button_idevice"
+                        main_page.source = "/idevices.qml"
+                        popup_devices.open()
+                    }
                 }
                 onClicked: {
-                    clicked_rect.state = "button_idevice"
-                    main_page.source = "/idevices.qml"
+                    if (DeviceWatcher.device_connected) {
+                        clicked_rect.state = "button_idevice"
+                        main_page.source = "/idevices.qml"
+                    }
                 }
             }
         }

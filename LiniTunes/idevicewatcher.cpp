@@ -68,7 +68,7 @@ void iDeviceWatcher::updateLists() {
         } else if (QFile::exists(":/images/Devices/Generic.png")) {
             this->_device_image_list.append(QString("/images/Devices/Generic.png"));
         } else {
-            this->_device_image_list.append(QString("/images/iDevice/iDevice_90x90.png"));
+            this->_device_image_list.append(QString("/images/iDevice/iDevice_light_90x90.png"));
         }
     }
     if (this->Devices.isEmpty()) {
@@ -110,7 +110,7 @@ QString iDeviceWatcher::device_image()
             return QString("/images/Devices/Generic.png");
         }
     }
-    return QString("/images/iDevice/iDevice_90x90.png");
+    return QString("/images/iDevice/iDevice_light_90x90.png");
 }
 
 bool iDeviceWatcher::device_connected() {
