@@ -23,6 +23,7 @@ class iDeviceWatcher : public QObject
     // For the current one
     Q_PROPERTY(QString udid READ udid NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString ecid READ ecid NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString serial READ serial NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString product_type READ product_type NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_name READ device_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString storage_capacity READ storage_capacity NOTIFY currentDeviceChanged)
