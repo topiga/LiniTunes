@@ -24,6 +24,7 @@ public:
     QString storage_capacity();
     QString device_class() { return QString(_device_class); }
     bool device_connected = false;
+    int battery() { return _battery_capacity; }
 
 private:
     idevice_t _device = NULL;
