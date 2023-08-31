@@ -9,7 +9,7 @@ Item {
             bottom: parent.bottom
             right: parent.right
         }
-        color: rootWindow.color_app
+        color: "#303030"
         Label {
             id: device_name
         }

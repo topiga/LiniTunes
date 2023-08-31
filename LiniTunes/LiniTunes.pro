@@ -1,4 +1,4 @@
-QT += quick quickcontrols2
+QT += quick
 
 SOURCES += \
         idevice.cpp \
@@ -8,12 +8,7 @@ SOURCES += \
 resources.files = main.qml 
 resources.prefix = /$${TARGET}
 RESOURCES += resources \
-    resources.qrc
-
-TRANSLATIONS += \
-    LiniTunes_fr_FR.ts
-CONFIG += lrelease
-CONFIG += embed_translations
+    ressource.qrc
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -26,16 +21,13 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-DISTFILES += \
-    Stroke.qml \
-    files.qml \
-    general.qml \
-    idevices.qml \
-    test.qml
-
 HEADERS += \
     idevice.h \
     idevicewatcher.h
+
+DISTFILES += \
+    general.qml \
+    idevices.qml
 
 unix:!macx {
     LIBS += -limobiledevice-1.0

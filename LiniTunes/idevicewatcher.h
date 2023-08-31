@@ -29,6 +29,8 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString storage_capacity READ storage_capacity NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_image READ device_image NOTIFY currentDeviceChanged)
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
+    Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -63,6 +65,8 @@ public:
     QString storage_capacity() { return CurrentDevice->storage_capacity(); }
     QString device_image();
     bool device_connected();
+    int battery() { return (CurrentDevice->battery()/100)*22; }
+    QString battery_string() { return QString::number(CurrentDevice->battery()); }
 
 signals:
     void serialListChanged();
