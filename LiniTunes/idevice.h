@@ -22,6 +22,7 @@ public:
     QString product_type() { return QString(_product_type); }
     QString device_name() { return QString(_device_name); }
     QString storage_capacity();
+    QString storage_left();
     QString device_class() { return QString(_device_class); }
     bool device_connected = false;
     int battery() { return _battery_capacity; }
@@ -38,6 +39,7 @@ private:
     uint64_t _ecid;
     char* _model = NULL;
     uint64_t _storage_capacity;
+    uint64_t _storage_left;
     uint64_t _battery_capacity;
     bool _battery_charging;
     void _get_basic_info();
