@@ -519,6 +519,18 @@ Window {
                         font.pointSize: 9
                         font.family: "Arial"
                         visible: false
+                        // TotalDataAvailable doesn't give the real storage left. To investigate.
+//                        Connections {
+//                            target: DeviceWatcher
+//                            function onCurrentDeviceChanged() {
+//                                if (DeviceWatcher.device_connected) {
+//                                    content_storage_left.text = DeviceWatcher.storage_left + " Available"
+//                                    content_storage_left.visible = true
+//                                } else {
+//                                    content_storage_left.visible = false
+//                                }
+//                            }
+//                        }
                     }
 
                     Rectangle {
@@ -531,7 +543,7 @@ Window {
                             rightMargin: 8
                         }
                         color: "transparent"
-                        visible: false
+                        visible: true
 
                         Rectangle {
                             id: device_battery_rect1
@@ -576,6 +588,7 @@ Window {
                                 topMargin: 0
                                 bottomMargin: 0
                             }
+                            visible: true
                         }
 
                         Text {

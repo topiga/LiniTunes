@@ -130,6 +130,15 @@ void iDevice::_get_basic_info() {
         }
     }
     {
+        plist_t tmp_storage_left = NULL;
+        if (lockdownd_get_value(_client, "com.apple.disk_usage", "TotalDataAvailable", &tmp_storage_left) == LOCKDOWN_E_SUCCESS) {
+            plist_get_uint_val(tmp_storage_left, &this->_storage_left);
+            qDebug("Device storage left: %lu", this->_storage_left);
+        } else {
+            qDebug("Failed to get device left");
+        }
+    }
+    {
         plist_t tmp_battery_capacity = NULL;
         if (lockdownd_get_value(_client, "com.apple.mobile.battery", "BatteryCurrentCapacity", &tmp_battery_capacity) == LOCKDOWN_E_SUCCESS) {
             plist_get_uint_val(tmp_battery_capacity, &this->_battery_capacity);
@@ -167,6 +176,21 @@ QString iDevice::storage_capacity() {
     return QString::number(_storage_capacity);
 }
 
+QString iDevice::storage_left() {
+    if (_storage_left>=1000000000000) {
+        return QString(QString::number(_storage_left/1000000000000)+" TB");
+    }
+    if (_storage_left>=1000000000) {
+        return QString(QString::number(_storage_left/1000000000)+"."+QString::number((_storage_left/100000000)%10)+" GB");
+    }
+    if (_storage_left>=1000000) {
+        return QString(QString::number(_storage_left/1000000)+"."+QString::number((_storage_left/100000)%10)+" MB");
+    }
+    if (_storage_left>=1000) {
+        return QString(QString::number(_storage_left/1000)+"."+QString::number((_storage_left/100)%10)+" kB");
+    }
+    return QString::number(_storage_left);
+}
 
 iDevice::~iDevice() {
     qDebug("Called");
