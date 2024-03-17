@@ -14,7 +14,7 @@ defaults:
 
 env:
   SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   6.5.*
+  QT_VERSION:   6.6.*
   ARTIFACT:     LiniTunes.AppImage
   
 jobs:
@@ -37,8 +37,56 @@ jobs:
           modules:      qtcharts qt5compat qtshadertools
           setup-python: true
 
-      - name: Install libimobiledevice with dpkg
-        run:  sudo apt-get install -y libimobiledevice6 usbmuxd libimobiledevice-utils libimobiledevice-dev
+      - name: Install libimobiledevice
+        run: |
+          sudo apt-get install \
+            build-essential \
+            checkinstall \
+            git \
+            autoconf \
+            automake \
+            libtool-bin \
+            libssl-dev \
+            libusb-1.0-0-dev \
+            udev
+          
+          sudo apt-get install \
+          	doxygen
+          
+          git clone https://github.com/libimobiledevice/libplist
+          cd libplist
+          ./autogen.sh
+          make
+          sudo make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/libimobiledevice-glue
+          cd libimobiledevice-glue
+          ./autogen.sh
+          make
+          sudo make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/libusbmuxd.git
+          cd libusbmuxd
+          ./autogen.sh
+          make
+          sudo make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/libimobiledevice.git
+          cd libimobiledevice
+          ./autogen.sh --without-cython
+          make
+          sudo make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/usbmuxd.git
+          cd usbmuxd
+          ./autogen.sh
+          make
+          sudo make install
+          cd ..
 
       - name: Install AppImage dependencies
         run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0
@@ -49,7 +97,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.SOURCE_DIR }}/build
         run:  |
-              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake ${{ env.SOURCE_DIR }}/LiniTunes/LiniTunes.pro -spec linux-g++ CONFIG+=qtquickcompiler && /usr/bin/make qmake_all
+              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qt-cmake ${{ env.SOURCE_DIR }}/LiniTunes/CMakeLists.txt
               make -j2
 
       - name: AppImage
@@ -61,7 +109,7 @@ jobs:
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$${{ runner.temp }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
           export QMAKE=${{ runner.temp }}/Qt/6.5.1/gcc_64/bin/qmake
           export QML_SOURCES_PATHS=${{ env.SOURCE_DIR }}/LiniTunes/
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e LiniTunes -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop --plugin qt --output appimage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e LiniTunes -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop --output appimage
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }} 
 
       - name: Linux artifact
