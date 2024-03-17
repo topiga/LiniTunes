@@ -37,8 +37,58 @@ jobs:
           modules:      qtcharts qt5compat qtshadertools
           setup-python: true
 
-      - name: Install libimobiledevice with dpkg
-        run:  sudo apt-get install -y libimobiledevice6 usbmuxd libimobiledevice-utils libimobiledevice-dev
+      - name: Install libimobiledevice
+        run: |
+          apt-get install \
+            build-essential \
+            checkinstall \
+            git \
+            autoconf \
+            automake \
+            libtool-bin \
+            libssl-dev \
+            libusb-1.0-0-dev \
+            udev
+          
+          apt-get install \
+          	doxygen \
+            python-is-python3 \
+          	cython3
+          
+          git clone https://github.com/libimobiledevice/libplist
+          cd libplist
+          ./autogen.sh
+          make
+          make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/libimobiledevice-glue
+          cd libimobiledevice-glue
+          ./autogen.sh
+          make
+          make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/libusbmuxd.git
+          cd libusbmuxd
+          ./autogen.sh
+          make
+          make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/libimobiledevice.git
+          cd libimobiledevice
+          ./autogen.sh --without-cython
+          make
+          make install
+          cd ..
+          
+          git clone https://github.com/libimobiledevice/usbmuxd.git
+          cd usbmuxd
+          ./autogen.sh
+          make
+          make install
+          cd ..
 
       - name: Install AppImage dependencies
         run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0
@@ -49,7 +99,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.SOURCE_DIR }}/build
         run:  |
-              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake ${{ env.SOURCE_DIR }}/LiniTunes/LiniTunes.pro -spec linux-g++ CONFIG+=qtquickcompiler && /usr/bin/make qmake_all
+              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qt-cmake ${{ env.SOURCE_DIR }}/LiniTunes/CMakeLists.txt
               make -j2
 
       - name: AppImage
