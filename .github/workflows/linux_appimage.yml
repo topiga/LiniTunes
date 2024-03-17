@@ -51,9 +51,7 @@ jobs:
             udev
           
           sudo apt-get install \
-          	doxygen \
-            python-is-python3 \
-          	cython3
+          	doxygen
           
           git clone https://github.com/libimobiledevice/libplist
           cd libplist
