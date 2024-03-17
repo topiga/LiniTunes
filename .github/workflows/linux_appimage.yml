@@ -39,7 +39,7 @@ jobs:
 
       - name: Install libimobiledevice
         run: |
-          apt-get install \
+          sudo apt-get install \
             build-essential \
             checkinstall \
             git \
@@ -50,7 +50,7 @@ jobs:
             libusb-1.0-0-dev \
             udev
           
-          apt-get install \
+          sudo apt-get install \
           	doxygen \
             python-is-python3 \
           	cython3
@@ -59,35 +59,35 @@ jobs:
           cd libplist
           ./autogen.sh
           make
-          make install
+          sudo make install
           cd ..
           
           git clone https://github.com/libimobiledevice/libimobiledevice-glue
           cd libimobiledevice-glue
           ./autogen.sh
           make
-          make install
+          sudo make install
           cd ..
           
           git clone https://github.com/libimobiledevice/libusbmuxd.git
           cd libusbmuxd
           ./autogen.sh
           make
-          make install
+          sudo make install
           cd ..
           
           git clone https://github.com/libimobiledevice/libimobiledevice.git
           cd libimobiledevice
           ./autogen.sh --without-cython
           make
-          make install
+          sudo make install
           cd ..
           
           git clone https://github.com/libimobiledevice/usbmuxd.git
           cd usbmuxd
           ./autogen.sh
           make
-          make install
+          sudo make install
           cd ..
 
       - name: Install AppImage dependencies
