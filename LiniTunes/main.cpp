@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("DeviceWatcher", DeviceWatcher);
 //    engine.rootContext()->setContextProperty("Devices", DeviceWatcher->Devices);
 
-    const QUrl url(u"qrc:/LiniTunes/main.qml"_qs);
+    const QUrl url(u"qrc:/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
