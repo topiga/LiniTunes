@@ -53,6 +53,7 @@ void iDeviceWatcher::updateLists() {
     this->_product_type_list.clear();
     this->_device_name_list.clear();
     this->_storage_capacity_list.clear();
+    this->_storage_left_list.clear();
     this->_device_image_list.clear();
     for (qsizetype i = 0; i < this->Devices.size(); i++) {
         this->_serial_list.append(this->Devices.at(i)->serial());
@@ -61,6 +62,7 @@ void iDeviceWatcher::updateLists() {
         this->_product_type_list.append(this->Devices.at(i)->product_type());
         this->_device_name_list.append(this->Devices.at(i)->device_name());
         this->_storage_capacity_list.append(this->Devices.at(i)->storage_capacity());
+        this->_storage_left_list.append(this->Devices.at(i)->storage_left());
         if (QFile::exists(":/images/Devices/"+this->Devices.at(i)->product_type()+".png")) {
             this->_device_image_list.append(QString("/images/Devices/"+this->Devices.at(i)->product_type()+".png"));
         } else if (QFile::exists(":/images/Devices/"+this->Devices.at(i)->device_class()+"Generic.png")) {

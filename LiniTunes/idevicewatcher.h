@@ -19,6 +19,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QStringList product_type_list READ product_type_list NOTIFY productTypeListChanged)
     Q_PROPERTY(QStringList device_name_list READ device_name_list NOTIFY deviceNameListChanged)
     Q_PROPERTY(QStringList storage_capacity_list READ storage_capacity_list NOTIFY storageCapacityListChanged)
+    Q_PROPERTY(QStringList storage_left_list READ storage_left_list NOTIFY storageLeftListChanged)
     Q_PROPERTY(QStringList device_image_list READ device_image_list NOTIFY deviceImageListChanged)
     // For the current one
     Q_PROPERTY(QString udid READ udid NOTIFY currentDeviceChanged)
@@ -27,8 +28,11 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString product_type READ product_type NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_name READ device_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString storage_capacity READ storage_capacity NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString storage_left READ storage_left NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_image READ device_image NOTIFY currentDeviceChanged)
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
+    Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -52,6 +56,7 @@ public:
     QStringList product_type_list() { return _product_type_list; }
     QStringList device_name_list() { return _device_name_list; }
     QStringList storage_capacity_list() { return _storage_capacity_list; }
+    QStringList storage_left_list() { return _storage_capacity_list; }
     QStringList device_image_list() { return _device_image_list; }
 
     // For the current device
@@ -61,8 +66,11 @@ public:
     QString product_type() { return CurrentDevice->product_type(); }
     QString device_name() { return CurrentDevice->device_name(); }
     QString storage_capacity() { return CurrentDevice->storage_capacity(); }
+    QString storage_left() { return CurrentDevice->storage_left(); }
     QString device_image();
     bool device_connected();
+    int battery() { return (CurrentDevice->battery()*22/100); }
+    QString battery_string() { return QString::number(CurrentDevice->battery()); }
 
 signals:
     void serialListChanged();
@@ -71,6 +79,7 @@ signals:
     void productTypeListChanged();
     void deviceNameListChanged();
     void storageCapacityListChanged();
+    void storageLeftListChanged();
     void currentDeviceChanged();
     void deviceImageListChanged();
 
@@ -81,6 +90,7 @@ private:
     QStringList _product_type_list;
     QStringList _device_name_list;
     QStringList _storage_capacity_list;
+    QStringList _storage_left_list;
     QStringList _device_image_list;
 };
 

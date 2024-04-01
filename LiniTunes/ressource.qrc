@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/tv.png</file>
+        <file>images/settings.png</file>
+        <file>images/podcast.png</file>
+        <file>images/photo.png</file>
+        <file>images/music.png</file>
+        <file>images/movies.png</file>
+        <file>images/folder.png</file>
+        <file>images/book.png</file>
+        <file>images/audiobook.png</file>
+        <file>images/iphone.png</file>
+        <file>images/develop_arrow.png</file>
+        <file>general.qml</file>
+        <file>main.qml</file>
+        <file>idevices.qml</file>
+    </qresource>
+</RCC>
