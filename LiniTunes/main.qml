@@ -433,12 +433,14 @@ Window {
                             onPressed: parent.opacity=0.7
                             onReleased: {
                                 parent.opacity=0.5
-                                if (device_stroke.state == "device_normal") {
-                                    device_stroke.state = "device_extended"
-                                    serial_info_rect.state = "device_extended"
-                                } else {
-                                    device_stroke.state = "device_normal"
-                                    serial_info_rect.state = "device_normal"
+                                if (DeviceWatcher.device_connected) {
+                                    if (device_stroke.state == "device_normal") {
+                                        device_stroke.state = "device_extended"
+                                        serial_info_rect.state = "device_extended"
+                                    } else {
+                                        device_stroke.state = "device_normal"
+                                        serial_info_rect.state = "device_normal"
+                                    }
                                 }
                             }
                         }
