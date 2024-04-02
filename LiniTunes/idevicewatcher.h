@@ -16,6 +16,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QStringList serial_list READ serial_list NOTIFY serialListChanged)
     Q_PROPERTY(QStringList udid_list READ udid_list NOTIFY udidListChanged)
     Q_PROPERTY(QStringList ecid_list READ ecid_list NOTIFY ecidListChanged)
+    Q_PROPERTY(QStringList imei_list READ imei_list NOTIFY imeiListChanged)
     Q_PROPERTY(QStringList product_type_list READ product_type_list NOTIFY productTypeListChanged)
     Q_PROPERTY(QStringList device_name_list READ device_name_list NOTIFY deviceNameListChanged)
     Q_PROPERTY(QStringList storage_capacity_list READ storage_capacity_list NOTIFY storageCapacityListChanged)
@@ -25,6 +26,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString udid READ udid NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString ecid READ ecid NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString serial READ serial NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString imei READ imei NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString product_type READ product_type NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_name READ device_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString storage_capacity READ storage_capacity NOTIFY currentDeviceChanged)
@@ -53,6 +55,7 @@ public:
     QStringList serial_list() { return _serial_list; }
     QStringList udid_list() { return _udid_list; }
     QStringList ecid_list() { return _ecid_list; }
+    QStringList imei_list() { return _imei_list; }
     QStringList product_type_list() { return _product_type_list; }
     QStringList device_name_list() { return _device_name_list; }
     QStringList storage_capacity_list() { return _storage_capacity_list; }
@@ -63,6 +66,7 @@ public:
     QString serial() { return CurrentDevice->serial(); }
     QString udid() { return CurrentDevice->udid(); }
     QString ecid() { return CurrentDevice->ecid(); }
+    QString imei() { return CurrentDevice->imei(); }
     QString product_type() { return CurrentDevice->product_type(); }
     QString device_name() { return CurrentDevice->device_name(); }
     QString storage_capacity() { return CurrentDevice->storage_capacity(); }
@@ -76,6 +80,7 @@ signals:
     void serialListChanged();
     void udidListChanged();
     void ecidListChanged();
+    void imeiListChanged();
     void productTypeListChanged();
     void deviceNameListChanged();
     void storageCapacityListChanged();
@@ -87,6 +92,7 @@ private:
     QStringList _serial_list;
     QStringList _udid_list;
     QStringList _ecid_list;
+    QStringList _imei_list;
     QStringList _product_type_list;
     QStringList _device_name_list;
     QStringList _storage_capacity_list;

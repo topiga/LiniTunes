@@ -101,6 +101,16 @@ void iDevice::_get_basic_info() {
         plist_free(tmp_ecid);
     }
     {
+        plist_t tmp_imei = NULL;
+        if (lockdownd_get_value(_client, NULL, "InternationalMobileEquipmentIdentity", &tmp_imei) == LOCKDOWN_E_SUCCESS) {
+            plist_get_uint_val(tmp_imei, &this->_imei);
+            qDebug("InternationalMobileEquipmentIdentity: %lu", this->_imei);
+        } else {
+            qDebug("Failed to get device IMEI");
+        }
+        plist_free(tmp_imei);
+    }
+    {
         plist_t tmp_model = NULL;
         plist_t tmp_region = NULL;
         char* tmp_model_ch = NULL;
