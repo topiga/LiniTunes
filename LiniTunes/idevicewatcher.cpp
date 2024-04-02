@@ -50,6 +50,7 @@ void iDeviceWatcher::updateLists() {
     this->_serial_list.clear();
     this->_udid_list.clear();
     this->_ecid_list.clear();
+    this->_imei_list.clear();
     this->_product_type_list.clear();
     this->_device_name_list.clear();
     this->_storage_capacity_list.clear();
@@ -59,6 +60,7 @@ void iDeviceWatcher::updateLists() {
         this->_serial_list.append(this->Devices.at(i)->serial());
         this->_udid_list.append(this->Devices.at(i)->udid());
         this->_ecid_list.append(this->Devices.at(i)->ecid());
+        this->_imei_list.append(this->Devices.at(i)->imei());
         this->_product_type_list.append(this->Devices.at(i)->product_type());
         this->_device_name_list.append(this->Devices.at(i)->device_name());
         this->_storage_capacity_list.append(this->Devices.at(i)->storage_capacity());

@@ -19,6 +19,7 @@ public:
     QString serial() { return QString(_serial); }
     QString udid() { return QString(_udid); }
     QString ecid() { return QString::number(_ecid); }
+    QString imei() { return QString::number(_imei); }
     QString product_type() { return QString(_product_type); }
     QString device_name() { return QString(_device_name); }
     QString storage_capacity();
@@ -37,6 +38,7 @@ private:
     char* _software_version = NULL;
     char* _serial = NULL;
     uint64_t _ecid;
+    uint64_t _imei;
     char* _model = NULL;
     uint64_t _storage_capacity;
     uint64_t _storage_left;
