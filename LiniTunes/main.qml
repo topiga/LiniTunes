@@ -288,6 +288,32 @@ Window {
                         color: "#02000000"
                     }
                 }
+                states: [ State {
+                        name: "device_normal"
+                        PropertyChanges {
+                            device_stroke {
+                                height: 85
+                            }
+                        }
+                    },
+                    State {
+                        name: "device_extended"
+                        PropertyChanges {
+                            device_stroke {
+                                height: 155
+                            }
+                        }
+                    } ]
+                transitions: [ Transition {
+                        to: "device_normal"
+                        NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
+                    },
+                    Transition {
+                        to: "device_extended"
+                        NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
+                    }
+                ]
+                state: "device_normal"
 
                 Rectangle {
                     id: device
@@ -326,7 +352,7 @@ Window {
                             left: parent.left
                             top: parent.top
                             topMargin: 8
-                            leftMargin: 8
+                            leftMargin: 10
                         }
                         font.pointSize: 9
                     }
@@ -334,12 +360,11 @@ Window {
                     Image {
                         id: device_image
                         width: 40
+                        height: 50
                         anchors {
                             left: parent.left
                             top: device_chosen_text.bottom
-                            bottom: content_info_circle.bottom
                             topMargin: 4
-                            bottomMargin: -5
                             leftMargin: 8
                         }
                         source: "/images/iphone.png"
@@ -387,9 +412,9 @@ Window {
                         border.color: "white"
                         border.width: 1
                         anchors.right: parent.right
-                        anchors.top: parent.top
+                        anchors.bottom: device_image.bottom
                         anchors.rightMargin: 10
-                        anchors.topMargin: 58
+                        anchors.bottomMargin: 2
                         radius: width*0.5
                         Text {
                             id: content_info_circle_text
@@ -406,8 +431,16 @@ Window {
                         MouseArea {
                             anchors.fill: parent
                             onPressed: parent.opacity=0.7
-                            onReleased: parent.opacity=0.5
-                            onClicked: {}
+                            onReleased: {
+                                parent.opacity=0.5
+                                if (device_stroke.state == "device_normal") {
+                                    device_stroke.state = "device_extended"
+                                    serial_info_rect.state = "device_extended"
+                                } else {
+                                    device_stroke.state = "device_normal"
+                                    serial_info_rect.state = "device_normal"
+                                }
+                            }
                         }
                     }
 
@@ -623,6 +656,7 @@ Window {
                     }
                     Rectangle {
                         id: serial_info_rect
+                        opacity: 0
                         color: "transparent"
                         anchors {
                             top: device_image.bottom
@@ -635,6 +669,123 @@ Window {
                         }
                         height: 90
                         visible: false
+
+                        states: [ State {
+                                name: "device_normal"
+                                PropertyChanges {
+                                    serial_info_rect {
+                                        opacity: 0
+                                    }
+                                }
+                            },
+                            State {
+                                name: "device_extended"
+                                PropertyChanges {
+                                    serial_info_rect {
+                                        opacity: 1.0
+                                    }
+                                }
+                            } ]
+                        transitions: [ Transition {
+                                to: "device_normal"
+                                NumberAnimation { properties: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                            },
+                            Transition {
+                                to: "device_extended"
+                                NumberAnimation { properties: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                            }
+                        ]
+
+                        Text {
+                            id: serial_text
+                            opacity: 0.5
+                            color: "white"
+                            text: qsTr("SERIAL")
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                topMargin: 4
+                                leftMargin: 6
+                            }
+                            font.pointSize: 8
+                        }
+                        Text {
+                            id: serial_info_text
+                            text: qsTr("")
+                            color: "white"
+                            anchors {
+                                top: serial_text.bottom
+                                left: serial_text.left
+                                topMargin: 1
+                                leftMargin: 0
+                            }
+                            font.pointSize: 8
+                        }
+                        Text {
+                            id: imei_text
+                            opacity: 0.5
+                            color: "white"
+                            text: qsTr("IMEI")
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                topMargin: 4
+                                leftMargin: parent.width/2
+                            }
+                            font.pointSize: 8
+                        }
+                        Text {
+                            id: imei_info_text
+                            text: qsTr("")
+                            color: "white"
+                            anchors {
+                                top: imei_text.bottom
+                                left: imei_text.left
+                                topMargin: 1
+                                leftMargin: 0
+                            }
+                            font.pointSize: 8
+                        }
+                        Text {
+                            id: udid_text
+                            opacity: 0.5
+                            color: "white"
+                            text: qsTr("UDID")
+                            anchors {
+                                top: serial_info_text.bottom
+                                left: parent.left
+                                topMargin: 2
+                                leftMargin: 6
+                            }
+                            font.pointSize: 8
+                        }
+                        Text {
+                            id: udid_info_text
+                            text: qsTr("")
+                            color: "white"
+                            anchors {
+                                top: udid_text.bottom
+                                left: udid_text.left
+                                topMargin: 1
+                                leftMargin: 0
+                            }
+                            font.pointSize: 8
+                        }
+                        Connections {
+                            target: DeviceWatcher
+                            function onCurrentDeviceChanged() {
+                                if (DeviceWatcher.device_connected) {
+                                    serial_info_text.text = DeviceWatcher.serial
+                                    imei_info_text.text = DeviceWatcher.imei
+                                    udid_info_text.text = DeviceWatcher.udid
+                                    serial_info_rect.visible = true
+                                } else {
+                                    serial_info_text.text = ""
+                                    imei_info_text.text = ""
+                                    udid_info_text.text = ""
+                                }
+                            }
+                        }
                     }
                 }
             }
