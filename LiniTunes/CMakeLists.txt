@@ -10,10 +10,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 COMPONENTS Core Quick REQUIRED)
 
-add_executable(LiniTunes
+set(HEADER_FILES
+    idevice.h
+    idevicewatcher.h
+)
+
+set(SOURCE_FILES
     idevice.cpp
     idevicewatcher.cpp
     main.cpp
+)
+
+add_executable(LiniTunes
+    ${HEADER_FILES}
+    ${SOURCE_FILES}
     ressource.qrc
 )
 
