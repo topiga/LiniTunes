@@ -8,15 +8,14 @@ Window {
     visible: true
     title: qsTr("LiniTunes")
     minimumWidth: 960
-    minimumHeight: 600
+    minimumHeight: 630
     color: Qt.rgba(0.0, 0.0, 0.0, 0.0)
 
     Rectangle {
         id: app
-        width: 960
-        height: 600
         color: "#181818"
         border.width: 0
+        anchors.fill: parent
 
         Loader {
             id: content
@@ -264,12 +263,10 @@ Window {
 
             Rectangle {
                 id: device_stroke
-                x: 7
-                y: 46
-                height: 85
                 radius: 8
                 border.color: "#00ffffff"
                 border.width: 0
+                height: 85
                 anchors {
                     left: parent.left
                     right: parent.right
