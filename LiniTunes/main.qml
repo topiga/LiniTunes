@@ -9,7 +9,7 @@ Window {
     title: qsTr("LiniTunes")
     minimumWidth: 960
     minimumHeight: 630
-    color: Qt.rgba(0.0, 0.0, 0.0, 0.0)
+    color: "#181818"
 
     Rectangle {
         id: app
@@ -748,6 +748,26 @@ Window {
                             }
                             font.pointSize: 8
                         }
+                        MouseArea {
+                            id: ecid_imei_mousearea
+                            anchors {
+                                top: imei_text.top
+                                bottom: imei_info_text.bottom
+                                left: imei_text.left
+                                right: imei_info_text.right
+                            }
+                            onClicked: {
+                                if (DeviceWatcher.imei !== "") {
+                                    if (imei_text.text == "IMEI") {
+                                        imei_info_text.text = DeviceWatcher.ecid
+                                        imei_text.text = "ECID"
+                                    } else {
+                                        imei_info_text.text = DeviceWatcher.imei
+                                        imei_text.text = "IMEI"
+                                    }
+                                }
+                            }
+                        }
                         Text {
                             id: udid_text
                             opacity: 0.5
@@ -778,7 +798,13 @@ Window {
                             function onCurrentDeviceChanged() {
                                 if (DeviceWatcher.device_connected) {
                                     serial_info_text.text = DeviceWatcher.serial
-                                    imei_info_text.text = DeviceWatcher.imei
+                                    if (DeviceWatcher.imei == "") {
+                                        imei_info_text.text = DeviceWatcher.ecid
+                                        imei_text.text = "ECID"
+                                    } else {
+                                        imei_info_text.text = DeviceWatcher.imei
+                                        imei_text.text = "IMEI"
+                                    }
                                     udid_info_text.text = DeviceWatcher.udid
                                     serial_info_rect.visible = true
                                 } else {

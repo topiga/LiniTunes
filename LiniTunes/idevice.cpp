@@ -26,25 +26,32 @@ iDevice::iDevice(char* tmp_udid, QObject *parent)
         return;
     }
 
+    // Attempt to retrieve the device's UDID.
     if (lockdownd_get_device_udid(client, &udid) != LOCKDOWN_E_SUCCESS) {
         qDebug("Failed to get device udid");
         return;
     }
 
+    // Log the connected device's UDID and name.
     qDebug("Connected with UDID: %s", udid);
     qDebug("Device name: %s", device_name);
 
-    // Assign
+    // Store the device, client, UDID, and device name in the class instance.
     this->_device = device;
     this->_client = client;
     this->_udid = udid;
     this->_device_name = device_name;
 
+    // Retrieve and log additional device information.
     _get_basic_info();
     this->device_connected = true;
 }
 
+// Retrieves basic information about the device and logs it.
 void iDevice::_get_basic_info() {
+    // The method is composed of several blocks, each attempting to retrieve a specific type of device information using lockdownd_get_value and logging the result.
+
+    // Retrieve and log the device's product type.
     {
         plist_t tmp_product_type = NULL;
         if (lockdownd_get_value(_client, NULL, "ProductType", &tmp_product_type) == LOCKDOWN_E_SUCCESS) {
@@ -55,6 +62,19 @@ void iDevice::_get_basic_info() {
         }
         plist_free(tmp_product_type);
     }
+    // Retrieve and log the device's class.
+    // The rest of the method follows a similar pattern for retrieving and logging:
+    // - Device class
+    // - Software version
+    // - Serial number
+    // - ECID (Exclusive Chip ID)
+    // - IMEI (International Mobile Equipment Identity)
+    // - Model number combined with region information
+    // - Storage capacity
+    // - Available storage
+    // - Battery capacity
+    // - Battery charging state
+    // Each block checks for success and logs either the retrieved value or a failure message.
     {
         plist_t tmp_device_class = NULL;
         if (lockdownd_get_value(_client, NULL, "DeviceClass", &tmp_device_class) == LOCKDOWN_E_SUCCESS) {
@@ -108,6 +128,7 @@ void iDevice::_get_basic_info() {
             qDebug("InternationalMobileEquipmentIdentity: %s", this->_imei);
         } else {
             qDebug("Failed to get device IMEI");
+            this->_imei="";
         }
         plist_free(tmp_imei);
     }
@@ -171,6 +192,7 @@ void iDevice::_get_basic_info() {
     }
 }
 
+// Returns the storage capacity of the device in a human-readable format.
 QString iDevice::storage_capacity() {
     if (_storage_capacity>=1000000000000) {
         return QString(QString::number(_storage_capacity%1000000000000)+"TB");
@@ -187,6 +209,7 @@ QString iDevice::storage_capacity() {
     return QString::number(_storage_capacity);
 }
 
+// Returns the available storage on the device in a human-readable format.
 QString iDevice::storage_left() {
     if (_storage_left>=1000000000000) {
         return QString(QString::number(_storage_left/1000000000000)+" TB");
@@ -203,7 +226,9 @@ QString iDevice::storage_left() {
     return QString::number(_storage_left);
 }
 
+// Destructor for the iDevice class. Frees up resources upon object destruction.
 iDevice::~iDevice() {
+    // Free the lockdownd client, device, and strings allocated for device information if they exist.
     qDebug("Called");
     if (this->_client) {
         if (lockdownd_client_free(this->_client) != LOCKDOWN_E_SUCCESS) {
@@ -217,11 +242,12 @@ iDevice::~iDevice() {
     }
     if (this->_device_name) {
         free(this->_device_name);
-        //printf("Name freed\n");
     }
     if (this->_udid) {
         free(this->_udid);
-        //printf("Udid freed\n");
+    }
+    if (this->_imei) {
+        free(this->_imei);
     }
     if (this->_serial) {
         free(this->_serial);
