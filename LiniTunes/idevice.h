@@ -38,7 +38,7 @@ private:
     char* _software_version = NULL;
     char* _serial = NULL;
     uint64_t _ecid;
-    char* _imei;
+    char* _imei = NULL;
     char* _model = NULL;
     uint64_t _storage_capacity;
     uint64_t _storage_left;

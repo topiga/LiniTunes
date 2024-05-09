@@ -128,7 +128,7 @@ void iDevice::_get_basic_info() {
             qDebug("InternationalMobileEquipmentIdentity: %s", this->_imei);
         } else {
             qDebug("Failed to get device IMEI");
-            this->_imei="";
+            this->_imei=NULL;
         }
         plist_free(tmp_imei);
     }
