@@ -552,17 +552,17 @@ Window {
                         font.family: "Arial"
                         visible: false
                         // TotalDataAvailable doesn't give the real storage left. To investigate.
-//                        Connections {
-//                            target: DeviceWatcher
-//                            function onCurrentDeviceChanged() {
-//                                if (DeviceWatcher.device_connected) {
-//                                    content_storage_left.text = DeviceWatcher.storage_left + " Available"
-//                                    content_storage_left.visible = true
-//                                } else {
-//                                    content_storage_left.visible = false
-//                                }
-//                            }
-//                        }
+                       Connections {
+                           target: DeviceWatcher
+                           function onCurrentDeviceChanged() {
+                               if (DeviceWatcher.device_connected) {
+                                   content_storage_left.text = DeviceWatcher.storage_left + " Available"
+                                   content_storage_left.visible = true
+                               } else {
+                                   content_storage_left.visible = false
+                               }
+                           }
+                       }
                     }
 
                     Rectangle {
@@ -815,6 +815,17 @@ Window {
                             }
                         }
                     }
+                    Connections {
+                        target: DeviceWatcher
+                        function onCurrentDeviceChanged() {
+                            if (!DeviceWatcher.device_connected) {
+                                if (device_stroke.state == "device_extended") {
+                                    device_stroke.state = "device_normal"
+                                    serial_info_rect.state = "device_normal"
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -838,6 +849,16 @@ Window {
                 font.pointSize: 18
                 font.styleName: "Bold"
             }
+
+            Rectangle {
+                id: sidebar_buttons
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: device_stroke.bottom
+                }
+                color: "transparent"
+                opacity: 1.0
 
             Rectangle {
                 id: clicked_rect
@@ -985,7 +1006,6 @@ Window {
                     }
                 ]
             }
-
             Rectangle {
                 id: sidebar_general_button
                 height: 40
@@ -994,7 +1014,7 @@ Window {
                 anchors {
                     left: parent.left
                     right: parent.right
-                    top: device_stroke.bottom
+                    top: parent.top
                     topMargin: 9
                     rightMargin: 10
                     leftMargin: 10
@@ -1755,6 +1775,7 @@ Window {
                         content.source = "/general.qml"
                     }
                 }
+            }
             }
 
             Rectangle {
