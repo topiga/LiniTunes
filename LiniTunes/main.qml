@@ -73,8 +73,6 @@ Window {
 
         Rectangle {
             id: storage_info_stroke
-            x: 314
-            y: 526
             height: 50
             visible: true
             radius: 8
@@ -243,11 +241,8 @@ Window {
             }
         }
 
-
         Rectangle {
             id: sidebar_rectangle
-            x: 9
-            y: 9
             width: 280
             color: "#353535"
             radius: 0
@@ -551,7 +546,7 @@ Window {
                         font.pointSize: 9
                         font.family: "Arial"
                         visible: false
-                        // TotalDataAvailable doesn't give the real storage left. To investigate.
+                        // TotalDataAvailable doesn't give the same storage left than the iOS/iPadOS settings. To investigate.
                        Connections {
                            target: DeviceWatcher
                            function onCurrentDeviceChanged() {
