@@ -6,7 +6,7 @@ After that, the goal is to add the ability to listen to their music with Apple M
 
 This will use lots of open-source project, and since I'm new to GUI app on Linux, I need to learn.
 I use Qt6+QML for this project.
-If you want to contribute, you can open an issue, a request, a suggestion, or submit a pool request.
+If you want to contribute, you can open an issue, a request, a suggestion, or submit a pull request.
 
 This project is in its early developments. Everything could change at any time given.
 
