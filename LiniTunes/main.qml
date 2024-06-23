@@ -36,32 +36,6 @@ Window {
             // Allow loaded pages to access the main.qml properties
             property alias rootWindow: root
         }
-        Rectangle {
-            id: content_sidebar_shadow
-            visible: true
-            anchors {
-                left: content.left
-                right: content.right
-                top: storage_info_stroke.top
-                bottom: content.bottom
-                rightMargin: 0
-                leftMargin: 0
-                bottomMargin: 0
-                topMargin: 0
-            }
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop {
-                    position: 0
-                    color: "#00000000"
-                }
-
-                GradientStop {
-                    position: 1
-                    color: "#1a000000"
-                }
-            }
-        }
 
         Rectangle {
             id: storage_info_stroke
@@ -69,6 +43,7 @@ Window {
             visible: true
             radius: 8
             border.width: 0
+            z: 1
             anchors {
                 left: content.left
                 right: content.right
@@ -89,7 +64,6 @@ Window {
             }
             anchors.leftMargin: 11
             anchors.rightMargin: 11
-
             Rectangle {
                 id: storage_info
                 x: 0
@@ -229,6 +203,34 @@ Window {
                             rightMargin: 1
                         }
                     }
+                }
+            }
+        }
+
+        Rectangle {
+            id: content_bottom_shadow
+            visible: true
+            anchors {
+                left: content.left
+                right: content.right
+                top: storage_info_stroke.top
+                bottom: content.bottom
+                rightMargin: 0
+                leftMargin: 0
+                bottomMargin: 0
+                topMargin: 0
+            }
+            z: 0
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop {
+                    position: 0
+                    color: "#00000000"
+                }
+
+                GradientStop {
+                    position: 1
+                    color: "#1a000000"
                 }
             }
         }

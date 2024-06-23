@@ -126,58 +126,6 @@ QVariantList iDeviceWatcher::getModel() {
     return model;
 }
 
-QVariantList iDeviceWatcher::getTestModel()
-{
-    QVariantList testModel;
-
-    QVariantMap element1;
-    element1["image"] = "/images/iphone.png";
-    element1["device_name"] = "TF4-iPhone";
-    element1["udid"] = "FK1VPUXXJCL8";
-    element1["product_type"] = "iPhone10,6";
-    element1["battery_string"] = "80";
-    element1["battery"] = 80;
-    testModel.append(element1);
-
-    QVariantMap element2;
-    element2["image"] = "/images/iphone.png";
-    element2["device_name"] = "iPhone de Fanny";
-    element2["udid"] = "FK2VPUXXJCL8";
-    element2["product_type"] = "iPhone10,6";
-    element2["battery_string"] = "100";
-    element2["battery"] = 100;
-    testModel.append(element2);
-
-    QVariantMap element3;
-    element3["image"] = "/images/iphone.png";
-    element3["device_name"] = "iPhone de Marine";
-    element3["udid"] = "FK3VPUXXJCL8";
-    element3["product_type"] = "iPhone10,6";
-    element3["battery_string"] = "80";
-    element3["battery"] = 80;
-    testModel.append(element3);
-
-    QVariantMap element4;
-    element4["image"] = "/images/iphone.png";
-    element4["device_name"] = "iPhone de Arthur";
-    element4["udid"] = "FK4VPUXXJCL8";
-    element4["product_type"] = "iPhone10,6";
-    element4["battery_string"] = "100";
-    element4["battery"] = 100;
-    testModel.append(element4);
-
-    for (const QVariant &item : testModel) {
-        QVariantMap map = item.toMap();
-        qDebug() << "Item:";
-        for (auto it = map.constBegin(); it != map.constEnd(); ++it) {
-            qDebug() << "  " << it.key() << ":" << it.value().toString();
-        }
-    }
-
-    return testModel;
-}
-
-
 iDeviceWatcher::~iDeviceWatcher()
 {
     usbmuxd_events_unsubscribe(*usbmuxd_context);

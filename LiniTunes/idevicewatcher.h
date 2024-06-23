@@ -10,7 +10,6 @@
 #include <QUrl>
 #include <QVariantList>
 #include <QVariantMap>
-#include <QThread>
 
 class iDeviceWatcher : public QObject
 {
@@ -45,15 +44,6 @@ public:
     // Choose the main device in QML
     Q_INVOKABLE void switchCurrentDevice(QString udid = NULL);
 
-    // // Get the devices in QML
-    // struct idevice {
-    //     QString udid;
-    //     QString serial;
-    //     QString name;
-    //     QUrl image;
-    // };
-    // Q_INVOKABLE QList<idevice> devicesModel();
-    Q_INVOKABLE QVariantList getTestModel();
     Q_INVOKABLE QVariantList getModel();
 
     // QML values
