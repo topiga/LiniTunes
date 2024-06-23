@@ -10,6 +10,43 @@ Window {
     minimumWidth: 960
     minimumHeight: 630
     color: "#181818"
+    property bool devices_normal: true
+    property bool devices_extended: false
+    property bool devices_choice: false
+
+    function swicthDevicesMode(mode) {
+        if (mode === "devices_choice" || mode === "device_choice") {
+            content_develop_arrow.state = "flipped"
+            device_chosen_text.state = "devices_choice"
+            current_device.state = "devices_choice"
+            choose_device.state = "devices_choice"
+            device_stroke.state = "devices_choice"
+            serial_info_rect.state = "device_normal"
+            devices_normal = false
+            devices_extended = false
+            devices_choice = true
+        } else if (mode === "devices_extended" || mode === "device_extended") {
+            content_develop_arrow.state = "normal"
+            device_chosen_text.state = "devices_normal"
+            current_device.state = "devices_normal"
+            choose_device.state = "devices_normal"
+            device_stroke.state = "device_extended"
+            serial_info_rect.state = "device_extended"
+            devices_normal = false
+            devices_extended = true
+            devices_choice = false
+        } else {
+            content_develop_arrow.state = "normal"
+            device_chosen_text.state = "devices_normal"
+            current_device.state = "devices_normal"
+            choose_device.state = "devices_normal"
+            device_stroke.state = "device_normal"
+            serial_info_rect.state = "device_normal"
+            devices_normal = true
+            devices_extended = false
+            devices_choice = false
+        }
+    }
 
     Rectangle {
         id: app
@@ -35,50 +72,15 @@ Window {
 
             // Allow loaded pages to access the main.qml properties
             property alias rootWindow: root
-//            Connections {
-//                target: DeviceWatcher
-//                function onEcidListChanged() {
-//                    if (main_page.source == "") {
-//                        main_page.source = "/idevices.qml"
-//                    }
-//                }
-//            }
-        }
-        Rectangle {
-            id: content_sidebar_shadow
-            visible: true
-            anchors {
-                left: content.left
-                right: content.right
-                top: storage_info_stroke.top
-                bottom: content.bottom
-                rightMargin: 0
-                leftMargin: 0
-                bottomMargin: 0
-                topMargin: 0
-            }
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop {
-                    position: 0
-                    color: "#00000000"
-                }
-
-                GradientStop {
-                    position: 1
-                    color: "#1a000000"
-                }
-            }
         }
 
         Rectangle {
             id: storage_info_stroke
-            x: 314
-            y: 526
             height: 50
             visible: true
             radius: 8
             border.width: 0
+            z: 1
             anchors {
                 left: content.left
                 right: content.right
@@ -99,7 +101,6 @@ Window {
             }
             anchors.leftMargin: 11
             anchors.rightMargin: 11
-
             Rectangle {
                 id: storage_info
                 x: 0
@@ -243,11 +244,36 @@ Window {
             }
         }
 
+        Rectangle {
+            id: content_bottom_shadow
+            visible: true
+            anchors {
+                left: content.left
+                right: content.right
+                top: storage_info_stroke.top
+                bottom: content.bottom
+                rightMargin: 0
+                leftMargin: 0
+                bottomMargin: 0
+                topMargin: 0
+            }
+            z: 0
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop {
+                    position: 0
+                    color: "#00000000"
+                }
+
+                GradientStop {
+                    position: 1
+                    color: "#1a000000"
+                }
+            }
+        }
 
         Rectangle {
             id: sidebar_rectangle
-            x: 9
-            y: 9
             width: 280
             color: "#353535"
             radius: 0
@@ -262,11 +288,39 @@ Window {
             }
 
             Rectangle {
+                id: sidebar_bottom_fade
+                visible: true
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                    rightMargin: 0
+                    leftMargin: 0
+                    bottomMargin: 0
+                }
+                z:1
+                height: 50
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop {
+                        position: 0
+                        color: "#00353535"
+                    }
+
+                    GradientStop {
+                        position: 1
+                        color: "#353535"
+                    }
+                }
+            }
+
+            Rectangle {
                 id: device_stroke
                 radius: 8
                 border.color: "#00ffffff"
                 border.width: 0
                 height: 85
+                width: 258
                 anchors {
                     left: parent.left
                     right: parent.right
@@ -303,6 +357,14 @@ Window {
                                 height: 155
                             }
                         }
+                    },
+                    State {
+                        name: "devices_choice"
+                        PropertyChanges {
+                            device_stroke {
+                                height: devices_repeater.height+device_chosen_text.height+device.anchors.bottomMargin+device.anchors.topMargin+device_chosen_text.anchors.topMargin
+                            }
+                        }
                     } ]
                 transitions: [ Transition {
                         to: "device_normal"
@@ -310,6 +372,10 @@ Window {
                     },
                     Transition {
                         to: "device_extended"
+                        NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
+                    },
+                    Transition {
+                        to: "devices_choice"
                         NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
                     }
                 ]
@@ -355,95 +421,23 @@ Window {
                             leftMargin: 10
                         }
                         font.pointSize: 9
-                    }
-
-                    Image {
-                        id: device_image
-                        width: 40
-                        height: 50
-                        anchors {
-                            left: parent.left
-                            top: device_chosen_text.bottom
-                            topMargin: 4
-                            leftMargin: 8
-                        }
-                        source: "/images/iphone.png"
-                        sourceSize.height: device_image.height
-                        fillMode: Image.PreserveAspectCrop
-                        smooth: true
-                    }
-
-                    Text {
-                        id: device_name_text
-                        color: "#ffffff"
-                        text: qsTr("No device connected")
-                        anchors {
-                            left: device_image.right
-                            top: device_image.top
-                            topMargin: 0
-                            leftMargin: 8
-                        }
-                        font.weight: Font.DemiBold
-                        font.pointSize: 12
-                        font.family: "Arial"
-                        maximumLineCount: 2
-                        wrapMode: Text.Wrap
-                        elide: Text.ElideRight
-                        Connections {
-                            target: DeviceWatcher
-                            function onCurrentDeviceChanged() {
-                                if (DeviceWatcher.device_connected) {
-                                    if (device_name_text.text != DeviceWatcher.device_name) {
-                                        device_name_text.text = DeviceWatcher.device_name
-                                    }
-                                } else {
-                                    device_name_text.text = "No device connected"
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        id: content_info_circle
-                        width: 15
-                        height: 15
-                        opacity: 0.5
-                        color: "#00000000"
-                        border.color: "white"
-                        border.width: 1
-                        anchors.right: parent.right
-                        anchors.bottom: device_image.bottom
-                        anchors.rightMargin: 10
-                        anchors.bottomMargin: 2
-                        radius: width*0.5
-                        Text {
-                            id: content_info_circle_text
-                            text: "i"
-                            height: 10
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: "white"
-                            anchors.fill: parent
-                            font.family: "Arial"
-                            font.pointSize: 9
-                            font.bold: true
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onPressed: parent.opacity=0.7
-                            onReleased: {
-                                parent.opacity=0.5
-                                if (DeviceWatcher.device_connected) {
-                                    if (device_stroke.state == "device_normal") {
-                                        device_stroke.state = "device_extended"
-                                        serial_info_rect.state = "device_extended"
-                                    } else {
-                                        device_stroke.state = "device_normal"
-                                        serial_info_rect.state = "device_normal"
+                        states: [ State {
+                                name: "devices_normal"
+                                PropertyChanges {
+                                    device_chosen_text {
+                                        text: qsTr("Device Chosen")
                                     }
                                 }
-                            }
-                        }
+                            },
+                            State {
+                                name: "devices_choice"
+                                PropertyChanges {
+                                    device_chosen_text {
+                                        text: qsTr("Connected Devices")
+                                    }
+                                }
+                            } ]
+                        state: "devices_normal"
                     }
 
                     Image {
@@ -458,370 +452,783 @@ Window {
                         }
                         source: "../images/develop_arrow.png"
                         fillMode: Image.PreserveAspectFit
-                    }
-
-                    Text {
-                        id: content_iphone_model
-                        opacity: 1
-                        color: "#d9d9d9"
-                        text: qsTr("Please connect a device to begin the sync")
-                        anchors {
-                            left: device_image.right
-                            top: device_name_text.bottom
-                            leftMargin: 8
-                            topMargin: 1
-                            right: parent.right
-                            rightMargin: 40
-                        }
-                        font.family: "Arial"
-                        font.weight: Font.Medium
-                        font.pointSize: 9
-                        wrapMode: Text.WordWrap
-                        Connections {
-                            target: DeviceWatcher
-                            function onCurrentDeviceChanged() {
-                                if (DeviceWatcher.device_connected) {
-                                    content_iphone_model.text = DeviceWatcher.product_type
-                                } else {
-                                    content_iphone_model.text = "Please connect a device to begin"
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        id: content_storage_capacity
-                        width: content_storage_capacity_text.width + 6
-                        height: 14
-                        opacity: 1
-                        color: "#00ffffff"
-                        radius: 3
-                        border.color: "#d9d9d9"
-                        border.width: 1
-                        anchors {
-                            left: device_image.right
-                            top: content_iphone_model.bottom
-                            topMargin: 2
-                            leftMargin: 8
-                        }
-                        visible: false
-
-                        Text {
-                            id: content_storage_capacity_text
-                            height: 14
-                            opacity: 1
-                            color: "#d9d9d9"
-                            text: qsTr("8GB")
-                            anchors {
-                                verticalCenter: parent.verticalCenter
-                                horizontalCenter: parent.horizontalCenter
-                            }
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.pointSize: 8
-                            font.family: "Arial"
-                            wrapMode: Text.WordWrap
-                            Connections {
-                                target: DeviceWatcher
-                                function onCurrentDeviceChanged() {
-                                    if (DeviceWatcher.device_connected) {
-                                        content_storage_capacity_text.text = DeviceWatcher.storage_capacity
-                                        content_storage_capacity.visible = true
-                                    } else {
-                                        content_storage_capacity.visible = false
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Text {
-                        id: content_storage_left
-                        width: 114
-                        height: 14
-                        opacity: 1
-                        color: "#d9d9d9"
-                        text: qsTr("160.4 GB Available")
-                        anchors {
-                            verticalCenter: content_storage_capacity.verticalCenter
-                            left: content_storage_capacity.right
-                            leftMargin: 4
-                        }
-                        font.weight: Font.Medium
-                        font.pointSize: 9
-                        font.family: "Arial"
-                        visible: false
-                        // TotalDataAvailable doesn't give the real storage left. To investigate.
-                       Connections {
-                           target: DeviceWatcher
-                           function onCurrentDeviceChanged() {
-                               if (DeviceWatcher.device_connected) {
-                                   content_storage_left.text = DeviceWatcher.storage_left + " Available"
-                                   content_storage_left.visible = true
-                               } else {
-                                   content_storage_left.visible = false
-                               }
-                           }
-                       }
-                    }
-
-                    Rectangle {
-                        id: content_battery
-                        width: 24
-                        height: 11
-                        anchors {
-                            verticalCenter: device_name_text.verticalCenter
-                            right: parent.right
-                            rightMargin: 8
-                        }
-                        color: "transparent"
-                        visible: true
-
-                        Rectangle {
-                            id: device_battery_rect1
-                            width: 22
-                            opacity: 0.5
-                            color: "#ffffff"
-                            radius: 3
-                            border.color: "#ffffff"
-                            anchors {
-                                left: parent.left
-                                top: parent.top
-                                bottom: parent.bottom
-                                leftMargin: 0
-                                topMargin: 0
-                                bottomMargin: 0
-                            }
-                        }
-
-                        Rectangle {
-                            id: device_battery_rect2
-                            width: 1
-                            height: 5
-                            opacity: 0.5
-                            color: "#ffffff"
-                            anchors {
-                                right: parent.right
-                                rightMargin: 0
-                                verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        Rectangle {
-                            id: device_battery_fill
-                            width: 18
-                            color: "#6bcc43"
-                            radius: 3
-                            anchors {
-                                left: parent.left
-                                top: parent.top
-                                bottom: parent.bottom
-                                leftMargin: 0
-                                topMargin: 0
-                                bottomMargin: 0
-                            }
-                            visible: true
-                        }
-
-                        Text {
-                            id: device_battery_text
-                            width: 20
-                            height: 11
-                            color: "#3b3b3b"
-                            text: qsTr("82")
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.family: "Arial"
-                            font.weight: Font.Bold
-                            font.pointSize: 9
-                            anchors.fill: device_battery_rect1
-                        }
-                        Connections {
-                            target: DeviceWatcher
-                            function onCurrentDeviceChanged() {
-                                if (DeviceWatcher.device_connected) {
-                                    device_battery_text.text = DeviceWatcher.battery_string
-                                    device_battery_fill.width = DeviceWatcher.battery
-                                    if (DeviceWatcher.battery_string === "100") {
-                                        device_battery_rect2.color = "#6bcc43"
-                                        device_battery_rect2.opacity = 1
-                                    } else {
-                                        device_battery_rect2.color = "#ffffff"
-                                        device_battery_rect2.opacity = 0.5
-                                    }
-                                    content_battery.visible = true
-                                } else {
-                                    content_battery.visible = false
-                                }
-                            }
-                        }
-                    }
-                    Rectangle {
-                        id: serial_info_rect
-                        opacity: 0
-                        color: "transparent"
-                        anchors {
-                            top: device_image.bottom
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                            topMargin: 4
-                            leftMargin: 4
-                            rightMargin: 4
-                        }
-                        height: 90
-                        visible: false
-
                         states: [ State {
-                                name: "device_normal"
+                                name: "normal"
                                 PropertyChanges {
-                                    serial_info_rect {
-                                        opacity: 0
+                                    content_develop_arrow {
+                                        rotation: 0
                                     }
                                 }
                             },
                             State {
-                                name: "device_extended"
+                                name: "flipped"
                                 PropertyChanges {
-                                    serial_info_rect {
+                                    content_develop_arrow {
+                                        rotation: 180
+                                    }
+                                }
+                            } ]
+                        transitions: [ Transition {
+                                to: "normal"
+                                NumberAnimation { properties: "rotation"; duration: 200; easing.type: Easing.OutCubic }
+                            },
+                            Transition {
+                                to: "flipped"
+                                NumberAnimation { properties: "rotation"; duration: 200; easing.type: Easing.OutCubic }
+                            }
+                        ]
+                        state: "normal"
+                    }
+                    MouseArea {
+                        id: m_content_develop_arrow
+                        anchors.fill: content_develop_arrow
+                        onPressed: content_develop_arrow.opacity=0.7
+                        onReleased: {
+                            content_develop_arrow.opacity=0.5
+                            if (!devices_choice) {
+                                swicthDevicesMode("devices_choice")
+                            } else {
+                                swicthDevicesMode("devices_normal")
+                            }
+                        }
+                    }
+                    Rectangle {
+                        id: choose_device
+                        color: "transparent"
+                        anchors {
+                            left: parent.left
+                            top: device_chosen_text.bottom
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
+                        opacity: 0.0
+                        states: [ State {
+                                name: "devices_normal"
+                                PropertyChanges {
+                                    choose_device {
+                                        opacity: 0.0
+                                    }
+                                }
+                            },
+                            State {
+                                name: "devices_choice"
+                                PropertyChanges {
+                                    choose_device {
                                         opacity: 1.0
                                     }
                                 }
                             } ]
                         transitions: [ Transition {
-                                to: "device_normal"
-                                NumberAnimation { properties: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                                to: "devices_normal"
+                                NumberAnimation { properties: "opacity"; duration: 150; easing.type: Easing.OutCubic }
                             },
                             Transition {
-                                to: "device_extended"
-                                NumberAnimation { properties: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                                to: "devices_choice"
+                                NumberAnimation { properties: "opacity"; duration: 150; easing.type: Easing.OutCubic }
                             }
                         ]
-
-                        Text {
-                            id: serial_text
-                            opacity: 0.5
-                            color: "white"
-                            text: qsTr("SERIAL")
-                            anchors {
-                                top: parent.top
-                                left: parent.left
-                                topMargin: 4
-                                leftMargin: 6
-                            }
-                            font.pointSize: 8
-                        }
-                        Text {
-                            id: serial_info_text
-                            text: qsTr("")
-                            color: "white"
-                            anchors {
-                                top: serial_text.bottom
-                                left: serial_text.left
-                                topMargin: 1
-                                leftMargin: 0
-                            }
-                            font.pointSize: 8
-                        }
-                        Text {
-                            id: imei_text
-                            opacity: 0.5
-                            color: "white"
-                            text: qsTr("IMEI")
-                            anchors {
-                                top: parent.top
-                                left: parent.left
-                                topMargin: 4
-                                leftMargin: parent.width/2
-                            }
-                            font.pointSize: 8
-                        }
-                        Text {
-                            id: imei_info_text
-                            text: qsTr("")
-                            color: "white"
-                            anchors {
-                                top: imei_text.bottom
-                                left: imei_text.left
-                                topMargin: 1
-                                leftMargin: 0
-                            }
-                            font.pointSize: 8
-                        }
-                        MouseArea {
-                            id: ecid_imei_mousearea
-                            anchors {
-                                top: imei_text.top
-                                bottom: imei_info_text.bottom
-                                left: imei_text.left
-                                right: imei_info_text.right
-                            }
-                            onClicked: {
-                                if (DeviceWatcher.imei !== "") {
-                                    if (imei_text.text == "IMEI") {
-                                        imei_info_text.text = DeviceWatcher.ecid
-                                        imei_text.text = "ECID"
-                                    } else {
-                                        imei_info_text.text = DeviceWatcher.imei
-                                        imei_text.text = "IMEI"
+                        state: "devices_normal"
+                        Repeater {
+                            id: devices_repeater //udidListChanged
+                            model: []
+                            delegate: Rectangle {
+                                width: parent.width
+                                color: "transparent"
+                                height: 48
+                                radius: 8
+                                Component.onCompleted: {
+                                    if (index === devices_repeater.count-1) {
+                                        devices_repeater.height = devices_repeater.count*(height + 10)+8
                                     }
+                                    if (DeviceWatcher.udid === modelData.udid) {
+                                        color = "#3284ff"
+                                    }
+                                }
+                                anchors {
+                                    left: parent.left
+                                    leftMargin: 10
+                                    right: parent.right
+                                    rightMargin: 10
+                                    top: index === devices_repeater.count-1 ? devices_repeater.top : devices_repeater.itemAt(index+1).bottom // I have absolutely no idea why this works, but it works. I think a repeater counts backwards.
+                                    topMargin: index === devices_repeater.count-1 ? 8 : 10
+                                }
+
+                                Image {
+                                    id: deviceImage
+                                    anchors {
+                                        left: parent.left
+                                        top: parent.top
+                                        bottom: parent.bottom
+                                        topMargin: 4
+                                        bottomMargin: 4
+                                    }
+                                    width: 45
+                                    source: encodeURIComponent(modelData.image)
+                                    sourceSize.height: deviceImage.height
+                                    fillMode: Image.PreserveAspectCrop
+                                    smooth: true
+                                }
+
+                                Text {
+                                    id: deviceNameText
+                                    color: "#ffffff"
+                                    text: modelData.device_name
+                                    anchors {
+                                        left: deviceImage.right
+                                        top: deviceImage.top
+                                        topMargin: 0
+                                        leftMargin: 0
+                                        right: deviceBattery.left
+                                        rightMargin: 4
+                                    }
+                                    font {
+                                        weight: Font.DemiBold
+                                        pointSize: 12
+                                        family: "Arial"
+                                    }
+                                    maximumLineCount: 1
+                                    wrapMode: Text.Wrap
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    id: deviceProductTypeText
+                                    opacity: 1
+                                    color: "#d9d9d9"
+                                    text: modelData.product_type
+                                    anchors {
+                                        left: deviceImage.right
+                                        top: deviceNameText.bottom
+                                        leftMargin: 0
+                                        topMargin: 1
+                                    }
+                                    font {
+                                        family: "Arial"
+                                        weight: Font.Medium
+                                        pointSize: 9
+                                    }
+                                    wrapMode: Text.WordWrap
+                                }
+                                Rectangle {
+                                    id: deviceBattery
+                                    width: 24
+                                    height: 11
+                                    anchors {
+                                        verticalCenter: deviceImage.verticalCenter
+                                        right: parent.right
+                                        rightMargin: 8
+                                    }
+                                    color: "transparent"
+                                    visible: true
+
+                                    Rectangle {
+                                        id: deviceBatteryRect1
+                                        width: 22
+                                        opacity: 0.5
+                                        color: "#ffffff"
+                                        radius: 3
+                                        border.color: "#ffffff"
+                                        anchors {
+                                            left: parent.left
+                                            top: parent.top
+                                            bottom: parent.bottom
+                                            leftMargin: 0
+                                            topMargin: 0
+                                            bottomMargin: 0
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        id: deviceBatteryRect2
+                                        width: 1
+                                        height: 5
+                                        opacity: modelData.battery_string === "100" ? 1 : 0.5;
+                                        color: modelData.battery_string === "100" ? "#6bcc43" : "#ffffff";
+                                        anchors {
+                                            right: parent.right
+                                            rightMargin: 0
+                                            verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        id: deviceBatteryFill
+                                        color: "#6bcc43"
+                                        radius: 3
+                                        anchors {
+                                            left: parent.left
+                                            top: parent.top
+                                            bottom: parent.bottom
+                                            leftMargin: 0
+                                            topMargin: 0
+                                            bottomMargin: 0
+                                        }
+                                        width: (modelData.battery)*22/100
+                                        visible: true
+                                    }
+
+                                    Text {
+                                        id: deviceBatteryText
+                                        width: 20
+                                        height: 11
+                                        color: "#3b3b3b"
+                                        text: modelData.battery_string
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                        font.family: "Arial"
+                                        font.weight: Font.Bold
+                                        font.pointSize: 9
+                                        anchors.fill: deviceBatteryRect1
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onPressed: parent.color = "#803284ff"
+                                    onReleased: {
+                                        for (let i = 0; i < devices_repeater.count; i++) {
+                                            devices_repeater.itemAt(i).color = "transparent"
+                                        }
+                                        parent.color = "#3284ff"
+                                        if (DeviceWatcher.udid !== modelData.udid) {
+                                            DeviceWatcher.switchCurrentDevice(modelData.udid)
+                                        }
+                                    }
+                                    enabled: devices_choice
                                 }
                             }
                         }
-                        Text {
-                            id: udid_text
-                            opacity: 0.5
-                            color: "white"
-                            text: qsTr("UDID")
-                            anchors {
-                                top: serial_info_text.bottom
-                                left: parent.left
-                                topMargin: 2
-                                leftMargin: 6
-                            }
-                            font.pointSize: 8
-                        }
-                        Text {
-                            id: udid_info_text
-                            text: qsTr("")
-                            color: "white"
-                            anchors {
-                                top: udid_text.bottom
-                                left: udid_text.left
-                                topMargin: 1
-                                leftMargin: 0
-                            }
-                            font.pointSize: 8
-                        }
                         Connections {
                             target: DeviceWatcher
-                            function onCurrentDeviceChanged() {
+                            function onUdidListChanged() {
                                 if (DeviceWatcher.device_connected) {
-                                    serial_info_text.text = DeviceWatcher.serial
-                                    if (DeviceWatcher.imei == "") {
-                                        imei_info_text.text = DeviceWatcher.ecid
-                                        imei_text.text = "ECID"
-                                    } else {
-                                        imei_info_text.text = DeviceWatcher.imei
-                                        imei_text.text = "IMEI"
-                                    }
-                                    udid_info_text.text = DeviceWatcher.udid
-                                    serial_info_rect.visible = true
+                                    devices_repeater.model = []
+                                    devices_repeater.model = DeviceWatcher.getModel()
                                 } else {
-                                    serial_info_text.text = ""
-                                    imei_info_text.text = ""
-                                    udid_info_text.text = ""
+                                    devices_repeater.model = []
                                 }
                             }
                         }
                     }
-                    Connections {
-                        target: DeviceWatcher
-                        function onCurrentDeviceChanged() {
-                            if (!DeviceWatcher.device_connected) {
-                                if (device_stroke.state == "device_extended") {
-                                    device_stroke.state = "device_normal"
-                                    serial_info_rect.state = "device_normal"
+                    Rectangle {
+                        id: current_device
+                        color: "transparent"
+                        anchors {
+                            left: parent.left
+                            top: device_chosen_text.bottom
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
+                        opacity: 1.0
+                        states: [ State {
+                                name: "devices_normal"
+                                PropertyChanges {
+                                    current_device {
+                                        opacity: 1.0
+                                    }
+                                }
+                            },
+                            State {
+                                name: "devices_choice"
+                                PropertyChanges {
+                                    current_device {
+                                        opacity: 0.0
+                                    }
+                                }
+                            } ]
+                        transitions: [ Transition {
+                                to: "devices_normal"
+                                NumberAnimation { properties: "opacity"; duration: 150; easing.type: Easing.OutCubic }
+                            },
+                            Transition {
+                                to: "devices_choice"
+                                NumberAnimation { properties: "opacity"; duration: 150; easing.type: Easing.OutCubic }
+                            }
+                        ]
+                        state: "devices_normal"
+                        Image {
+                            id: current_device_image
+                            width: 40
+                            height: 50
+                            anchors {
+                                left: parent.left
+                                top: parent.top
+                                topMargin: 4
+                                leftMargin: 8
+                            }
+                            source: "/images/iphone.png"
+                            sourceSize.height: current_device_image.height
+                            fillMode: Image.PreserveAspectCrop
+                            smooth: true
+                        }
+
+                        Text {
+                            id: device_name_text
+                            color: "#ffffff"
+                            text: qsTr("No device connected")
+                            anchors {
+                                left: current_device_image.right
+                                top: current_device_image.top
+                                topMargin: 0
+                                leftMargin: 8
+                            }
+                            font {
+                                weight: Font.DemiBold
+                                pointSize: 12
+                                family: "Arial"
+                            }
+                            maximumLineCount: 2
+                            wrapMode: Text.Wrap
+                            elide: Text.ElideRight
+                            Connections {
+                                target: DeviceWatcher
+                                function onCurrentDeviceChanged() {
+                                    if (DeviceWatcher.device_connected) {
+                                        if (device_name_text.text != DeviceWatcher.device_name) {
+                                            device_name_text.text = DeviceWatcher.device_name
+                                        }
+                                    } else {
+                                        device_name_text.text = "No device connected"
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: content_info_circle
+                            width: 15
+                            height: 15
+                            opacity: 0.5
+                            color: "#00000000"
+                            border.color: "white"
+                            border.width: 1
+                            anchors {
+                                right: parent.right
+                                bottom: current_device_image.bottom
+                                rightMargin: 10
+                                bottomMargin: 2
+                            }
+                            radius: width*0.5
+                            Text {
+                                id: content_info_circle_text
+                                text: "i"
+                                height: 10
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                color: "white"
+                                anchors.fill: parent
+                                font.family: "Arial"
+                                font.pointSize: 9
+                                font.bold: true
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                onPressed: parent.opacity=0.7
+                                onReleased: {
+                                    parent.opacity=0.5
+                                    if (DeviceWatcher.device_connected) {
+                                        if (devices_normal) {
+                                            swicthDevicesMode("device_extended")
+                                        } else {
+                                            swicthDevicesMode("device_normal")
+                                        }
+                                    }
+                                }
+                                enabled: !devices_choice
+                            }
+                        }
+
+                        Text {
+                            id: content_iphone_model
+                            opacity: 1
+                            color: "#d9d9d9"
+                            text: qsTr("Please connect a device to begin the sync")
+                            anchors {
+                                left: current_device_image.right
+                                top: device_name_text.bottom
+                                leftMargin: 8
+                                topMargin: 1
+                                right: parent.right
+                                rightMargin: 40
+                            }
+                            font {
+                                family: "Arial"
+                                weight: Font.Medium
+                                pointSize: 9
+                            }
+                            wrapMode: Text.WordWrap
+                            Connections {
+                                target: DeviceWatcher
+                                function onCurrentDeviceChanged() {
+                                    if (DeviceWatcher.device_connected) {
+                                        content_iphone_model.text = DeviceWatcher.product_type
+                                    } else {
+                                        content_iphone_model.text = "Please connect a device to begin"
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: content_storage_capacity
+                            width: content_storage_capacity_text.width + 6
+                            height: 14
+                            opacity: 1.0
+                            color: "#00ffffff"
+                            radius: 3
+                            border.color: "#d9d9d9"
+                            border.width: 1
+                            anchors {
+                                left: current_device_image.right
+                                top: content_iphone_model.bottom
+                                topMargin: 2
+                                leftMargin: 8
+                            }
+                            visible: false
+
+                            Text {
+                                id: content_storage_capacity_text
+                                height: 14
+                                opacity: 1
+                                color: "#d9d9d9"
+                                text: qsTr("8GB")
+                                anchors {
+                                    verticalCenter: parent.verticalCenter
+                                    horizontalCenter: parent.horizontalCenter
+                                }
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                font.pointSize: 8
+                                font.family: "Arial"
+                                wrapMode: Text.WordWrap
+                                Connections {
+                                    target: DeviceWatcher
+                                    function onCurrentDeviceChanged() {
+                                        if (DeviceWatcher.device_connected) {
+                                            content_storage_capacity_text.text = DeviceWatcher.storage_capacity
+                                            content_storage_capacity.visible = true
+                                        } else {
+                                            content_storage_capacity.visible = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Text {
+                            id: content_storage_left
+                            width: 114
+                            height: 14
+                            opacity: 1
+                            color: "#d9d9d9"
+                            text: qsTr("160.4 GB Available")
+                            anchors {
+                                verticalCenter: content_storage_capacity.verticalCenter
+                                left: content_storage_capacity.right
+                                leftMargin: 4
+                            }
+                            font {
+                                weight: Font.Medium
+                                pointSize: 9
+                                family: "Arial"
+                            }
+                            visible: false
+                            // TotalDataAvailable doesn't give the real storage left. To investigate.
+                           Connections {
+                               target: DeviceWatcher
+                               function onCurrentDeviceChanged() {
+                                   if (DeviceWatcher.device_connected) {
+                                       content_storage_left.text = DeviceWatcher.storage_left + " Available"
+                                       content_storage_left.visible = true
+                                   } else {
+                                       content_storage_left.visible = false
+                                   }
+                               }
+                           }
+                           states: [ State {
+                                   name: "devices_normal"
+                                   PropertyChanges {
+                                       content_storage_capacity {
+                                           opacity: 1.0
+                                       }
+                                   }
+                               },
+                               State {
+                                   name: "devices_choice"
+                                   PropertyChanges {
+                                       content_storage_capacity {
+                                           opacity: 0.0
+                                       }
+                                   }
+                               } ]
+                           transitions: [ Transition {
+                                   to: "devices_normal"
+                                   NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
+                               },
+                               Transition {
+                                   to: "devices_choice"
+                                   NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
+                               }
+                           ]
+                           state: "devices_normal"
+                        }
+
+                        Rectangle {
+                            id: content_battery
+                            width: 24
+                            height: 11
+                            anchors {
+                                verticalCenter: device_name_text.verticalCenter
+                                right: parent.right
+                                rightMargin: 8
+                            }
+                            color: "transparent"
+                            visible: true
+
+                            Rectangle {
+                                id: device_battery_rect1
+                                width: 22
+                                opacity: 0.5
+                                color: "#ffffff"
+                                radius: 3
+                                border.color: "#ffffff"
+                                anchors {
+                                    left: parent.left
+                                    top: parent.top
+                                    bottom: parent.bottom
+                                    leftMargin: 0
+                                    topMargin: 0
+                                    bottomMargin: 0
+                                }
+                            }
+
+                            Rectangle {
+                                id: device_battery_fill
+                                width: 18
+                                color: "#6bcc43"
+                                radius: 3
+                                anchors {
+                                    left: parent.left
+                                    top: parent.top
+                                    bottom: parent.bottom
+                                    leftMargin: 0
+                                    topMargin: 0
+                                    bottomMargin: 0
+                                }
+                                visible: true
+                            }
+
+                            Rectangle {
+                                id: device_battery_rect2
+                                width: 1
+                                height: 5
+                                opacity: 0.5
+                                color: "#ffffff"
+                                anchors {
+                                    right: parent.right
+                                    rightMargin: 0
+                                    verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            Text {
+                                id: device_battery_text
+                                width: 20
+                                height: 11
+                                color: "#3b3b3b"
+                                text: qsTr("82")
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                font.family: "Arial"
+                                font.weight: Font.Bold
+                                font.pointSize: 9
+                                anchors.fill: device_battery_rect1
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onCurrentDeviceChanged() {
+                                    if (DeviceWatcher.device_connected) {
+                                        device_battery_text.text = DeviceWatcher.battery_string
+                                        device_battery_fill.width = (DeviceWatcher.battery)*22/100
+                                        if (DeviceWatcher.battery_string === "100") {
+                                            device_battery_rect2.color = "#6bcc43"
+                                            device_battery_rect2.opacity = 1
+                                        } else {
+                                            device_battery_rect2.color = "#ffffff"
+                                            device_battery_rect2.opacity = 0.5
+                                        }
+                                        content_battery.visible = true
+                                    } else {
+                                        content_battery.visible = false
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            id: serial_info_rect
+                            opacity: 0
+                            color: "transparent"
+                            anchors {
+                                top: current_device_image.bottom
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                                topMargin: 4
+                                leftMargin: 4
+                                rightMargin: 4
+                            }
+                            height: 90
+                            visible: false
+
+                            states: [ State {
+                                    name: "device_normal"
+                                    PropertyChanges {
+                                        serial_info_rect {
+                                            opacity: 0
+                                        }
+                                    }
+                                },
+                                State {
+                                    name: "device_extended"
+                                    PropertyChanges {
+                                        serial_info_rect {
+                                            opacity: 1.0
+                                        }
+                                    }
+                                } ]
+                            transitions: [ Transition {
+                                    to: "device_normal"
+                                    NumberAnimation { properties: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                                },
+                                Transition {
+                                    to: "device_extended"
+                                    NumberAnimation { properties: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                                }
+                            ]
+
+                            Text {
+                                id: serial_text
+                                opacity: 0.5
+                                color: "white"
+                                text: qsTr("SERIAL")
+                                anchors {
+                                    top: parent.top
+                                    left: parent.left
+                                    topMargin: 4
+                                    leftMargin: 6
+                                }
+                                font.pointSize: 8
+                            }
+                            Text {
+                                id: serial_info_text
+                                text: qsTr("")
+                                color: "white"
+                                anchors {
+                                    top: serial_text.bottom
+                                    left: serial_text.left
+                                    topMargin: 1
+                                    leftMargin: 0
+                                }
+                                font.pointSize: 8
+                            }
+                            Text {
+                                id: imei_text
+                                opacity: 0.5
+                                color: "white"
+                                text: qsTr("IMEI")
+                                anchors {
+                                    top: parent.top
+                                    left: parent.left
+                                    topMargin: 4
+                                    leftMargin: parent.width/2
+                                }
+                                font.pointSize: 8
+                            }
+                            Text {
+                                id: imei_info_text
+                                text: qsTr("")
+                                color: "white"
+                                anchors {
+                                    top: imei_text.bottom
+                                    left: imei_text.left
+                                    topMargin: 1
+                                    leftMargin: 0
+                                }
+                                font.pointSize: 8
+                            }
+                            MouseArea {
+                                id: ecid_imei_mousearea
+                                anchors {
+                                    top: imei_text.top
+                                    bottom: imei_info_text.bottom
+                                    left: imei_text.left
+                                    right: imei_info_text.right
+                                }
+                                onClicked: {
+                                    if (DeviceWatcher.imei !== "") {
+                                        if (imei_text.text == "IMEI") {
+                                            imei_info_text.text = DeviceWatcher.ecid
+                                            imei_text.text = "ECID"
+                                        } else {
+                                            imei_info_text.text = DeviceWatcher.imei
+                                            imei_text.text = "IMEI"
+                                        }
+                                    }
+                                }
+                                enabled: devices_extended
+                            }
+                            Text {
+                                id: udid_text
+                                opacity: 0.5
+                                color: "white"
+                                text: qsTr("UDID")
+                                anchors {
+                                    top: serial_info_text.bottom
+                                    left: parent.left
+                                    topMargin: 2
+                                    leftMargin: 6
+                                }
+                                font.pointSize: 8
+                            }
+                            Text {
+                                id: udid_info_text
+                                text: qsTr("")
+                                color: "white"
+                                anchors {
+                                    top: udid_text.bottom
+                                    left: udid_text.left
+                                    topMargin: 1
+                                    leftMargin: 0
+                                }
+                                font.pointSize: 8
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onCurrentDeviceChanged() {
+                                    if (DeviceWatcher.device_connected) {
+                                        serial_info_text.text = DeviceWatcher.serial
+                                        if (DeviceWatcher.imei == "") {
+                                            imei_info_text.text = DeviceWatcher.ecid
+                                            imei_text.text = "ECID"
+                                        } else {
+                                            imei_info_text.text = DeviceWatcher.imei
+                                            imei_text.text = "IMEI"
+                                        }
+                                        udid_info_text.text = DeviceWatcher.udid
+                                        serial_info_rect.visible = true
+                                    } else {
+                                        serial_info_text.text = ""
+                                        imei_info_text.text = ""
+                                        udid_info_text.text = ""
+                                    }
+                                }
+                            }
+                        }
+                        Connections {
+                            target: DeviceWatcher
+                            function onCurrentDeviceChanged() {
+                                if (!DeviceWatcher.device_connected) {
+                                    if (devices_extended) {
+                                        swicthDevicesMode("device_normal")
+                                    }
                                 }
                             }
                         }
@@ -864,145 +1271,142 @@ Window {
                 id: clicked_rect
                 color: "#3284ff"
                 radius: 8
-                x: sidebar_general_button.x
-                y: sidebar_general_button.y
-                height: sidebar_general_button.height
-                width: sidebar_general_button.width
+                anchors {
+                    right: sidebar_general_button.right
+                    left: sidebar_general_button.left
+                    top: sidebar_general_button.top
+                    bottom: sidebar_general_button.bottom
+                    rightMargin: 0
+                    leftMargin: 0
+                    topMargin: 0
+                    bottomMargin: 0
+                }
 
                 states: [ State {
                         name: "sidebar_general_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_general_button.y
-                                x: sidebar_general_button.x
-                                height: sidebar_general_button.height
-                                width: sidebar_general_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_general_button.right
+                            anchors.left: sidebar_general_button.left
+                            anchors.top: sidebar_general_button.top
+                            anchors.bottom: sidebar_general_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_music_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_music_button.y
-                                x: sidebar_music_button.x
-                                height: sidebar_music_button.height
-                                width: sidebar_music_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_music_button.right
+                            anchors.left: sidebar_music_button.left
+                            anchors.top: sidebar_music_button.top
+                            anchors.bottom: sidebar_music_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_movies_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_movies_button.y
-                                x: sidebar_movies_button.x
-                                height: sidebar_movies_button.height
-                                width: sidebar_movies_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_movies_button.right
+                            anchors.left: sidebar_movies_button.left
+                            anchors.top: sidebar_movies_button.top
+                            anchors.bottom: sidebar_movies_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_tv_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_tv_button.y
-                                x: sidebar_tv_button.x
-                                height: sidebar_tv_button.height
-                                width: sidebar_tv_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_tv_button.right
+                            anchors.left: sidebar_tv_button.left
+                            anchors.top: sidebar_tv_button.top
+                            anchors.bottom: sidebar_tv_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_podcasts_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_podcasts_button.y
-                                x: sidebar_podcasts_button.x
-                                height: sidebar_podcasts_button.height
-                                width: sidebar_podcasts_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_podcasts_button.right
+                            anchors.left: sidebar_podcasts_button.left
+                            anchors.top: sidebar_podcasts_button.top
+                            anchors.bottom: sidebar_podcasts_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_audiobooks_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_audiobooks_button.y
-                                x: sidebar_audiobooks_button.x
-                                height: sidebar_audiobooks_button.height
-                                width: sidebar_audiobooks_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_audiobooks_button.right
+                            anchors.left: sidebar_audiobooks_button.left
+                            anchors.top: sidebar_audiobooks_button.top
+                            anchors.bottom: sidebar_audiobooks_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_books_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_books_button.y
-                                x: sidebar_books_button.x
-                                height: sidebar_books_button.height
-                                width: sidebar_books_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_books_button.right
+                            anchors.left: sidebar_books_button.left
+                            anchors.top: sidebar_books_button.top
+                            anchors.bottom: sidebar_books_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_photos_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_photos_button.y
-                                x: sidebar_photos_button.x
-                                height: sidebar_photos_button.height
-                                width: sidebar_photos_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_photos_button.right
+                            anchors.left: sidebar_photos_button.left
+                            anchors.top: sidebar_photos_button.top
+                            anchors.bottom: sidebar_photos_button.bottom
                         }
                     },
                     State {
                         name: "sidebar_files_button"
-                        PropertyChanges {
-                            clicked_rect {
-                                y: sidebar_files_button.y
-                                x: sidebar_files_button.x
-                                height: sidebar_files_button.height
-                                width: sidebar_files_button.width
-                            }
+                        AnchorChanges {
+                            target : clicked_rect
+                            anchors.right: sidebar_files_button.right
+                            anchors.left: sidebar_files_button.left
+                            anchors.top: sidebar_files_button.top
+                            anchors.bottom: sidebar_files_button.bottom
                         }
                     } ]
                 transitions: [ Transition {
                         to: "sidebar_general_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_music_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_movies_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_tv_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_podcasts_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_audiobooks_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_books_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_photos_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     },
                     Transition {
                         to: "sidebar_files_button"
-                        NumberAnimation { properties: "y, x, height, width"; duration: 200; easing.type: Easing.OutCubic }
+                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
                     }
                 ]
             }

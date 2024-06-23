@@ -226,6 +226,19 @@ QString iDevice::storage_left() {
     return QString::number(_storage_left);
 }
 
+QString iDevice::device_image()
+{
+    if (QFile::exists(":/images/Devices/"+this->product_type()+".png")) {
+        return QString("/images/Devices/"+this->product_type()+".png");
+    } else if (QFile::exists(":/images/Devices/"+this->device_class()+"Generic.png")) {
+        return QString("/images/Devices/"+this->device_class()+"Generic.png");
+    } else if (QFile::exists(":/images/Devices/Generic.png")) {
+        return QString("/images/Devices/Generic.png");
+    }
+    // return QString("/images/iDevice/iDevice_light_90x90.png");
+    return QString("/images/iphone.png");
+}
+
 // Destructor for the iDevice class. Frees up resources upon object destruction.
 iDevice::~iDevice() {
     // Free the lockdownd client, device, and strings allocated for device information if they exist.

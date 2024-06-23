@@ -1,5 +1,8 @@
-import QtQuick 2.0
-import QtQuick.Controls 2.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Effects
+import Qt5Compat.GraphicalEffects
+// import QtQuick.Layoutsw
 
 Item {
     Rectangle {
@@ -10,8 +13,5 @@ Item {
             right: parent.right
         }
         color: "#303030"
-        Label {
-            id: device_name
-        }
     }
 }

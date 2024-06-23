@@ -8,20 +8,14 @@
 #include <QDebug>
 #include <QFile>
 #include <QUrl>
+#include <QVariantList>
+#include <QVariantMap>
 
 class iDeviceWatcher : public QObject
 {
     Q_OBJECT
     // For all devices
-    Q_PROPERTY(QStringList serial_list READ serial_list NOTIFY serialListChanged)
     Q_PROPERTY(QStringList udid_list READ udid_list NOTIFY udidListChanged)
-    Q_PROPERTY(QStringList ecid_list READ ecid_list NOTIFY ecidListChanged)
-    Q_PROPERTY(QStringList imei_list READ imei_list NOTIFY imeiListChanged)
-    Q_PROPERTY(QStringList product_type_list READ product_type_list NOTIFY productTypeListChanged)
-    Q_PROPERTY(QStringList device_name_list READ device_name_list NOTIFY deviceNameListChanged)
-    Q_PROPERTY(QStringList storage_capacity_list READ storage_capacity_list NOTIFY storageCapacityListChanged)
-    Q_PROPERTY(QStringList storage_left_list READ storage_left_list NOTIFY storageLeftListChanged)
-    Q_PROPERTY(QStringList device_image_list READ device_image_list NOTIFY deviceImageListChanged)
     // For the current one
     Q_PROPERTY(QString udid READ udid NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString ecid READ ecid NOTIFY currentDeviceChanged)
@@ -50,17 +44,11 @@ public:
     // Choose the main device in QML
     Q_INVOKABLE void switchCurrentDevice(QString udid = NULL);
 
+    Q_INVOKABLE QVariantList getModel();
+
     // QML values
     void updateLists();
-    QStringList serial_list() { return _serial_list; }
     QStringList udid_list() { return _udid_list; }
-    QStringList ecid_list() { return _ecid_list; }
-    QStringList imei_list() { return _imei_list; }
-    QStringList product_type_list() { return _product_type_list; }
-    QStringList device_name_list() { return _device_name_list; }
-    QStringList storage_capacity_list() { return _storage_capacity_list; }
-    QStringList storage_left_list() { return _storage_capacity_list; }
-    QStringList device_image_list() { return _device_image_list; }
 
     // For the current device
     QString serial() { return CurrentDevice->serial(); }
@@ -71,33 +59,17 @@ public:
     QString device_name() { return CurrentDevice->device_name(); }
     QString storage_capacity() { return CurrentDevice->storage_capacity(); }
     QString storage_left() { return CurrentDevice->storage_left(); }
-    QString device_image();
+    QString device_image() { return CurrentDevice->device_image(); }
     bool device_connected();
-    int battery() { return (CurrentDevice->battery()*22/100); }
+    int battery() { return (CurrentDevice->battery()); }
     QString battery_string() { return QString::number(CurrentDevice->battery()); }
 
 signals:
-    void serialListChanged();
     void udidListChanged();
-    void ecidListChanged();
-    void imeiListChanged();
-    void productTypeListChanged();
-    void deviceNameListChanged();
-    void storageCapacityListChanged();
-    void storageLeftListChanged();
     void currentDeviceChanged();
-    void deviceImageListChanged();
 
 private:
-    QStringList _serial_list;
     QStringList _udid_list;
-    QStringList _ecid_list;
-    QStringList _imei_list;
-    QStringList _product_type_list;
-    QStringList _device_name_list;
-    QStringList _storage_capacity_list;
-    QStringList _storage_left_list;
-    QStringList _device_image_list;
 };
 
 #endif // IDEVICEWATCHER_H
