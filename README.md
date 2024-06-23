@@ -11,7 +11,7 @@ If you want to contribute, you can open an issue, a request, a suggestion, or su
 This project is in its early developments. Everything could change at any time given.
 
 Looks like this for now :
-![image](https://github.com/topiga/LiniTunes/assets/38886040/5d710e3d-779f-4b74-ab2c-46e958158840)
+![Capture d’écran du 2024-06-24 00-19-07](https://github.com/topiga/LiniTunes/assets/38886040/e5963350-7ff9-4cdc-887f-c8fe6789ff98)
 
 This project is under the GPLv3 licence.
 
