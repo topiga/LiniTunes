@@ -998,22 +998,22 @@ Window {
                                     topMargin: 0
                                     bottomMargin: 0
                                 }
+                            }
 
-                                Rectangle {
-                                    id: device_battery_fill
-                                    width: 18
-                                    color: "#6bcc43"
-                                    radius: 3
-                                    anchors {
-                                        left: parent.left
-                                        top: parent.top
-                                        bottom: parent.bottom
-                                        leftMargin: 0
-                                        topMargin: 0
-                                        bottomMargin: 0
-                                    }
-                                    visible: true
+                            Rectangle {
+                                id: device_battery_fill
+                                width: 18
+                                color: "#6bcc43"
+                                radius: 3
+                                anchors {
+                                    left: parent.left
+                                    top: parent.top
+                                    bottom: parent.bottom
+                                    leftMargin: 0
+                                    topMargin: 0
+                                    bottomMargin: 0
                                 }
+                                visible: true
                             }
 
                             Rectangle {
