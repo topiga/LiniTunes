@@ -10,6 +10,43 @@ Window {
     minimumWidth: 960
     minimumHeight: 630
     color: "#181818"
+    property bool devices_normal: true
+    property bool devices_extended: false
+    property bool devices_choice: false
+
+    function swicthDevicesMode(mode) {
+        if (mode === "devices_choice" || mode === "device_choice") {
+            content_develop_arrow.state = "flipped"
+            device_chosen_text.state = "devices_choice"
+            current_device.state = "devices_choice"
+            choose_device.state = "devices_choice"
+            device_stroke.state = "devices_choice"
+            serial_info_rect.state = "device_normal"
+            devices_normal = false
+            devices_extended = false
+            devices_choice = true
+        } else if (mode === "devices_extended" || mode === "device_extended") {
+            content_develop_arrow.state = "normal"
+            device_chosen_text.state = "devices_normal"
+            current_device.state = "devices_normal"
+            choose_device.state = "devices_normal"
+            device_stroke.state = "device_extended"
+            serial_info_rect.state = "device_extended"
+            devices_normal = false
+            devices_extended = true
+            devices_choice = false
+        } else {
+            content_develop_arrow.state = "normal"
+            device_chosen_text.state = "devices_normal"
+            current_device.state = "devices_normal"
+            choose_device.state = "devices_normal"
+            device_stroke.state = "device_normal"
+            serial_info_rect.state = "device_normal"
+            devices_normal = true
+            devices_extended = false
+            devices_choice = false
+        }
+    }
 
     Rectangle {
         id: app
@@ -251,6 +288,33 @@ Window {
             }
 
             Rectangle {
+                id: sidebar_bottom_fade
+                visible: true
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                    rightMargin: 0
+                    leftMargin: 0
+                    bottomMargin: 0
+                }
+                z:1
+                height: 50
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop {
+                        position: 0
+                        color: "#00353535"
+                    }
+
+                    GradientStop {
+                        position: 1
+                        color: "#353535"
+                    }
+                }
+            }
+
+            Rectangle {
                 id: device_stroke
                 radius: 8
                 border.color: "#00ffffff"
@@ -421,18 +485,10 @@ Window {
                         onPressed: content_develop_arrow.opacity=0.7
                         onReleased: {
                             content_develop_arrow.opacity=0.5
-                            if (content_develop_arrow.state == "normal") {
-                                content_develop_arrow.state = "flipped"
-                                device_chosen_text.state = "devices_choice"
-                                current_device.state = "devices_choice"
-                                choose_device.state = "devices_choice"
-                                device_stroke.state = "devices_choice"
+                            if (!devices_choice) {
+                                swicthDevicesMode("devices_choice")
                             } else {
-                                content_develop_arrow.state = "normal"
-                                device_chosen_text.state = "devices_normal"
-                                current_device.state = "devices_normal"
-                                choose_device.state = "devices_normal"
-                                device_stroke.state = "device_normal"
+                                swicthDevicesMode("devices_normal")
                             }
                         }
                     }
@@ -636,6 +692,7 @@ Window {
                                             DeviceWatcher.switchCurrentDevice(modelData.udid)
                                         }
                                     }
+                                    enabled: devices_choice
                                 }
                             }
                         }
@@ -768,15 +825,14 @@ Window {
                                 onReleased: {
                                     parent.opacity=0.5
                                     if (DeviceWatcher.device_connected) {
-                                        if (device_stroke.state == "device_normal") {
-                                            device_stroke.state = "device_extended"
-                                            serial_info_rect.state = "device_extended"
+                                        if (devices_normal) {
+                                            swicthDevicesMode("device_extended")
                                         } else {
-                                            device_stroke.state = "device_normal"
-                                            serial_info_rect.state = "device_normal"
+                                            swicthDevicesMode("device_normal")
                                         }
                                     }
                                 }
+                                enabled: !devices_choice
                             }
                         }
 
@@ -1117,6 +1173,7 @@ Window {
                                         }
                                     }
                                 }
+                                enabled: devices_extended
                             }
                             Text {
                                 id: udid_text
@@ -1169,9 +1226,8 @@ Window {
                             target: DeviceWatcher
                             function onCurrentDeviceChanged() {
                                 if (!DeviceWatcher.device_connected) {
-                                    if (device_stroke.state == "device_extended") {
-                                        device_stroke.state = "device_normal"
-                                        serial_info_rect.state = "device_normal"
+                                    if (devices_extended) {
+                                        swicthDevicesMode("device_normal")
                                     }
                                 }
                             }
