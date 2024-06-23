@@ -7,6 +7,7 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <plist/plist.h>
+#include <QFile>
 
 class iDevice : public QObject
 {
@@ -25,6 +26,7 @@ public:
     QString storage_capacity();
     QString storage_left();
     QString device_class() { return QString(_device_class); }
+    QString device_image();
     bool device_connected = false;
     int battery() { return _battery_capacity; }
 

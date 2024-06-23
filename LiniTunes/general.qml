@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
+// import QtQuick.Layoutsw
 
 Item {
     Rectangle {
@@ -53,6 +54,14 @@ Item {
                             height: 155
                         }
                     }
+                },
+                State {
+                    name: "devices_choice"
+                    PropertyChanges {
+                        device_stroke {
+                            height: devices_repeater.height+device_chosen_text.height+device.anchors.bottomMargin+device.anchors.topMargin+device_chosen_text.anchors.topMargin
+                        }
+                    }
                 } ]
             transitions: [ Transition {
                     to: "device_normal"
@@ -60,6 +69,10 @@ Item {
                 },
                 Transition {
                     to: "device_extended"
+                    NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
+                },
+                Transition {
+                    to: "devices_choice"
                     NumberAnimation { properties: "height"; duration: 200; easing.type: Easing.OutCubic }
                 }
             ]
@@ -173,10 +186,229 @@ Item {
                             content_develop_arrow.state = "flipped"
                             device_chosen_text.state = "devices_choice"
                             current_device.state = "devices_choice"
+                            choose_device.state = "devices_choice"
+                            device_stroke.state = "devices_choice"
                         } else {
                             content_develop_arrow.state = "normal"
                             device_chosen_text.state = "devices_normal"
                             current_device.state = "devices_normal"
+                            choose_device.state = "devices_normal"
+                            device_stroke.state = "device_normal"
+                        }
+                    }
+                }
+                Rectangle {
+                    id: choose_device
+                    color: "transparent"
+                    anchors {
+                        left: parent.left
+                        top: device_chosen_text.bottom
+                        right: parent.right
+                        bottom: parent.bottom
+                    }
+                    opacity: 0.0
+                    states: [ State {
+                            name: "devices_normal"
+                            PropertyChanges {
+                                choose_device {
+                                    opacity: 0.0
+                                }
+                            }
+                        },
+                        State {
+                            name: "devices_choice"
+                            PropertyChanges {
+                                choose_device {
+                                    opacity: 1.0
+                                }
+                            }
+                        } ]
+                    transitions: [ Transition {
+                            to: "devices_normal"
+                            NumberAnimation { properties: "opacity"; duration: 150; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "devices_choice"
+                            NumberAnimation { properties: "opacity"; duration: 150; easing.type: Easing.OutCubic }
+                        }
+                    ]
+                    state: "devices_normal"
+                    Repeater {
+                        id: devices_repeater //udidListChanged
+                        model: []
+                        delegate: Rectangle {
+                            width: parent.width
+                            color: "transparent"
+                            height: 48
+                            radius: 8
+                            Component.onCompleted: {
+                                if (index === devices_repeater.count-1) {
+                                    devices_repeater.height = devices_repeater.count*(height + 10)+8
+                                }
+                                if (DeviceWatcher.udid === modelData.udid) {
+                                    color = "#3284ff"
+                                }
+                            }
+                            anchors {
+                                left: parent.left
+                                leftMargin: 10
+                                right: parent.right
+                                rightMargin: 10
+                                top: index === devices_repeater.count-1 ? devices_repeater.top : devices_repeater.itemAt(index+1).bottom // I have absolutely no idea why this works, but it works. I think a repeater counts backwards.
+                                topMargin: index === devices_repeater.count-1 ? 8 : 10
+                            }
+
+                            Image {
+                                id: deviceImage
+                                anchors {
+                                    left: parent.left
+                                    top: parent.top
+                                    bottom: parent.bottom
+                                    topMargin: 4
+                                    bottomMargin: 4
+                                }
+                                width: 45
+                                source: encodeURIComponent(modelData.image)
+                                sourceSize.height: deviceImage.height
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true
+                            }
+
+                            Text {
+                                id: deviceNameText
+                                color: "#ffffff"
+                                text: modelData.device_name
+                                anchors {
+                                    left: deviceImage.right
+                                    top: deviceImage.top
+                                    topMargin: 0
+                                    leftMargin: 0
+                                    right: deviceBattery.left
+                                    rightMargin: 4
+                                }
+                                font {
+                                    weight: Font.DemiBold
+                                    pointSize: 12
+                                    family: "Arial"
+                                }
+                                maximumLineCount: 1
+                                wrapMode: Text.Wrap
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                id: deviceProductTypeText
+                                opacity: 1
+                                color: "#d9d9d9"
+                                text: modelData.product_type
+                                anchors {
+                                    left: deviceImage.right
+                                    top: deviceNameText.bottom
+                                    leftMargin: 0
+                                    topMargin: 1
+                                }
+                                font {
+                                    family: "Arial"
+                                    weight: Font.Medium
+                                    pointSize: 9
+                                }
+                                wrapMode: Text.WordWrap
+                            }
+                            Rectangle {
+                                id: deviceBattery
+                                width: 24
+                                height: 11
+                                anchors {
+                                    verticalCenter: deviceImage.verticalCenter
+                                    right: parent.right
+                                    rightMargin: 8
+                                }
+                                color: "transparent"
+                                visible: true
+
+                                Rectangle {
+                                    id: deviceBatteryRect1
+                                    width: 22
+                                    opacity: 0.5
+                                    color: "#ffffff"
+                                    radius: 3
+                                    border.color: "#ffffff"
+                                    anchors {
+                                        left: parent.left
+                                        top: parent.top
+                                        bottom: parent.bottom
+                                        leftMargin: 0
+                                        topMargin: 0
+                                        bottomMargin: 0
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: deviceBatteryRect2
+                                    width: 1
+                                    height: 5
+                                    opacity: modelData.battery_string === "100" ? 1 : 0.5;
+                                    color: modelData.battery_string === "100" ? "#6bcc43" : "#ffffff";
+                                    anchors {
+                                        right: parent.right
+                                        rightMargin: 0
+                                        verticalCenter: parent.verticalCenter
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: deviceBatteryFill
+                                    color: "#6bcc43"
+                                    radius: 3
+                                    anchors {
+                                        left: parent.left
+                                        top: parent.top
+                                        bottom: parent.bottom
+                                        leftMargin: 0
+                                        topMargin: 0
+                                        bottomMargin: 0
+                                    }
+                                    width: (modelData.battery)*22/100
+                                    visible: true
+                                }
+
+                                Text {
+                                    id: deviceBatteryText
+                                    width: 20
+                                    height: 11
+                                    color: "#3b3b3b"
+                                    text: modelData.battery_string
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.family: "Arial"
+                                    font.weight: Font.Bold
+                                    font.pointSize: 9
+                                    anchors.fill: deviceBatteryRect1
+                                }
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                onPressed: parent.color = "#803284ff"
+                                onReleased: {
+                                    for (let i = 0; i < devices_repeater.count; i++) {
+                                        devices_repeater.itemAt(i).color = "transparent"
+                                    }
+                                    parent.color = "#3284ff"
+                                    if (DeviceWatcher.udid !== modelData.udid) {
+                                        DeviceWatcher.switchCurrentDevice(modelData.udid)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Connections {
+                        target: DeviceWatcher
+                        function onUdidListChanged() {
+                            if (DeviceWatcher.device_connected) {
+                                devices_repeater.model = []
+                                devices_repeater.model = DeviceWatcher.getModel()
+                            } else {
+                                devices_repeater.model = []
+                            }
                         }
                     }
                 }
@@ -242,9 +474,11 @@ Item {
                             topMargin: 0
                             leftMargin: 8
                         }
-                        font.weight: Font.DemiBold
-                        font.pointSize: 12
-                        font.family: "Arial"
+                        font {
+                            weight: Font.DemiBold
+                            pointSize: 12
+                            family: "Arial"
+                        }
                         maximumLineCount: 2
                         wrapMode: Text.Wrap
                         elide: Text.ElideRight
@@ -270,10 +504,12 @@ Item {
                         color: "#00000000"
                         border.color: "white"
                         border.width: 1
-                        anchors.right: parent.right
-                        anchors.bottom: current_device_image.bottom
-                        anchors.rightMargin: 10
-                        anchors.bottomMargin: 2
+                        anchors {
+                            right: parent.right
+                            bottom: current_device_image.bottom
+                            rightMargin: 10
+                            bottomMargin: 2
+                        }
                         radius: width*0.5
                         Text {
                             id: content_info_circle_text
@@ -318,9 +554,11 @@ Item {
                             right: parent.right
                             rightMargin: 40
                         }
-                        font.family: "Arial"
-                        font.weight: Font.Medium
-                        font.pointSize: 9
+                        font {
+                            family: "Arial"
+                            weight: Font.Medium
+                            pointSize: 9
+                        }
                         wrapMode: Text.WordWrap
                         Connections {
                             target: DeviceWatcher
@@ -392,9 +630,11 @@ Item {
                             left: content_storage_capacity.right
                             leftMargin: 4
                         }
-                        font.weight: Font.Medium
-                        font.pointSize: 9
-                        font.family: "Arial"
+                        font {
+                            weight: Font.Medium
+                            pointSize: 9
+                            family: "Arial"
+                        }
                         visible: false
                         // TotalDataAvailable doesn't give the real storage left. To investigate.
                        Connections {
@@ -463,6 +703,22 @@ Item {
                                 topMargin: 0
                                 bottomMargin: 0
                             }
+
+                            Rectangle {
+                                id: device_battery_fill
+                                width: 18
+                                color: "#6bcc43"
+                                radius: 3
+                                anchors {
+                                    left: parent.left
+                                    top: parent.top
+                                    bottom: parent.bottom
+                                    leftMargin: 0
+                                    topMargin: 0
+                                    bottomMargin: 0
+                                }
+                                visible: true
+                            }
                         }
 
                         Rectangle {
@@ -476,22 +732,6 @@ Item {
                                 rightMargin: 0
                                 verticalCenter: parent.verticalCenter
                             }
-                        }
-
-                        Rectangle {
-                            id: device_battery_fill
-                            width: 18
-                            color: "#6bcc43"
-                            radius: 3
-                            anchors {
-                                left: parent.left
-                                top: parent.top
-                                bottom: parent.bottom
-                                leftMargin: 0
-                                topMargin: 0
-                                bottomMargin: 0
-                            }
-                            visible: true
                         }
 
                         Text {
@@ -512,7 +752,7 @@ Item {
                             function onCurrentDeviceChanged() {
                                 if (DeviceWatcher.device_connected) {
                                     device_battery_text.text = DeviceWatcher.battery_string
-                                    device_battery_fill.width = DeviceWatcher.battery
+                                    device_battery_fill.width = (DeviceWatcher.battery)*22/100
                                     if (DeviceWatcher.battery_string === "100") {
                                         device_battery_rect2.color = "#6bcc43"
                                         device_battery_rect2.opacity = 1
