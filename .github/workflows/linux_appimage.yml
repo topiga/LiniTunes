@@ -34,7 +34,7 @@ jobs:
           host:         linux
           target:       desktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qt5compat qtshadertools
+          modules:      qtcharts qt5compat qtshadertools qtwaylandcompositor
           setup-python: true
 
       - name: Install libimobiledevice
@@ -89,7 +89,7 @@ jobs:
           cd ..
 
       - name: Install AppImage dependencies
-        run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0 libwayland-dev qt6-wayland
+        run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0 libwayland-dev
 
       - name: Create build directory
         run:  mkdir ${{ env.SOURCE_DIR }}/build
@@ -113,7 +113,7 @@ jobs:
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }} 
 
       - name: Linux artifact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.3.3
         with:
           name: ${{ env.ARTIFACT }}
           path: ${{ env.SOURCE_DIR }}/build/${{ env.ARTIFACT }}
