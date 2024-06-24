@@ -34,7 +34,7 @@ jobs:
           host:         linux
           target:       desktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qt5compat qtshadertools
+          modules:      qtcharts qt5compat qtshadertools qtwayland
           setup-python: true
 
       - name: Install libimobiledevice
@@ -48,7 +48,7 @@ jobs:
             libtool-bin \
             libssl-dev \
             libusb-1.0-0-dev \
-            udev
+            udev 
           
           sudo apt-get install \
           	doxygen
