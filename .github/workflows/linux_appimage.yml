@@ -23,18 +23,18 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3.2.1
+        uses: jurplel/install-qt-action@v4.0.0
         with:
           version:      ${{ env.QT_VERSION }}
           host:         linux
           target:       desktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qt5compat qtshadertools
+          modules:      qtcharts qt5compat qtshadertools qtwaylandcompositor
           setup-python: true
 
       - name: Install libimobiledevice
@@ -48,7 +48,7 @@ jobs:
             libtool-bin \
             libssl-dev \
             libusb-1.0-0-dev \
-            udev
+            udev 
           
           sudo apt-get install \
           	doxygen
@@ -89,7 +89,7 @@ jobs:
           cd ..
 
       - name: Install AppImage dependencies
-        run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0
+        run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0 libwayland-dev
 
       - name: Create build directory
         run:  mkdir ${{ env.SOURCE_DIR }}/build
@@ -106,6 +106,9 @@ jobs:
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
+          export DEPLOY_PLATFORM_THEMES=1
+          export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
+          export EXTRA_QT_PLUGINS="wayland-decoration-client;wayland-graphics-integration-client;wayland-shell-integration;platformthemes;platforms"
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$${{ runner.temp }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
           export QMAKE=${{ runner.temp }}/Qt/6.5.1/gcc_64/bin/qmake
           export QML_SOURCES_PATHS=${{ env.SOURCE_DIR }}/LiniTunes/
@@ -113,7 +116,7 @@ jobs:
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }} 
 
       - name: Linux artifact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.3.3
         with:
           name: ${{ env.ARTIFACT }}
           path: ${{ env.SOURCE_DIR }}/build/${{ env.ARTIFACT }}
