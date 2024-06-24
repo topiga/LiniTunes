@@ -27,7 +27,7 @@ add_executable(LiniTunes
     ressource.qrc
 )
 
-target_link_libraries(LiniTunes PRIVATE Qt6::Core Qt6::Quick)
+target_link_libraries(LiniTunes PRIVATE Qt6::Core Qt6::Quick Qt6::QWaylandIntegrationPlugin)
 
 target_include_directories(LiniTunes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
