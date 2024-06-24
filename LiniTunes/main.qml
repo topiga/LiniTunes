@@ -14,6 +14,16 @@ Window {
     property bool devices_extended: false
     property bool devices_choice: false
 
+    FontLoader {
+        id: interFont
+        source: "qrc:/ressources/fonts/inter_variable_font.ttf"
+    }
+
+    FontLoader {
+        id: cabinFont
+        source: "qrc:/ressources/fonts/inter_variable_font.ttf"
+    }
+
     function swicthDevicesMode(mode) {
         if (mode === "devices_choice" || mode === "device_choice") {
             content_develop_arrow.state = "flipped"
@@ -346,7 +356,7 @@ Window {
                         name: "device_normal"
                         PropertyChanges {
                             device_stroke {
-                                height: 85
+                                height: 88
                             }
                         }
                     },
@@ -584,7 +594,7 @@ Window {
                                     font {
                                         weight: Font.DemiBold
                                         pointSize: 12
-                                        family: "Arial"
+                                        family: interFont.name
                                     }
                                     maximumLineCount: 1
                                     wrapMode: Text.Wrap
@@ -602,7 +612,7 @@ Window {
                                         topMargin: 1
                                     }
                                     font {
-                                        family: "Arial"
+                                        family: interFont.name
                                         weight: Font.Medium
                                         pointSize: 9
                                     }
@@ -674,7 +684,7 @@ Window {
                                         text: modelData.battery_string
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
-                                        font.family: "Arial"
+                                        font.family: cabinFont.name
                                         font.weight: Font.Bold
                                         font.pointSize: 9
                                         anchors.fill: deviceBatteryRect1
@@ -746,13 +756,13 @@ Window {
                         state: "devices_normal"
                         Image {
                             id: current_device_image
-                            width: 40
-                            height: 50
+                            width: 48
+                            height: 53
                             anchors {
                                 left: parent.left
                                 top: parent.top
                                 topMargin: 4
-                                leftMargin: 8
+                                leftMargin: 2
                             }
                             source: "/images/iphone.png"
                             sourceSize.height: current_device_image.height
@@ -768,12 +778,12 @@ Window {
                                 left: current_device_image.right
                                 top: current_device_image.top
                                 topMargin: 0
-                                leftMargin: 8
+                                leftMargin: 2
                             }
                             font {
                                 weight: Font.DemiBold
                                 pointSize: 12
-                                family: "Arial"
+                                family: interFont.name
                             }
                             maximumLineCount: 2
                             wrapMode: Text.Wrap
@@ -815,7 +825,7 @@ Window {
                                 verticalAlignment: Text.AlignVCenter
                                 color: "white"
                                 anchors.fill: parent
-                                font.family: "Arial"
+                                font.family: interFont.name
                                 font.pointSize: 9
                                 font.bold: true
                             }
@@ -844,13 +854,13 @@ Window {
                             anchors {
                                 left: current_device_image.right
                                 top: device_name_text.bottom
-                                leftMargin: 8
-                                topMargin: 1
+                                leftMargin: 2
+                                topMargin: 0
                                 right: parent.right
                                 rightMargin: 40
                             }
                             font {
-                                family: "Arial"
+                                family: interFont.name
                                 weight: Font.Medium
                                 pointSize: 9
                             }
@@ -880,7 +890,7 @@ Window {
                                 left: current_device_image.right
                                 top: content_iphone_model.bottom
                                 topMargin: 2
-                                leftMargin: 8
+                                leftMargin: 2
                             }
                             visible: false
 
@@ -897,7 +907,7 @@ Window {
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                                 font.pointSize: 8
-                                font.family: "Arial"
+                                font.family: interFont.name
                                 wrapMode: Text.WordWrap
                                 Connections {
                                     target: DeviceWatcher
@@ -928,7 +938,7 @@ Window {
                             font {
                                 weight: Font.Medium
                                 pointSize: 9
-                                family: "Arial"
+                                family: interFont.name
                             }
                             visible: false
                             // TotalDataAvailable doesn't give the real storage left. To investigate.
@@ -1037,7 +1047,7 @@ Window {
                                 text: qsTr("82")
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
-                                font.family: "Arial"
+                                font.family: cabinFont.name
                                 font.weight: Font.Bold
                                 font.pointSize: 9
                                 anchors.fill: device_battery_rect1
@@ -1252,7 +1262,7 @@ Window {
                 }
                 horizontalAlignment: Text.AlignLeft
                 verticalAlignment: Text.AlignTop
-                font.family: "Arial"
+                font.family: interFont.name
                 font.pointSize: 18
                 font.styleName: "Bold"
             }
@@ -1474,7 +1484,7 @@ Window {
                         leftMargin: 8
                     }
                     font.weight: Font.DemiBold
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                 }
                 MouseArea {
@@ -1558,7 +1568,7 @@ Window {
                         left: sidebar_music_button_image.right
                         leftMargin: 8
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
@@ -1642,7 +1652,7 @@ Window {
                         left: sidebar_movies_button_image.right
                         leftMargin: 8
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
@@ -1729,7 +1739,7 @@ Window {
                         leftMargin: 8
                         rightMargin: 10
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
@@ -1816,7 +1826,7 @@ Window {
                         leftMargin: 8
                     }
                     font.pointSize: 10
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.weight: Font.DemiBold
                 }
                 MouseArea {
@@ -1900,7 +1910,7 @@ Window {
                         left: sidebar_audiobooks_button_image.right
                         leftMargin: 8
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
@@ -1986,7 +1996,7 @@ Window {
                         left: sidebar_books_button_image.right
                         leftMargin: 8
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
@@ -2073,7 +2083,7 @@ Window {
                         left: sidebar_photos_button_image.right
                         leftMargin: 8
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
@@ -2157,7 +2167,7 @@ Window {
                         left: sidebar_files_button_image.right
                         leftMargin: 8
                     }
-                    font.family: "Arial"
+                    font.family: interFont.name
                     font.pointSize: 10
                     font.weight: Font.DemiBold
                 }
