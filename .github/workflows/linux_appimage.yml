@@ -106,6 +106,7 @@ jobs:
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
+          export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so libqwayland-generic.so"
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$${{ runner.temp }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
           export QMAKE=${{ runner.temp }}/Qt/6.5.1/gcc_64/bin/qmake
           export QML_SOURCES_PATHS=${{ env.SOURCE_DIR }}/LiniTunes/
