@@ -446,7 +446,8 @@ Window {
                                         text: qsTr("Connected Devices")
                                     }
                                 }
-                            } ]
+                            }
+                        ]
                         state: "devices_normal"
                     }
 
@@ -495,10 +496,12 @@ Window {
                         onPressed: content_develop_arrow.opacity=0.7
                         onReleased: {
                             content_develop_arrow.opacity=0.5
-                            if (!devices_choice) {
-                                swicthDevicesMode("devices_choice")
-                            } else {
-                                swicthDevicesMode("devices_normal")
+                            if (DeviceWatcher.device_connected) {
+                                if (!devices_choice) {
+                                    swicthDevicesMode("devices_choice")
+                                } else {
+                                    swicthDevicesMode("devices_normal")
+                                }
                             }
                         }
                     }
@@ -539,12 +542,12 @@ Window {
                         ]
                         state: "devices_normal"
                         Repeater {
-                            id: devices_repeater //udidListChanged
+                            id: devices_repeater // udidListChanged
                             model: []
                             delegate: Rectangle {
                                 width: parent.width
                                 color: "transparent"
-                                height: 48
+                                height: 50
                                 radius: 8
                                 Component.onCompleted: {
                                     if (index === devices_repeater.count-1) {
@@ -586,7 +589,7 @@ Window {
                                     anchors {
                                         left: deviceImage.right
                                         top: deviceImage.top
-                                        topMargin: 0
+                                        topMargin: 2
                                         leftMargin: 0
                                         right: deviceBattery.left
                                         rightMargin: 4
@@ -2194,8 +2197,6 @@ Window {
 
             Rectangle {
                 id: app_settings_button
-                x: 240
-                y: 13
                 width: 27
                 height: 27
                 anchors {
@@ -2208,7 +2209,6 @@ Window {
 
                 Image {
                     id: app_settings_button_image
-                    x: 7
                     width: 21
                     height: 21
                     anchors.verticalCenter: parent.verticalCenter
@@ -2217,6 +2217,15 @@ Window {
                     fillMode: Image.PreserveAspectFit
                     sourceSize.height: app_settings_button_image.height
                     sourceSize.width: app_settings_button_image.width
+                }
+                MouseArea {
+                    id: m_app_settings_button
+                    anchors.fill: parent
+                    onPressed: parent.opacity=0.7
+                    onReleased: {
+                        parent.opacity=1.0
+                        console.log("App settings not implemented yet")
+                    }
                 }
             }
         }
