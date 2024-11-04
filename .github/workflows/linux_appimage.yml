@@ -73,6 +73,13 @@ jobs:
           make
           sudo make install
           cd ..
+
+          git clone https://github.com/libimobiledevice/libtatsu.git
+          cd libtatsu
+          ./autogen.sh
+          make
+          sudo make install
+          cd ..
           
           git clone https://github.com/libimobiledevice/libimobiledevice.git
           cd libimobiledevice
