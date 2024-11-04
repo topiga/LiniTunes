@@ -57,6 +57,7 @@ void iDevice::_get_basic_info() {
         if (lockdownd_get_value(_client, NULL, "ProductType", &tmp_product_type) == LOCKDOWN_E_SUCCESS) {
             plist_get_string_val(tmp_product_type, &this->_product_type);
             qDebug("ProductType: %s", this->_product_type);
+            QThread::msleep(100);
         } else {
             qDebug("Failed to get device product type");
         }
@@ -228,12 +229,12 @@ QString iDevice::storage_left() {
 
 QString iDevice::device_image()
 {
-    if (QFile::exists(":/images/Devices/"+this->product_type()+".png")) {
-        return QString("/images/Devices/"+this->product_type()+".png");
-    } else if (QFile::exists(":/images/Devices/"+this->device_class()+"Generic.png")) {
-        return QString("/images/Devices/"+this->device_class()+"Generic.png");
-    } else if (QFile::exists(":/images/Devices/Generic.png")) {
-        return QString("/images/Devices/Generic.png");
+    if (QFile::exists(":/images/devices/"+this->product_type()+".png")) {
+        return QString("/images/devices/"+this->product_type()+".png");
+    } else if (QFile::exists(":/images/devices/"+this->device_class()+"Generic.png")) {
+        return QString("/images/devices/"+this->device_class()+"Generic.png");
+    } else if (QFile::exists(":/images/devices/Generic.png")) {
+        return QString("/images/devices/Generic.png");
     }
     // return QString("/images/iDevice/iDevice_light_90x90.png");
     return QString("/images/iphone.png");

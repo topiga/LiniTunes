@@ -8,6 +8,7 @@
 #include <libimobiledevice/lockdown.h>
 #include <plist/plist.h>
 #include <QFile>
+#include <QThread>
 
 class iDevice : public QObject
 {

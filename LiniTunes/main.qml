@@ -461,7 +461,7 @@ Window {
                             right: parent.right
                             rightMargin: 8
                         }
-                        source: "../images/develop_arrow.png"
+                        source: "../images/glyphs/develop_arrow.png"
                         fillMode: Image.PreserveAspectFit
                         states: [ State {
                                 name: "normal"
@@ -798,8 +798,12 @@ Window {
                                         if (device_name_text.text != DeviceWatcher.device_name) {
                                             device_name_text.text = DeviceWatcher.device_name
                                         }
+                                        if (current_device_image.source != DeviceWatcher.device_image) {
+                                            current_device_image.source = DeviceWatcher.device_image
+                                        }
                                     } else {
                                         device_name_text.text = "No device connected"
+                                        current_device_image.source = "/images/iphone.png"
                                     }
                                 }
                             }
@@ -1473,7 +1477,7 @@ Window {
                         bottomMargin: 8
                         topMargin: 8
                     }
-                    source: "../images/settings.png"
+                    source: "../images/glyphs/settings.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -1558,7 +1562,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/music.png"
+                    source: "../images/glyphs/music.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -1642,7 +1646,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/movies.png"
+                    source: "../images/glyphs/movies.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -1728,7 +1732,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/tv.png"
+                    source: "../images/glyphs/tv.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -1815,7 +1819,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/podcast.png"
+                    source: "../images/glyphs/podcast.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -1900,7 +1904,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/audiobook.png"
+                    source: "../images/glyphs/audiobook.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -1986,7 +1990,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/book.png"
+                    source: "../images/glyphs/book.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -2073,7 +2077,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/photo.png"
+                    source: "../images/glyphs/photo.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -2157,7 +2161,7 @@ Window {
                         leftMargin: 8
                         bottomMargin: 8
                     }
-                    source: "../images/folder.png"
+                    source: "../images/glyphs/folder.png"
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -2213,7 +2217,7 @@ Window {
                     height: 21
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.horizontalCenter: parent.horizontalCenter
-                    source: "../images/settings.png"
+                    source: "../images/glyphs/settings.png"
                     fillMode: Image.PreserveAspectFit
                     sourceSize.height: app_settings_button_image.height
                     sourceSize.width: app_settings_button_image.width
