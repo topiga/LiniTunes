@@ -48,7 +48,8 @@ jobs:
             libtool-bin \
             libssl-dev \
             libusb-1.0-0-dev \
-            udev
+            udev \
+            libcurl4-openssl-dev
           
           sudo apt-get install \
           	doxygen
