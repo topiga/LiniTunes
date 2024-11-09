@@ -1,7 +1,4 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Effects
-import Qt5Compat.GraphicalEffects
 // import QtQuick.Layoutsw
 
 Item {
@@ -12,6 +9,6 @@ Item {
             bottom: parent.bottom
             right: parent.right
         }
-        color: "#303030"
+        color: root.colors.contentBackground
     }
 }

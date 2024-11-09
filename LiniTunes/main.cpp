@@ -3,10 +3,16 @@
 #include <QIcon>
 #include <QQmlContext>
 
+// Translation purposes (TODO)
 #include <QLocale>
 #include <QTranslator>
+
+// Device purposes
 #include <idevice.h>
 #include <idevicewatcher.h>
+
+// Theme
+#include <thememanager.h>
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +32,9 @@ int main(int argc, char *argv[])
 
     iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
     engine.rootContext()->setContextProperty("DeviceWatcher", DeviceWatcher);
-//    engine.rootContext()->setContextProperty("Devices", DeviceWatcher->Devices);
+
+    ThemeManager *themeManager = new ThemeManager();
+    engine.rootContext()->setContextProperty("ThemeManager", themeManager);
 
     const QUrl url(u"qrc:/main.qml"_qs);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

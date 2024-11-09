@@ -1,7 +1,6 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 
 Window {
     id: root
@@ -9,11 +8,43 @@ Window {
     title: qsTr("LiniTunes")
     minimumWidth: 960
     minimumHeight: 630
-    color: "#181818"
+    color: colors.background
     property bool devices_normal: true
     property bool devices_extended: false
     property bool devices_choice: false
 
+    // Theme-related properties
+    property bool isDarkTheme: ThemeManager.isDarkMode
+
+    // Color scheme
+    property QtObject colors: QtObject {
+        property color background: root.isDarkTheme ?                       "#181818" : "#ffffff"
+        property color contentBackground: root.isDarkTheme ?                "#303030" : "#ffffff"
+        property color sidebarBackground: root.isDarkTheme ?                "#353535" : "#f6f5f4"
+        property color sidebarBackgroundTransparent: root.isDarkTheme ?     "#00353535" : "#00f6f5f4"
+        property color sidebarCardStroke: root.isDarkTheme ?                "#424242" : "#deddda"
+
+        property color textPrimary: root.isDarkTheme ?                      "#ffffff" : "#241f31"
+        property color textSecondary: root.isDarkTheme ?                    "#d9d9d9" : "#3d3846"
+        property color accent:                                              "#3284ff"
+
+        property color buttonHover: root.isDarkTheme ?                      "#424242" : "#e0e0e0"
+        property color divider: root.isDarkTheme ?                          "#424242" : "#e0e0e0"
+
+        property color cardBackgroundTop: root.isDarkTheme ?                "#3a3a3a" : "#ffffff"
+        property color cardBackgroundBottom: root.isDarkTheme ?             "#3e3e3e" : "#f6f5f4"
+        property color cardStroke: root.isDarkTheme ?                       "#424242" : "#f6f5f4"
+
+        property color settingsButtonBg: root.isDarkTheme ?                 "#252525" : "#f0f0f0"
+
+        property color sideTextInactive: root.isDarkTheme ?                 "#9A9A9A" : "#9a9996"  // 55% white or 55% black
+        property color sideTextActive:                                      "#FFFFFF"
+
+        property color batteryText: root.isDarkTheme ?                      "#3b3b3b" : "#F9F9F9"
+
+    }
+
+    // Universal font for all platforms? Doesn't work. WIP
     FontLoader {
         id: interFont
         source: "qrc:/ressources/fonts/inter_variable_font.ttf"
@@ -60,7 +91,7 @@ Window {
 
     Rectangle {
         id: app
-        color: "#181818"
+        color: root.colors.background
         border.width: 0
         anchors.fill: parent
 
@@ -81,7 +112,7 @@ Window {
             source: "/general.qml"
 
             // Allow loaded pages to access the main.qml properties
-            property alias rootWindow: root
+            property alias root: root
         }
 
         Rectangle {
@@ -100,12 +131,12 @@ Window {
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: "#424242"
+                    color: root.colors.cardStroke
                 }
 
                 GradientStop {
                     position: 1
-                    color: "#00000000"
+                    color: "#02000000"
                 }
                 orientation: Gradient.Vertical
             }
@@ -113,7 +144,6 @@ Window {
             anchors.rightMargin: 11
             Rectangle {
                 id: storage_info
-                x: 0
                 radius: 8
                 border.width: 0
                 anchors {
@@ -130,12 +160,12 @@ Window {
                     orientation: Gradient.Vertical
                     GradientStop {
                         position: 0
-                        color: "#383838"
+                        color: root.colors.cardBackgroundTop
                     }
 
                     GradientStop {
                         position: 1
-                        color: "#343434"
+                        color: root.colors.cardBackgroundBottom
                     }
                 }
                 layer.enabled: true
@@ -155,7 +185,6 @@ Window {
                 Rectangle {
                     id: rectangle
                     radius: 5
-                    border.color: "#1f1f1f"
                     border.width: 0
                     anchors {
                         left: parent.left
@@ -172,22 +201,19 @@ Window {
                         orientation: Gradient.Vertical
                         GradientStop {
                             position: 0
-                            color: "#424242"
+                            color: root.colors.cardStroke
                         }
 
                         GradientStop {
                             position: 1
-                            color: "#00000000"
+                            color: "#02000000"
                         }
                     }
 
                     Rectangle {
                         id: rectangle3
-                        x: -1
-                        y: -1
-                        color: "#3b3b3b"
+                        color: root.colors.batteryText
                         radius: 5
-                        border.color: "#1f1f1f"
                         border.width: 0
                         anchors {
                             left: parent.left
@@ -205,11 +231,8 @@ Window {
 
                 Rectangle {
                     id: strorage_sync_button_stroke
-                    x: 393
-                    y: 20
                     width: 100
                     radius: 5
-                    border.color: "#1f1f1f"
                     border.width: 0
                     anchors {
                         right: parent.right
@@ -222,12 +245,12 @@ Window {
                     gradient: Gradient {
                         GradientStop {
                             position: 0
-                            color: "#424242"
+                            color: root.colors.cardStroke
                         }
 
                         GradientStop {
                             position: 1
-                            color: "#00000000"
+                            color: "#02000000"
                         }
                         orientation: Gradient.Vertical
                     }
@@ -235,9 +258,8 @@ Window {
                     Rectangle {
                         id: strorage_sync_button
                         y: 0
-                        color: "#3b3b3b"
+                        color: root.colors.batteryText
                         radius: 5
-                        border.color: "#1f1f1f"
                         border.width: 0
                         anchors {
                             left: parent.left
@@ -272,7 +294,7 @@ Window {
                 orientation: Gradient.Vertical
                 GradientStop {
                     position: 0
-                    color: "#00000000"
+                    color: "#02000000"
                 }
 
                 GradientStop {
@@ -285,7 +307,7 @@ Window {
         Rectangle {
             id: sidebar_rectangle
             width: 280
-            color: "#353535"
+            color: colors.sidebarBackground
             radius: 0
             border.width: 0
             anchors {
@@ -314,12 +336,12 @@ Window {
                     orientation: Gradient.Vertical
                     GradientStop {
                         position: 0
-                        color: "#00353535"
+                        color: root.colors.sidebarBackgroundTransparent
                     }
 
                     GradientStop {
                         position: 1
-                        color: "#353535"
+                        color: root.colors.sidebarBackground
                     }
                 }
             }
@@ -344,7 +366,7 @@ Window {
                     orientation: Gradient.Vertical
                     GradientStop {
                         position: 0
-                        color: "#424242"
+                        color: root.colors.cardStroke
                     }
 
                     GradientStop {
@@ -372,7 +394,7 @@ Window {
                         name: "devices_choice"
                         PropertyChanges {
                             device_stroke {
-                                height: devices_repeater.height+device_chosen_text.height+device.anchors.bottomMargin+device.anchors.topMargin+device_chosen_text.anchors.topMargin
+                                height: devices_repeater.height+device_chosen_text.height+device.anchors.bottomMargin+device.anchors.topMargin+device_chosen_text.anchors.topMargin // This works. Why ? Idk, I played with it and eventually it worked lol
                             }
                         }
                     } ]
@@ -394,7 +416,6 @@ Window {
                 Rectangle {
                     id: device
                     radius: 8
-                    border.color: "#00ffffff"
                     border.width: 0
                     anchors {
                         left: device_stroke.left
@@ -410,19 +431,19 @@ Window {
                         orientation: Gradient.Vertical
                         GradientStop {
                             position: 1
-                            color: "#3a3a3a"
+                            color: root.colors.cardBackgroundTop
                         }
 
                         GradientStop {
                             position: 0
-                            color: "#3e3e3e"
+                            color: root.colors.cardBackgroundBottom
                         }
                     }
 
                     Text {
                         id: device_chosen_text
                         opacity: 0.5
-                        color: "white"
+                        color: root.colors.textPrimary
                         text: qsTr("Device Chosen")
                         anchors {
                             left: parent.left
@@ -555,8 +576,15 @@ Window {
                                     }
                                     if (DeviceWatcher.udid === modelData.udid) {
                                         color = "#3284ff"
+                                        deviceNameTextColor = "#ffffff"
+                                        deviceProductTypeTextColor = "#d9d9d9"
+                                    } else {
+                                        deviceNameTextColor = root.colors.textPrimary
+                                        deviceProductTypeTextColor = root.colors.textSecondary
                                     }
                                 }
+                                property color deviceNameTextColor : "#ffffff"
+                                property color deviceProductTypeTextColor : "#d9d9d9"
                                 anchors {
                                     left: parent.left
                                     leftMargin: 10
@@ -584,7 +612,7 @@ Window {
 
                                 Text {
                                     id: deviceNameText
-                                    color: "#ffffff"
+                                    color: parent.deviceNameTextColor
                                     text: modelData.device_name
                                     anchors {
                                         left: deviceImage.right
@@ -606,7 +634,7 @@ Window {
                                 Text {
                                     id: deviceProductTypeText
                                     opacity: 1
-                                    color: "#d9d9d9"
+                                    color: parent.deviceProductTypeTextColor
                                     text: modelData.product_type
                                     anchors {
                                         left: deviceImage.right
@@ -637,9 +665,9 @@ Window {
                                         id: deviceBatteryRect1
                                         width: 22
                                         opacity: 0.5
-                                        color: "#ffffff"
+                                        color: root.colors.textPrimary
                                         radius: 3
-                                        border.color: "#ffffff"
+                                        border.color: root.colors.textPrimary
                                         anchors {
                                             left: parent.left
                                             top: parent.top
@@ -655,7 +683,7 @@ Window {
                                         width: 1
                                         height: 5
                                         opacity: modelData.battery_string === "100" ? 1 : 0.5;
-                                        color: modelData.battery_string === "100" ? "#6bcc43" : "#ffffff";
+                                        color: modelData.battery_string === "100" ? "#6bcc43" : root.colors.textPrimary;
                                         anchors {
                                             right: parent.right
                                             rightMargin: 0
@@ -683,7 +711,7 @@ Window {
                                         id: deviceBatteryText
                                         width: 20
                                         height: 11
-                                        color: "#3b3b3b"
+                                        color: root.colors.batteryText
                                         text: modelData.battery_string
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
@@ -695,12 +723,16 @@ Window {
                                 }
                                 MouseArea {
                                     anchors.fill: parent
-                                    onPressed: parent.color = "#803284ff"
+                                    onPressed: parent.color = "#203284ff"
                                     onReleased: {
                                         for (let i = 0; i < devices_repeater.count; i++) {
                                             devices_repeater.itemAt(i).color = "transparent"
+                                            devices_repeater.itemAt(i).deviceNameTextColor = root.colors.textPrimary
+                                            devices_repeater.itemAt(i).deviceProductTypeTextColor = root.colors.textSecondary
                                         }
                                         parent.color = "#3284ff"
+                                        parent.deviceNameTextColor = "#ffffff"
+                                        parent.deviceProductTypeTextColor = "#d9d9d9"
                                         if (DeviceWatcher.udid !== modelData.udid) {
                                             DeviceWatcher.switchCurrentDevice(modelData.udid)
                                         }
@@ -775,7 +807,7 @@ Window {
 
                         Text {
                             id: device_name_text
-                            color: "#ffffff"
+                            color: root.colors.textPrimary
                             text: qsTr("No device connected")
                             anchors {
                                 left: current_device_image.right
@@ -815,7 +847,7 @@ Window {
                             height: 15
                             opacity: 0.5
                             color: "#00000000"
-                            border.color: "white"
+                            border.color: root.colors.textPrimary
                             border.width: 1
                             anchors {
                                 right: parent.right
@@ -830,7 +862,7 @@ Window {
                                 height: 10
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
-                                color: "white"
+                                color: root.colors.textPrimary
                                 anchors.fill: parent
                                 font.family: interFont.name
                                 font.pointSize: 9
@@ -856,7 +888,7 @@ Window {
                         Text {
                             id: content_iphone_model
                             opacity: 1
-                            color: "#d9d9d9"
+                            color: colors.textSecondary
                             text: qsTr("Please connect a device to begin the sync")
                             anchors {
                                 left: current_device_image.right
@@ -891,7 +923,7 @@ Window {
                             opacity: 1.0
                             color: "#00ffffff"
                             radius: 3
-                            border.color: "#d9d9d9"
+                            border.color: colors.textSecondary
                             border.width: 1
                             anchors {
                                 left: current_device_image.right
@@ -905,7 +937,7 @@ Window {
                                 id: content_storage_capacity_text
                                 height: 14
                                 opacity: 1
-                                color: "#d9d9d9"
+                                color: colors.textSecondary
                                 text: qsTr("8GB")
                                 anchors {
                                     verticalCenter: parent.verticalCenter
@@ -935,7 +967,7 @@ Window {
                             width: 114
                             height: 14
                             opacity: 1
-                            color: "#d9d9d9"
+                            color: colors.textSecondary
                             text: qsTr("160.4 GB Available")
                             anchors {
                                 verticalCenter: content_storage_capacity.verticalCenter
@@ -1004,9 +1036,9 @@ Window {
                                 id: device_battery_rect1
                                 width: 22
                                 opacity: 0.5
-                                color: "#ffffff"
+                                color: root.colors.textPrimary
                                 radius: 3
-                                border.color: "#ffffff"
+                                border.color: root.colors.textPrimary
                                 anchors {
                                     left: parent.left
                                     top: parent.top
@@ -1038,7 +1070,7 @@ Window {
                                 width: 1
                                 height: 5
                                 opacity: 0.5
-                                color: "#ffffff"
+                                color: root.colors.textPrimary
                                 anchors {
                                     right: parent.right
                                     rightMargin: 0
@@ -1050,7 +1082,7 @@ Window {
                                 id: device_battery_text
                                 width: 20
                                 height: 11
-                                color: "#3b3b3b"
+                                color: root.colors.batteryText
                                 text: qsTr("82")
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -1066,10 +1098,10 @@ Window {
                                         device_battery_text.text = DeviceWatcher.battery_string
                                         device_battery_fill.width = (DeviceWatcher.battery)*22/100
                                         if (DeviceWatcher.battery_string === "100") {
-                                            device_battery_rect2.color = "#6bcc43"
+                                            device_battery_rect2.color = "#6bcc4#00003"
                                             device_battery_rect2.opacity = 1
                                         } else {
-                                            device_battery_rect2.color = "#ffffff"
+                                            device_battery_rect2.color = root.colors.textPrimary
                                             device_battery_rect2.opacity = 0.5
                                         }
                                         content_battery.visible = true
@@ -1124,7 +1156,7 @@ Window {
                             Text {
                                 id: serial_text
                                 opacity: 0.5
-                                color: "white"
+                                color: root.colors.textPrimary
                                 text: qsTr("SERIAL")
                                 anchors {
                                     top: parent.top
@@ -1137,7 +1169,7 @@ Window {
                             Text {
                                 id: serial_info_text
                                 text: qsTr("")
-                                color: "white"
+                                color: root.colors.textPrimary
                                 anchors {
                                     top: serial_text.bottom
                                     left: serial_text.left
@@ -1149,7 +1181,7 @@ Window {
                             Text {
                                 id: imei_text
                                 opacity: 0.5
-                                color: "white"
+                                color: root.colors.textPrimary
                                 text: qsTr("IMEI")
                                 anchors {
                                     top: parent.top
@@ -1162,7 +1194,7 @@ Window {
                             Text {
                                 id: imei_info_text
                                 text: qsTr("")
-                                color: "white"
+                                color: root.colors.textPrimary
                                 anchors {
                                     top: imei_text.bottom
                                     left: imei_text.left
@@ -1195,7 +1227,7 @@ Window {
                             Text {
                                 id: udid_text
                                 opacity: 0.5
-                                color: "white"
+                                color: root.colors.textPrimary
                                 text: qsTr("UDID")
                                 anchors {
                                     top: serial_info_text.bottom
@@ -1208,7 +1240,7 @@ Window {
                             Text {
                                 id: udid_info_text
                                 text: qsTr("")
-                                color: "white"
+                                color: root.colors.textPrimary
                                 anchors {
                                     top: udid_text.bottom
                                     left: udid_text.left
@@ -1259,7 +1291,7 @@ Window {
                 y: 17
                 width: 112
                 height: 27
-                color: "#ffffff"
+                color: root.colors.textPrimary
                 text: qsTr("LiniTunes")
                 anchors {
                     left: parent.left
@@ -1284,919 +1316,1221 @@ Window {
                 color: "transparent"
                 opacity: 1.0
 
-            Rectangle {
-                id: clicked_rect
-                color: "#3284ff"
-                radius: 8
-                anchors {
-                    right: sidebar_general_button.right
-                    left: sidebar_general_button.left
-                    top: sidebar_general_button.top
-                    bottom: sidebar_general_button.bottom
-                    rightMargin: 0
-                    leftMargin: 0
-                    topMargin: 0
-                    bottomMargin: 0
-                }
-
-                states: [ State {
-                        name: "sidebar_general_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_general_button.right
-                            anchors.left: sidebar_general_button.left
-                            anchors.top: sidebar_general_button.top
-                            anchors.bottom: sidebar_general_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_music_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_music_button.right
-                            anchors.left: sidebar_music_button.left
-                            anchors.top: sidebar_music_button.top
-                            anchors.bottom: sidebar_music_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_movies_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_movies_button.right
-                            anchors.left: sidebar_movies_button.left
-                            anchors.top: sidebar_movies_button.top
-                            anchors.bottom: sidebar_movies_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_tv_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_tv_button.right
-                            anchors.left: sidebar_tv_button.left
-                            anchors.top: sidebar_tv_button.top
-                            anchors.bottom: sidebar_tv_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_podcasts_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_podcasts_button.right
-                            anchors.left: sidebar_podcasts_button.left
-                            anchors.top: sidebar_podcasts_button.top
-                            anchors.bottom: sidebar_podcasts_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_audiobooks_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_audiobooks_button.right
-                            anchors.left: sidebar_audiobooks_button.left
-                            anchors.top: sidebar_audiobooks_button.top
-                            anchors.bottom: sidebar_audiobooks_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_books_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_books_button.right
-                            anchors.left: sidebar_books_button.left
-                            anchors.top: sidebar_books_button.top
-                            anchors.bottom: sidebar_books_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_photos_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_photos_button.right
-                            anchors.left: sidebar_photos_button.left
-                            anchors.top: sidebar_photos_button.top
-                            anchors.bottom: sidebar_photos_button.bottom
-                        }
-                    },
-                    State {
-                        name: "sidebar_files_button"
-                        AnchorChanges {
-                            target : clicked_rect
-                            anchors.right: sidebar_files_button.right
-                            anchors.left: sidebar_files_button.left
-                            anchors.top: sidebar_files_button.top
-                            anchors.bottom: sidebar_files_button.bottom
-                        }
-                    } ]
-                transitions: [ Transition {
-                        to: "sidebar_general_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_music_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_movies_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_tv_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_podcasts_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_audiobooks_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_books_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_photos_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    },
-                    Transition {
-                        to: "sidebar_files_button"
-                        AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                Rectangle {
+                    id: clicked_rect
+                    color: "#3284ff"
+                    radius: 8
+                    anchors {
+                        right: sidebar_general_button.right
+                        left: sidebar_general_button.left
+                        top: sidebar_general_button.top
+                        bottom: sidebar_general_button.bottom
+                        rightMargin: 0
+                        leftMargin: 0
+                        topMargin: 0
+                        bottomMargin: 0
                     }
-                ]
-            }
-            Rectangle {
-                id: sidebar_general_button
-                height: 40
-                color: "#00000000"
-                radius: 8
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: parent.top
-                    topMargin: 9
-                    rightMargin: 10
-                    leftMargin: 10
-                }
-                opacity: 1.0
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_general_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_general_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
 
-                Image {
-                    id: sidebar_general_button_image
-                    width: 24
+                    states: [ State {
+                            name: "sidebar_general_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_general_button.right
+                                anchors.left: sidebar_general_button.left
+                                anchors.top: sidebar_general_button.top
+                                anchors.bottom: sidebar_general_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_music_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_music_button.right
+                                anchors.left: sidebar_music_button.left
+                                anchors.top: sidebar_music_button.top
+                                anchors.bottom: sidebar_music_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_movies_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_movies_button.right
+                                anchors.left: sidebar_movies_button.left
+                                anchors.top: sidebar_movies_button.top
+                                anchors.bottom: sidebar_movies_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_tv_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_tv_button.right
+                                anchors.left: sidebar_tv_button.left
+                                anchors.top: sidebar_tv_button.top
+                                anchors.bottom: sidebar_tv_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_podcasts_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_podcasts_button.right
+                                anchors.left: sidebar_podcasts_button.left
+                                anchors.top: sidebar_podcasts_button.top
+                                anchors.bottom: sidebar_podcasts_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_audiobooks_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_audiobooks_button.right
+                                anchors.left: sidebar_audiobooks_button.left
+                                anchors.top: sidebar_audiobooks_button.top
+                                anchors.bottom: sidebar_audiobooks_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_books_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_books_button.right
+                                anchors.left: sidebar_books_button.left
+                                anchors.top: sidebar_books_button.top
+                                anchors.bottom: sidebar_books_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_photos_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_photos_button.right
+                                anchors.left: sidebar_photos_button.left
+                                anchors.top: sidebar_photos_button.top
+                                anchors.bottom: sidebar_photos_button.bottom
+                            }
+                        },
+                        State {
+                            name: "sidebar_files_button"
+                            AnchorChanges {
+                                target : clicked_rect
+                                anchors.right: sidebar_files_button.right
+                                anchors.left: sidebar_files_button.left
+                                anchors.top: sidebar_files_button.top
+                                anchors.bottom: sidebar_files_button.bottom
+                            }
+                        } ]
+                    transitions: [ Transition {
+                            to: "sidebar_general_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_music_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_movies_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_tv_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_podcasts_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_audiobooks_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_books_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_photos_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        },
+                        Transition {
+                            to: "sidebar_files_button"
+                            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        }
+                    ]
+                }
+                Rectangle {
+                    id: sidebar_general_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 8
                     anchors {
                         left: parent.left
+                        right: parent.right
                         top: parent.top
-                        bottom: parent.bottom
-                        leftMargin: 8
-                        bottomMargin: 8
-                        topMargin: 8
+                        topMargin: 9
+                        rightMargin: 10
+                        leftMargin: 10
                     }
-                    source: "../images/glyphs/settings.png"
-                    fillMode: Image.PreserveAspectFit
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+
+                    Image {
+                        id: sidebar_general_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            leftMargin: 8
+                            bottomMargin: 8
+                            topMargin: 8
+                        }
+                        source: "../images/glyphs/settings.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_general_button_text
+                        // color: "#ffffff"
+                        text: qsTr("General")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_general_button_image.right
+                            leftMargin: 8
+                        }
+                        font.weight: Font.DemiBold
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        color: root.colors.sideTextActive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_general_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_general_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_general_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_general_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_general_button_image_overlay
+                        anchors.fill: sidebar_general_button_image
+                        source: sidebar_general_button_image
+                        state: parent.state
+                        color: root.colors.sideTextActive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_general_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_general_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_general_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_general_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_general_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_general_button"
+                            sidebar_general_button.state = "clicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
+                    }
                 }
 
-                Text {
-                    id: sidebar_general_button_text
-                    color: "#ffffff"
-                    text: qsTr("General")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_general_button_image.right
-                        leftMargin: 8
-                    }
-                    font.weight: Font.DemiBold
-                    font.family: interFont.name
-                    font.pointSize: 10
-                }
-                MouseArea {
-                    id: m_sidebar_general_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_general_button"
-                        sidebar_general_button.state = "clicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_music_button
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_general_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_music_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_music_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_music_button_image
-                    width: 24
+                Rectangle {
+                    id: sidebar_music_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
                         left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
-                    }
-                    source: "../images/glyphs/music.png"
-                    fillMode: Image.PreserveAspectFit
-                }
-
-                Text {
-                    id: sidebar_music_button_text
-                    color: "#ffffff"
-                    text: qsTr("Music")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_music_button_image.right
-                        leftMargin: 8
-                    }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                MouseArea {
-                    id: m_sidebar_music_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_music_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "clicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_movies_button
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_music_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_movies_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_movies_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_movies_button_image
-                    width: 24
-                    anchors {
-                        left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
-                    }
-                    source: "../images/glyphs/movies.png"
-                    fillMode: Image.PreserveAspectFit
-                }
-
-                Text {
-                    id: sidebar_movies_button_text
-                    color: "#ffffff"
-                    text: qsTr("Movies")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_movies_button_image.right
-                        leftMargin: 8
-                    }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                anchors.rightMargin: 10
-                MouseArea {
-                    id: m_sidebar_movies_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_movies_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "clicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_tv_button
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_movies_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_tv_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_tv_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_tv_button_image
-                    width: 24
-                    anchors {
-                        left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
-                    }
-                    source: "../images/glyphs/tv.png"
-                    fillMode: Image.PreserveAspectFit
-                }
-
-                Text {
-                    id: sidebar_tv_button_text
-                    color: "#ffffff"
-                    text: qsTr("TV")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_tv_button_image.right
-                        leftMargin: 8
+                        right: parent.right
+                        top: sidebar_general_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
                         rightMargin: 10
                     }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                MouseArea {
-                    id: m_sidebar_tv_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_tv_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "clicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_music_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/music.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_music_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Music")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_music_button_image.right
+                            leftMargin: 8
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_music_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_music_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_music_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_music_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_music_button_image_overlay
+                        anchors.fill: sidebar_music_button_image
+                        source: sidebar_music_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_music_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_music_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_music_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_music_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_music_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_music_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "clicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
                     }
                 }
-            }
 
-            Rectangle {
-                id: sidebar_podcasts_button
-                x: -11
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_tv_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_podcasts_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_podcasts_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_podcasts_button_image
-                    width: 24
+                Rectangle {
+                    id: sidebar_movies_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
                         left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
+                        right: parent.right
+                        top: sidebar_music_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
+                        rightMargin: 10
                     }
-                    source: "../images/glyphs/podcast.png"
-                    fillMode: Image.PreserveAspectFit
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_movies_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/movies.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_movies_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Movies")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_movies_button_image.right
+                            leftMargin: 8
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_movies_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_movies_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_movies_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_movies_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_movies_button_image_overlay
+                        anchors.fill: sidebar_movies_button_image
+                        source: sidebar_movies_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_movies_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_movies_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_movies_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_movies_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_movies_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_movies_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "clicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
+                    }
                 }
 
-                Text {
-                    id: sidebar_podcasts_button_text
-                    color: "#ffffff"
-                    text: qsTr("Podcasts")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_podcasts_button_image.right
-                        leftMargin: 8
-                    }
-                    font.pointSize: 10
-                    font.family: interFont.name
-                    font.weight: Font.DemiBold
-                }
-                MouseArea {
-                    id: m_sidebar_podcasts_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_podcasts_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "clicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_audiobooks_button
-                x: 0
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_podcasts_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_audiobooks_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_audiobooks_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_audiobooks_button_image
-                    width: 24
+                Rectangle {
+                    id: sidebar_tv_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
                         left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
+                        right: parent.right
+                        top: sidebar_movies_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
+                        rightMargin: 10
                     }
-                    source: "../images/glyphs/audiobook.png"
-                    fillMode: Image.PreserveAspectFit
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_tv_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/tv.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_tv_button_text
+                        // color: "#ffffff"
+                        text: qsTr("TV")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_tv_button_image.right
+                            leftMargin: 8
+                            rightMargin: 10
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_tv_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_tv_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_tv_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_tv_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_tv_button_image_overlay
+                        anchors.fill: sidebar_tv_button_image
+                        source: sidebar_tv_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_tv_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_tv_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_tv_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_tv_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_tv_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_tv_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "clicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
+                    }
                 }
 
-                Text {
-                    id: sidebar_audiobooks_button_text
-                    color: "#ffffff"
-                    text: qsTr("Audiobooks")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_audiobooks_button_image.right
-                        leftMargin: 8
-                    }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                anchors.rightMargin: 10
-                MouseArea {
-                    id: m_sidebar_audiobooks_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_audiobooks_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "clicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_books_button
-                x: 5
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_audiobooks_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_books_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_books_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_books_button_image
-                    width: 24
+                Rectangle {
+                    id: sidebar_podcasts_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
                         left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
+                        right: parent.right
+                        top: sidebar_tv_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
+                        rightMargin: 10
                     }
-                    source: "../images/glyphs/book.png"
-                    fillMode: Image.PreserveAspectFit
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_podcasts_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/podcast.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_podcasts_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Podcasts")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_podcasts_button_image.right
+                            leftMargin: 8
+                        }
+                        font.pointSize: 10
+                        font.family: interFont.name
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_podcasts_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_podcasts_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_podcasts_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_podcasts_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_podcasts_button_image_overlay
+                        anchors.fill: sidebar_podcasts_button_image
+                        source: sidebar_podcasts_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_podcasts_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_podcasts_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_podcasts_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_podcasts_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_podcasts_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_podcasts_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "clicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
+                    }
                 }
 
-                Text {
-                    id: sidebar_books_button_text
-                    color: "#ffffff"
-                    text: qsTr("Books")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_books_button_image.right
-                        leftMargin: 8
-                    }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                anchors.rightMargin: 10
-                MouseArea {
-                    id: m_sidebar_books_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_books_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "clicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_photos_button
-                x: -8
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_books_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_photos_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_photos_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_photos_button_image
-                    width: 24
+                Rectangle {
+                    id: sidebar_audiobooks_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
                         left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
+                        right: parent.right
+                        top: sidebar_podcasts_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
+                        rightMargin: 10
                     }
-                    source: "../images/glyphs/photo.png"
-                    fillMode: Image.PreserveAspectFit
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_audiobooks_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/audiobook.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_audiobooks_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Audiobooks")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_audiobooks_button_image.right
+                            leftMargin: 8
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_audiobooks_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_audiobooks_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_audiobooks_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_audiobooks_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_audiobooks_button_image_overlay
+                        anchors.fill: sidebar_audiobooks_button_image
+                        source: sidebar_audiobooks_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_audiobooks_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_audiobooks_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_audiobooks_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_audiobooks_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_audiobooks_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_audiobooks_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "clicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
+                    }
                 }
 
-                Text {
-                    id: sidebar_photos_button_text
-                    color: "#ffffff"
-                    text: qsTr("Photos")
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_photos_button_image.right
-                        leftMargin: 8
-                    }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                MouseArea {
-                    id: m_sidebar_photos_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_photos_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "clicked"
-                        sidebar_files_button.state = "unclicked"
-                        content.source = "/general.qml"
-                    }
-                }
-            }
-
-            Rectangle {
-                id: sidebar_files_button
-                height: 40
-                color: "#00000000"
-                radius: 6
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: sidebar_photos_button.bottom
-                    topMargin: 4
-                    leftMargin: 10
-                }
-                opacity: 0.5
-                states: [ State {
-                        name: "clicked"
-                        PropertyChanges {
-                            sidebar_files_button {
-                                opacity: 1.0
-                            }
-                        }
-                    },
-                    State {
-                        name: "unclicked"
-                        PropertyChanges {
-                            sidebar_files_button {
-                                opacity: 0.5
-                            }
-                        }
-                    }]
-                transitions:  [ Transition {
-                    to: "clicked"
-                    NumberAnimation { properties: "opacity"; duration: 100; easing.type: Easing.OutExpo }
-                },
-                Transition {
-                    to: "unclicked"
-                    NumberAnimation { properties: "opacity"; duration: 30; easing.type: Easing.InExpo }
-                } ]
-                Image {
-                    id: sidebar_files_button_image
-                    width: 24
+                Rectangle {
+                    id: sidebar_books_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
                         left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                        topMargin: 8
-                        leftMargin: 8
-                        bottomMargin: 8
+                        right: parent.right
+                        top: sidebar_audiobooks_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
                     }
-                    source: "../images/glyphs/folder.png"
-                    fillMode: Image.PreserveAspectFit
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_books_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                            rightMargin: 10
+                        }
+                        source: "../images/glyphs/book.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_books_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Books")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_books_button_image.right
+                            leftMargin: 8
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_books_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_books_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_books_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_books_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_books_button_image_overlay
+                        anchors.fill: sidebar_books_button_image
+                        source: sidebar_books_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_books_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_books_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_books_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_books_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_books_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_books_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "clicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
+                    }
                 }
 
-                Text {
-                    id: sidebar_files_button_text
-                    color: "#ffffff"
-                    text: qsTr("Files")
+                Rectangle {
+                    id: sidebar_photos_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
                     anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: sidebar_files_button_image.right
-                        leftMargin: 8
+                        left: parent.left
+                        right: parent.right
+                        top: sidebar_books_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
+                        rightMargin: 10
                     }
-                    font.family: interFont.name
-                    font.pointSize: 10
-                    font.weight: Font.DemiBold
-                }
-                anchors.rightMargin: 10
-                MouseArea {
-                    id: m_sidebar_files_button
-                    anchors.fill: parent
-                    onClicked: {
-                        clicked_rect.state = "sidebar_files_button"
-                        sidebar_general_button.state = "unclicked"
-                        sidebar_music_button.state = "unclicked"
-                        sidebar_movies_button.state = "unclicked"
-                        sidebar_tv_button.state = "unclicked"
-                        sidebar_podcasts_button.state = "unclicked"
-                        sidebar_audiobooks_button.state = "unclicked"
-                        sidebar_books_button.state = "unclicked"
-                        sidebar_photos_button.state = "unclicked"
-                        sidebar_files_button.state = "clicked"
-                        content.source = "/general.qml"
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_photos_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/photo.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_photos_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Photos")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_photos_button_image.right
+                            leftMargin: 8
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_photos_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_photos_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_photos_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_photos_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_photos_button_image_overlay
+                        anchors.fill: sidebar_photos_button_image
+                        source: sidebar_photos_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_photos_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_photos_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_photos_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_photos_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_photos_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_photos_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "clicked"
+                            sidebar_files_button.state = "unclicked"
+                            content.source = "/general.qml"
+                        }
                     }
                 }
-            }
+
+                Rectangle {
+                    id: sidebar_files_button
+                    height: 40
+                    color: "#00000000"
+                    radius: 6
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        top: sidebar_photos_button.bottom
+                        topMargin: 4
+                        leftMargin: 10
+                        rightMargin: 10
+                    }
+                    opacity: 1.0
+                    states: [
+                        State { name: "clicked" },
+                        State { name: "unclicked" }
+                    ]
+                    Image {
+                        id: sidebar_files_button_image
+                        width: 24
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            topMargin: 8
+                            leftMargin: 8
+                            bottomMargin: 8
+                        }
+                        source: "../images/glyphs/folder.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    Text {
+                        id: sidebar_files_button_text
+                        // color: "#ffffff"
+                        text: qsTr("Files")
+                        anchors {
+                            verticalCenter: parent.verticalCenter
+                            left: sidebar_files_button_image.right
+                            leftMargin: 8
+                        }
+                        font.family: interFont.name
+                        font.pointSize: 10
+                        font.weight: Font.DemiBold
+                        color: root.colors.sideTextInactive
+                        state: parent.state
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_files_button_text; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_files_button_text; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_files_button_text; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_files_button_text; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+
+                    ColorOverlay {
+                        id: sidebar_files_button_image_overlay
+                        anchors.fill: sidebar_files_button_image
+                        source: sidebar_files_button_image
+                        state: parent.state
+                        color: root.colors.sideTextInactive
+
+                        states: [
+                            State {
+                                name: "clicked"
+                                PropertyChanges { target: sidebar_files_button_image_overlay; color: root.colors.sideTextActive }
+                            },
+                            State {
+                                name: "unclicked"
+                                PropertyChanges { target: sidebar_files_button_image_overlay; color: root.colors.sideTextInactive }
+                            }
+                        ]
+
+                        transitions: [
+                            Transition {
+                                to: "clicked"
+                                ColorAnimation { target: sidebar_files_button_image_overlay; property: "color"; duration: 80 }
+                            },
+                            Transition {
+                                to: "unclicked"
+                                ColorAnimation { target: sidebar_files_button_image_overlay; property: "color"; duration: 80 }
+                            }
+                        ]
+                    }
+                    MouseArea {
+                        id: m_sidebar_files_button
+                        anchors.fill: parent
+                        onClicked: {
+                            clicked_rect.state = "sidebar_files_button"
+                            sidebar_general_button.state = "unclicked"
+                            sidebar_music_button.state = "unclicked"
+                            sidebar_movies_button.state = "unclicked"
+                            sidebar_tv_button.state = "unclicked"
+                            sidebar_podcasts_button.state = "unclicked"
+                            sidebar_audiobooks_button.state = "unclicked"
+                            sidebar_books_button.state = "unclicked"
+                            sidebar_photos_button.state = "unclicked"
+                            sidebar_files_button.state = "clicked"
+                            content.source = "/general.qml"
+                        }
+                    }
+                }
             }
 
             Rectangle {

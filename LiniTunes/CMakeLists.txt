@@ -25,6 +25,8 @@ add_executable(LiniTunes
     ${HEADER_FILES}
     ${SOURCE_FILES}
     ressource.qrc
+    thememanager.h thememanager.cpp
+    images.qrc
 )
 
 target_link_libraries(LiniTunes PRIVATE Qt6::Core Qt6::Quick)
