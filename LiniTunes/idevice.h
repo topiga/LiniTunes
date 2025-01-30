@@ -10,12 +10,17 @@
 #include <QFile>
 #include <QThread>
 
+// backup purposes
+#include <libimobiledevice/mobilebackup2.h>
+#include <libimobiledevice/file_relay.h>
+
 class iDevice : public QObject
 {
     Q_OBJECT
 public:
     explicit iDevice(char* udid, QObject *parent = nullptr);
     ~iDevice();
+    bool performBackup(const QString &backupPath);
 
     // Values
     QString serial() { return QString(_serial); }
@@ -48,6 +53,11 @@ private:
     uint64_t _battery_capacity;
     bool _battery_charging;
     void _get_basic_info();
+
+    // backup purposes
+    mobilebackup2_client_t mb2_client = NULL;
+    void handle_mb2_status_response(plist_t status_plist);
+    bool sendBackupRequest(const char *command, plist_t options);
 
 signals:
     void deviceNameChanged();

@@ -240,6 +240,143 @@ QString iDevice::device_image()
     return QString("/images/iphone.png");
 }
 
+bool iDevice::performBackup(const QString &backupPath)
+{
+    lockdownd_service_descriptor_t service = NULL;
+    mobilebackup2_error_t mb2_error;
+
+    // Start the mobilebackup2 service
+    if (lockdownd_start_service(_client, "com.apple.mobilebackup2", &service) != LOCKDOWN_E_SUCCESS || !service) {
+        qWarning("Could not start mobilebackup2 service");
+        return false;
+    }
+
+    // Create a mobilebackup2 client
+    mb2_error = mobilebackup2_client_new(_device, service, &mb2_client);
+    lockdownd_service_descriptor_free(service);
+
+    if (mb2_error != MOBILEBACKUP2_E_SUCCESS) {
+        qWarning("Could not create mobilebackup2 client");
+        return false;
+    }
+
+    // Prepare backup options
+    plist_t backup_options = plist_new_dict();
+    plist_dict_set_item(backup_options, "BackupAll", plist_new_bool(1));
+    plist_dict_set_item(backup_options, "RestoreSystemFiles", plist_new_bool(0));
+    plist_dict_set_item(backup_options, "BackupSystemFiles", plist_new_bool(1));
+
+    // Set the backup directory
+    QByteArray backupPathBA = backupPath.toUtf8();
+    const char *backup_path_cstr = backupPathBA.constData();
+
+    // Send the 'Backup' request
+    if (!sendBackupRequest("Backup", backup_options)) {
+        plist_free(backup_options);
+        mobilebackup2_client_free(mb2_client);
+        mb2_client = NULL;
+        return false;
+    }
+
+    plist_free(backup_options);
+
+    // Handle responses and perform backup steps
+    plist_t response = NULL;
+    char *dlmessage = NULL;  // Add this variable for the DL* message
+    bool success = true;
+
+    while (success) {
+        mb2_error = mobilebackup2_receive_message(mb2_client, &response, &dlmessage);
+        if (mb2_error != MOBILEBACKUP2_E_SUCCESS) {
+            qWarning("Failed to receive message from device");
+            success = false;
+            break;
+        }
+
+        if (response == NULL) {
+            qWarning("Received NULL response");
+            success = false;
+            break;
+        }
+
+        // Log the DL* message if we got one
+        if (dlmessage) {
+            qDebug("Received DL* message: %s", dlmessage);
+            free(dlmessage);  // We shouldn't need the dlmessage after
+            dlmessage = NULL;
+        }
+
+        char *message_type = NULL;
+        plist_t node = plist_dict_get_item(response, "MessageType");
+        if (node && plist_get_node_type(node) == PLIST_STRING) {
+            plist_get_string_val(node, &message_type);
+        }
+
+        if (message_type) {
+            if (strcmp(message_type, "Status") == 0) {
+                handle_mb2_status_response(response);
+            } else if (strcmp(message_type, "Error") == 0) {
+                qWarning("Received error message from device");
+                success = false;
+            } else if (strcmp(message_type, "Progress") == 0) {
+                // TODO: Handle progress updates
+            } else if (strcmp(message_type, "Complete") == 0) {
+                qDebug("Backup completed successfully");
+                break;
+            } else {
+                qDebug("Received unknown message type: %s", message_type);
+            }
+            free(message_type);
+        }
+
+        plist_free(response);
+        response = NULL;
+    }
+
+    // Clean up that garbage
+    if (mb2_client) {
+        mobilebackup2_client_free(mb2_client);
+        mb2_client = NULL;
+    }
+    if (dlmessage) {
+        free(dlmessage);
+    }
+
+    return success;
+}
+
+bool iDevice::sendBackupRequest(const char *command, plist_t options)
+{
+    // We need the device's UDID as target_identifier
+    const char* target_identifier = _udid;
+    // Need to gen some UDID
+    const char* source_identifier = NULL;  // NULL for now
+
+    mobilebackup2_error_t mb2_error = mobilebackup2_send_request(mb2_client,command,target_identifier,source_identifier,options);
+
+    if (mb2_error != MOBILEBACKUP2_E_SUCCESS) {
+        qWarning("Could not send '%s' request: %d", command, mb2_error);
+        return false;
+    }
+    return true;
+}
+
+
+void iDevice::handle_mb2_status_response(plist_t status_plist)
+{
+    char *status_code = NULL;
+    plist_t status_node = plist_dict_get_item(status_plist, "Status");
+    if (status_node && plist_get_node_type(status_node) == PLIST_STRING) {
+        plist_get_string_val(status_node, &status_code);
+        if (status_code) {
+            qDebug("Backup Status: %s", status_code);
+            // TODO: emit signals or update UI based on status_code
+            free(status_code);
+        }
+    }
+    // TODO: more detailed status updates
+}
+
 // Destructor for the iDevice class. Frees up resources upon object destruction.
 iDevice::~iDevice() {
     // Free the lockdownd client, device, and strings allocated for device information if they exist.
