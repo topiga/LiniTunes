@@ -1098,7 +1098,26 @@ Window {
                                         device_battery_text.text = DeviceWatcher.battery_string
                                         device_battery_fill.width = (DeviceWatcher.battery)*22/100
                                         if (DeviceWatcher.battery_string === "100") {
-                                            device_battery_rect2.color = "#6bcc4#00003"
+                                            device_battery_rect2.color = "#6bcc43"
+                                            device_battery_rect2.opacity = 1
+                                        } else {
+                                            device_battery_rect2.color = root.colors.textPrimary
+                                            device_battery_rect2.opacity = 0.5
+                                        }
+                                        content_battery.visible = true
+                                    } else {
+                                        content_battery.visible = false
+                                    }
+                                }
+                            }
+                            Connections {
+                                target: ThemeManager
+                                function onThemeChanged() {
+                                    if (DeviceWatcher.device_connected) {
+                                        device_battery_text.text = DeviceWatcher.battery_string
+                                        device_battery_fill.width = (DeviceWatcher.battery)*22/100
+                                        if (DeviceWatcher.battery_string === "100") {
+                                            device_battery_rect2.color = "#6bcc43"
                                             device_battery_rect2.opacity = 1
                                         } else {
                                             device_battery_rect2.color = root.colors.textPrimary
