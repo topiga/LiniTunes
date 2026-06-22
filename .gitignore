@@ -53,3 +53,5 @@ compile_commands.json
 
 # added
 build*
+/jkcoxson-idevice-DeepWiki
+/third_party/idevice/

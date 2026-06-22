@@ -17,5 +17,6 @@ This project is under the GPLv3 licence.
 
 ## Thanks to 
  - [@nikias](https://github.com/nikias) for [libimobiledevice](https://github.com/libimobiledevice/libimobiledevice)
+ - [@jkcoxson](https://github.com/jkcoxson) for [idevice](https://github.com/jkcoxson/idevice)
  - [@cj123](https://github.com/cj123) for [ipsw.me](https://ipsw.me/) and its API
  - Apple for iOS, iPadOS, etc

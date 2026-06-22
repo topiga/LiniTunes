@@ -1,0 +1,3 @@
+[submodule "third_party/idevice"]
+	path = third_party/idevice
+	url = https://github.com/jkcoxson/idevice.git
