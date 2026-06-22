@@ -908,7 +908,7 @@ Window {
                                 target: DeviceWatcher
                                 function onCurrentDeviceChanged() {
                                     if (DeviceWatcher.device_connected) {
-                                        content_iphone_model.text = DeviceWatcher.product_type
+                                        content_iphone_model.text = DeviceWatcher.marketing_name
                                     } else {
                                         content_iphone_model.text = "Please connect a device to begin"
                                     }

@@ -16,7 +16,7 @@ env:
   SOURCE_DIR:   ${{ github.workspace }}
   QT_VERSION:   6.5.1
   ARTIFACT:     LiniTunes.AppImage
-  
+
 jobs:
   build:
     runs-on:  ubuntu-latest
@@ -26,6 +26,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v3.2.1
@@ -37,90 +40,39 @@ jobs:
           modules:      qtcharts qt5compat qtshadertools
           setup-python: true
 
-      - name: Install libimobiledevice
+      - name: Install system dependencies
         run: |
-          sudo apt-get install \
-            build-essential \
-            checkinstall \
-            git \
-            autoconf \
-            automake \
-            libtool-bin \
-            libssl-dev \
-            libusb-1.0-0-dev \
-            udev \
-            libcurl4-openssl-dev
-          
-          sudo apt-get install \
-          	doxygen
-          
-          git clone https://github.com/libimobiledevice/libplist
-          cd libplist
-          ./autogen.sh
-          make
-          sudo make install
-          cd ..
-          
-          git clone https://github.com/libimobiledevice/libimobiledevice-glue
-          cd libimobiledevice-glue
-          ./autogen.sh
-          make
-          sudo make install
-          cd ..
-          
-          git clone https://github.com/libimobiledevice/libusbmuxd.git
-          cd libusbmuxd
-          ./autogen.sh
-          make
-          sudo make install
-          cd ..
+          sudo apt-get update
+          sudo apt-get install -y fuse libfuse2 libxcb-cursor0 libusb-1.0-0-dev libssl-dev
 
-          git clone https://github.com/libimobiledevice/libtatsu.git
-          cd libtatsu
-          ./autogen.sh
-          make
-          sudo make install
-          cd ..
-          
-          git clone https://github.com/libimobiledevice/libimobiledevice.git
-          cd libimobiledevice
-          ./autogen.sh --without-cython
-          make
-          sudo make install
-          cd ..
-          
-          git clone https://github.com/libimobiledevice/usbmuxd.git
-          cd usbmuxd
-          ./autogen.sh
-          make
-          sudo make install
-          cd ..
+      - name: Build idevice FFI
+        run: |
+          cd ${{ env.SOURCE_DIR }}/third_party/idevice
+          cargo build --release -p idevice-ffi --features "usbmuxd,diagnostics_relay,pair"
 
-      - name: Install AppImage dependencies
-        run: sudo apt-get install -y fuse libfuse2 libxcb-cursor0
+      - name: Build LiniTunes
+        run: |
+          cmake -B ${{ env.SOURCE_DIR }}/build -S ${{ env.SOURCE_DIR }}/LiniTunes \
+            -DCMAKE_PREFIX_PATH=${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64
+          cmake --build ${{ env.SOURCE_DIR }}/build -j$(nproc)
 
-      - name: Create build directory
-        run:  mkdir ${{ env.SOURCE_DIR }}/build
-
-      - name: Build
-        working-directory: ${{ env.SOURCE_DIR }}/build
-        run:  |
-              ${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qt-cmake ${{ env.SOURCE_DIR }}/LiniTunes/CMakeLists.txt
-              make -j2
-
-      - name: AppImage
+      - name: Package AppImage
         working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$${{ runner.temp }}/Qt/6.5.1/gcc_64/lib/:/usr/lib/
-          export QMAKE=${{ runner.temp }}/Qt/6.5.1/gcc_64/bin/qmake
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/lib/
+          export QMAKE=${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake
           export QML_SOURCES_PATHS=${{ env.SOURCE_DIR }}/LiniTunes/
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e LiniTunes -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop --plugin qt --output appimage
-          mv LiniTunes*.AppImage ${{ env.ARTIFACT }} 
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+            -e LiniTunes \
+            -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png \
+            -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop \
+            --plugin qt --output appimage
+          mv LiniTunes*.AppImage ${{ env.ARTIFACT }}
 
-      - name: Linux artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4.6.0
         with:
           name: ${{ env.ARTIFACT }}

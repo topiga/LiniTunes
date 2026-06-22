@@ -8,7 +8,6 @@
 #include <QTranslator>
 
 // Device purposes
-#include <idevice.h>
 #include <idevicewatcher.h>
 
 // Theme
@@ -28,6 +27,7 @@ int main(int argc, char *argv[])
             break;
         }
     }
+
     QQmlApplicationEngine engine;
 
     iDeviceWatcher *DeviceWatcher = new iDeviceWatcher();
@@ -44,12 +44,8 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-    // We need to connect the dots right after the QML,
-    // or the devices might not be recognized.
-    if (DeviceWatcher->begin() != 0) {
-        app.quit();
-    }
+    // Start device listener after QML is loaded
+    DeviceWatcher->start();
 
     return app.exec();
-    delete DeviceWatcher;
 }
