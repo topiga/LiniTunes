@@ -178,7 +178,7 @@ Window {
                 }
 
                 Rectangle {
-                    id: rectangle
+                    id: storage_ratio_stroke
                     radius: 5
                     border.width: 0
                     anchors {
@@ -206,7 +206,7 @@ Window {
                     }
 
                     Rectangle {
-                        id: rectangle3
+                        id: storage_ratio
                         radius: 5
                         border.width: 0
                         anchors {
@@ -292,9 +292,20 @@ Window {
                             id: strorage_sync_button_text
                             text: qsTr("Sync")
                             color: root.colors.textPrimary
+                            font.weight: Font.DemiBold
+                            font.family: interFont.name
+                            font.pointSize: 10
                             anchors {
                                 horizontalCenter: parent.horizontalCenter
                                 verticalCenter: parent.verticalCenter
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onPressed: parent.opacity=0.7
+                            onReleased: {
+                                parent.opacity=1
+                                DeviceWatcher.startStorageSync()
                             }
                         }
                     }
