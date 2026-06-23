@@ -2,25 +2,30 @@
 #define LINTUNES_IDEVICE_H
 
 #include <QObject>
+#include <QThread>
 #include <QString>
+#include "storage_info.h"
+#include "storage_sync_worker.h"
 
-// Forward-declare namespace types (definitions are in idevice.cpp)
+// Forward-declare
 namespace IdeviceFFI {
     class UsbmuxdAddr;
 }
-typedef void *plist_t;
 
 class iDevice : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QObject* storage_info READ storageInfo CONSTANT)
+    Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
+    Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
+
 public:
     explicit iDevice(QObject *parent = nullptr);
     ~iDevice() override;
 
-    // Initialize device connection and fetch all info. Returns true on success.
     bool init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr);
 
-    // Values
+    // Device info
     QString serial() const { return m_serial; }
     QString udid() const { return m_udid; }
     QString ecid() const { return m_ecid; }
@@ -34,7 +39,22 @@ public:
     QString marketing_name() const { return m_marketingName; }
     int battery() const { return m_batteryCapacity; }
     bool device_connected() const { return m_connected; }
-    static QString format_bytes(uint64_t bytes);
+    uint32_t deviceId() const { return m_deviceId; }
+
+    // Storage
+    StorageInfo *storageInfo() const { return m_storageInfo; }
+    Q_INVOKABLE void startStorageSync();
+    bool storageSyncing() const { return m_storageInfo ? m_storageInfo->syncing() : false; }
+    int storageSyncProgress() const { return m_storageSyncProgress; }
+
+    static QString format_bytes(uint64_t bytes, bool decimals=true);
+
+signals:
+    void storageSyncChanged();
+
+private slots:
+    void onStorageSyncFinished(StorageInfo *result);
+    void onStorageSyncFailed(const QString &error);
 
 private:
     QString m_udid;
@@ -44,14 +64,20 @@ private:
     QString m_serial;
     QString m_ecid;
     QString m_imei;
-    QString m_model;
     QString m_marketingName;
+    uint32_t m_deviceId = 0;
     uint64_t m_storageCapacityBytes = 0;
     uint64_t m_storageLeftBytes = 0;
     QString m_storageCapacity;
     QString m_storageLeft;
     int m_batteryCapacity = 0;
     bool m_connected = false;
+
+    StorageInfo *m_storageInfo = nullptr;
+
+    QThread m_storageSyncThread;
+    StorageSyncWorker *m_storageSyncWorker = nullptr;
+    int m_storageSyncProgress = 0;
 };
 
 #endif // LINTUNES_IDEVICE_H

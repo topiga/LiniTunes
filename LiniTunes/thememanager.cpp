@@ -1,4 +1,6 @@
 #include "thememanager.h"
+#include <QGuiApplication>
+#include <QStyleHints>
 
 ThemeManager::ThemeManager(QObject *parent)
     : QObject(parent)

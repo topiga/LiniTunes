@@ -6,7 +6,6 @@ extern "C" {
 #include <idevice.h>
 }
 
-// Retry delay helper — sleeps 100ms slices until m_running is false or timeout
 static void retryDelay(std::atomic<bool> &running, int slices = 20) {
     for (int i = 0; i < slices && running; ++i)
         QThread::msleep(100);
@@ -81,7 +80,6 @@ void UsbmuxdListener::run()
 
         idevice_usbmuxd_listener_handle_free(listener);
         idevice_usbmuxd_connection_free(conn);
-
         retryDelay(m_running, 10);
     }
 }
@@ -144,6 +142,12 @@ void iDeviceWatcher::start()
     m_workerThread.start();
 }
 
+void iDeviceWatcher::connectDeviceSignals(iDevice *dev)
+{
+    connect(dev, &iDevice::storageSyncChanged,
+            this, &iDeviceWatcher::storageSyncChanged);
+}
+
 void iDeviceWatcher::onDeviceConnected(const QString &udid, uint32_t deviceId)
 {
     m_deviceIdToUdid[deviceId] = udid;
@@ -167,6 +171,8 @@ void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
            qPrintable(dev->device_name()),
            qPrintable(dev->product_type()),
            qPrintable(dev->marketing_name()));
+
+    connectDeviceSignals(dev);
     Devices.append(dev);
     updateLists();
 }
@@ -255,4 +261,10 @@ QVariantList iDeviceWatcher::getModel()
     }
 
     return model;
+}
+
+void iDeviceWatcher::startStorageSync()
+{
+    if (m_currentDevice)
+        m_currentDevice->startStorageSync();
 }

@@ -2,8 +2,6 @@
 #define THEMEMANAGER_H
 
 #include <QObject>
-#include <QGuiApplication>
-#include <QStyleHints>
 
 class ThemeManager : public QObject
 {

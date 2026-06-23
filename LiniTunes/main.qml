@@ -50,11 +50,6 @@ Window {
         source: "qrc:/ressources/fonts/inter_variable_font.ttf"
     }
 
-    FontLoader {
-        id: cabinFont
-        source: "qrc:/ressources/fonts/inter_variable_font.ttf"
-    }
-
     function swicthDevicesMode(mode) {
         if (mode === "devices_choice" || mode === "device_choice") {
             content_develop_arrow.state = "flipped"
@@ -212,7 +207,6 @@ Window {
 
                     Rectangle {
                         id: rectangle3
-                        color: root.colors.batteryText
                         radius: 5
                         border.width: 0
                         anchors {
@@ -226,6 +220,18 @@ Window {
                             rightMargin: 1
                         }
                         clip: true
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 1
+                                color: root.colors.cardBackgroundTop
+                            }
+
+                            GradientStop {
+                                position: 0
+                                color: root.colors.cardBackgroundBottom
+                            }
+                            orientation: Gradient.Vertical
+                        }
                     }
                 }
 
@@ -258,7 +264,6 @@ Window {
                     Rectangle {
                         id: strorage_sync_button
                         y: 0
-                        color: root.colors.batteryText
                         radius: 5
                         border.width: 0
                         anchors {
@@ -270,6 +275,27 @@ Window {
                             topMargin: 1
                             bottomMargin: 1
                             rightMargin: 1
+                        }
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 1
+                                color: root.colors.cardBackgroundTop
+                            }
+
+                            GradientStop {
+                                position: 0
+                                color: root.colors.cardBackgroundBottom
+                            }
+                            orientation: Gradient.Vertical
+                        }
+                        Text {
+                            id: strorage_sync_button_text
+                            text: qsTr("Sync")
+                            color: root.colors.textPrimary
+                            anchors {
+                                horizontalCenter: parent.horizontalCenter
+                                verticalCenter: parent.verticalCenter
+                            }
                         }
                     }
                 }
@@ -715,7 +741,7 @@ Window {
                                         text: modelData.battery_string
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
-                                        font.family: cabinFont.name
+                                        font.family: interFont.name
                                         font.weight: Font.Bold
                                         font.pointSize: 9
                                         anchors.fill: deviceBatteryRect1
@@ -1086,7 +1112,7 @@ Window {
                                 text: qsTr("82")
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
-                                font.family: cabinFont.name
+                                font.family: interFont.name
                                 font.weight: Font.Bold
                                 font.pointSize: 9
                                 anchors.fill: device_battery_rect1
@@ -2205,6 +2231,7 @@ Window {
                         top: sidebar_audiobooks_button.bottom
                         topMargin: 4
                         leftMargin: 10
+                        rightMargin: 10
                     }
                     opacity: 1.0
                     states: [

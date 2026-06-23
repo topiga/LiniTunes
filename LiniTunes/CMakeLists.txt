@@ -37,13 +37,15 @@ target_link_libraries(plist_ffi_cpp PUBLIC
 
 # ---- LiniTunes source files -----------------------------------------------
 set(HEADER_FILES
-    liniTunes_device.h
+    linitunes_device.h
     idevicewatcher.h
 )
 
 set(SOURCE_FILES
-    liniTunes_device.cpp
+    linitunes_device.cpp
     idevicewatcher.cpp
+    storage_info.h storage_info.cpp
+    storage_sync_worker.h storage_sync_worker.cpp
     main.cpp
 )
 

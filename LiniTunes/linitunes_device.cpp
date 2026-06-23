@@ -1,4 +1,4 @@
-#include "liniTunes_device.h"
+#include "linitunes_device.h"
 #include <QDebug>
 #include <QFile>
 #include <plist/plist.h>
@@ -98,13 +98,26 @@ static QString lookup_marketing_name(const QString &identifier)
 iDevice::iDevice(QObject *parent)
     : QObject{parent}
 {
+    m_storageSyncWorker = new StorageSyncWorker();
+    m_storageSyncWorker->moveToThread(&m_storageSyncThread);
+    connect(&m_storageSyncThread, &QThread::finished,
+            m_storageSyncWorker, &QObject::deleteLater);
+    connect(m_storageSyncWorker, &StorageSyncWorker::finished,
+            this, &iDevice::onStorageSyncFinished);
+    connect(m_storageSyncWorker, &StorageSyncWorker::failed,
+            this, &iDevice::onStorageSyncFailed);
 }
 
-iDevice::~iDevice() = default;
+iDevice::~iDevice()
+{
+    m_storageSyncThread.quit();
+    m_storageSyncThread.wait();
+}
 
 bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr)
 {
     m_udid = udid;
+    m_deviceId = deviceId;
 
     auto prov_result = IdeviceFFI::Provider::usbmuxd_new(
         std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes");
@@ -148,14 +161,6 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     m_ecid              = plist_dict_get_uint_str(all_dict, "UniqueChipID");
     m_imei              = plist_dict_get_string(all_dict, "InternationalMobileEquipmentIdentity");
 
-    QString modelNum    = plist_dict_get_string(all_dict, "ModelNumber");
-    QString regionInfo  = plist_dict_get_string(all_dict, "RegionInfo");
-    m_model             = modelNum + regionInfo;
-
-    QString swVer = plist_dict_get_string(all_dict, "ProductVersion");
-    if (swVer.isEmpty())
-        swVer = plist_dict_get_string(all_dict, "HumanReadableProductVersionString");
-
     // Lookup marketing name
     m_marketingName = lookup_marketing_name(m_productType);
 
@@ -180,22 +185,41 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
         plist_free(node);
     }
 
-    // Disk usage
+    // Disk usage & storage info (tier 1 immediate estimate)
     auto disk_cap = lockdown.get_value("TotalDiskCapacity", "com.apple.disk_usage");
+    uint64_t totalBytes = 0;
     if (disk_cap.is_ok()) {
         plist_t node = disk_cap.unwrap();
-        plist_get_uint_val(node, &m_storageCapacityBytes);
-        m_storageCapacity = format_bytes(m_storageCapacityBytes);
+        plist_get_uint_val(node, &totalBytes);
+        m_storageCapacityBytes = totalBytes;
+        m_storageCapacity = format_bytes(m_storageCapacityBytes, false);
         plist_free(node);
     }
 
-    auto disk_avail = lockdown.get_value("TotalDataAvailable", "com.apple.disk_usage");
-    if (disk_avail.is_ok()) {
-        plist_t node = disk_avail.unwrap();
-        plist_get_uint_val(node, &m_storageLeftBytes);
-        m_storageLeft = format_bytes(m_storageLeftBytes);
+    // AmountDataAvailable is closer to real free space than TotalDataAvailable
+    uint64_t availBytes = 0;
+    auto amt_avail = lockdown.get_value("AmountDataAvailable", "com.apple.disk_usage");
+    if (amt_avail.is_ok()) {
+        plist_t node = amt_avail.unwrap();
+        plist_get_uint_val(node, &availBytes);
         plist_free(node);
     }
+    if (availBytes == 0) {
+        // Fallback to TotalDataAvailable
+        auto disk_avail = lockdown.get_value("TotalDataAvailable", "com.apple.disk_usage");
+        if (disk_avail.is_ok()) {
+            plist_t node = disk_avail.unwrap();
+            plist_get_uint_val(node, &availBytes);
+            plist_free(node);
+        }
+    }
+    m_storageLeftBytes = availBytes;
+    m_storageLeft = format_bytes(m_storageLeftBytes);
+
+    // Create tier-1 storage info
+    if (!m_storageInfo)
+        m_storageInfo = new StorageInfo(this);
+    m_storageInfo->setImmediate(totalBytes, availBytes);
 
     m_connected = true;
     qDebug("Device: %s | %s | %s", qPrintable(m_deviceName),
@@ -203,26 +227,47 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     return true;
 }
 
-QString iDevice::format_bytes(uint64_t bytes)
+QString iDevice::format_bytes(uint64_t bytes, bool decimals)
 {
-    if (bytes >= 1000000000000ULL)
-        return QString::number(bytes / 1000000000000ULL) + " TB";
+    if (bytes >= 1000000000000ULL) {
+        uint64_t tb = bytes / 1000000000000ULL;
+        if (decimals) {
+            uint64_t dec = (bytes / 100000000000ULL) % 10;
+            return QString::number(tb) + "." + QString::number(dec) + " TB";
+        } else {
+            return QString::number(tb) + " TB";
+        }
+    }
     if (bytes >= 1000000000ULL) {
         uint64_t gb = bytes / 1000000000ULL;
-        uint64_t dec = (bytes / 100000000ULL) % 10;
-        return QString::number(gb) + "." + QString::number(dec) + " GB";
+        if (decimals) {
+            uint64_t dec = (bytes / 100000000ULL) % 10;
+            return QString::number(gb) + "." + QString::number(dec) + " GB";
+        } else {
+            return QString::number(gb) + " GB";
+        }
     }
     if (bytes >= 1000000ULL) {
         uint64_t mb = bytes / 1000000ULL;
-        uint64_t dec = (bytes / 100000ULL) % 10;
-        return QString::number(mb) + "." + QString::number(dec) + " MB";
+        if (decimals) {
+            uint64_t dec = (bytes / 100000ULL) % 10;
+            return QString::number(mb) + "." + QString::number(dec) + " MB";
+        } else {
+            return QString::number(mb) + " MB";
+        }
     }
     if (bytes >= 1000ULL) {
         uint64_t kb = bytes / 1000ULL;
-        uint64_t dec = (bytes / 100ULL) % 10;
-        return QString::number(kb) + "." + QString::number(dec) + " kB";
+        if (decimals) {
+            uint64_t dec = (bytes / 100ULL) % 10;
+            return QString::number(kb) + "." + QString::number(dec) + " kB";
+        } else {
+            return QString::number(kb) + " kB";
+        }
     }
-    return QString::number(bytes) + " B";
+    if (decimals)
+        return QString::number(bytes) + " B";
+    return QString::number(bytes) + " B";
 }
 
 QString iDevice::device_image() const
@@ -236,4 +281,38 @@ QString iDevice::device_image() const
     if (QFile::exists(":/images/devices/Generic.png"))
         return "/images/devices/Generic.png";
     return "/images/iphone.png";
+}
+
+void iDevice::startStorageSync()
+{
+    if ((m_storageInfo && m_storageInfo->syncing()) || !m_connected)
+        return;
+
+    m_storageSyncProgress = 0;
+    if (m_storageInfo)
+        m_storageInfo->setSyncing(true);
+    emit storageSyncChanged();
+
+    if (!m_storageSyncThread.isRunning())
+        m_storageSyncThread.start();
+
+    QMetaObject::invokeMethod(m_storageSyncWorker,
+        [this]() { m_storageSyncWorker->runSync(m_udid, m_deviceId); },
+        Qt::QueuedConnection);
+}
+
+void iDevice::onStorageSyncFinished(StorageInfo *result)
+{
+    qDebug("Storage sync finished: total=%.1f GB, free=%.1f GB",
+           result->totalGb(), result->availableGb());
+    m_storageSyncProgress = 100;
+    emit storageSyncChanged();
+}
+
+void iDevice::onStorageSyncFailed(const QString &error)
+{
+    qDebug("Storage sync failed: %s", qPrintable(error));
+    if (m_storageInfo)
+        m_storageInfo->setSyncing(false);
+    emit storageSyncChanged();
 }

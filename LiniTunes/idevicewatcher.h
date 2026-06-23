@@ -6,9 +6,10 @@
 #include <QMap>
 #include <QStringList>
 #include <QVariantList>
-#include <QVariantMap>
 #include <atomic>
-#include "liniTunes_device.h"
+#include "linitunes_device.h"
+
+class StorageInfo;
 
 // ---- Worker: listens for usbmuxd events on a dedicated thread ----
 
@@ -27,7 +28,7 @@ signals:
     void deviceDisconnected(uint32_t deviceId);
 
 private:
-    std::atomic<bool> m_running{false};
+    std::atomic<bool> m_running = false;
 };
 
 // ---- Worker: initializes iDevice on a background thread ----
@@ -64,6 +65,9 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
     Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY currentDeviceChanged)
+    Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
+    Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -75,6 +79,7 @@ public:
 
     Q_INVOKABLE void switchCurrentDevice(const QString &udid = QString());
     Q_INVOKABLE QVariantList getModel();
+    Q_INVOKABLE void startStorageSync();
 
     void updateLists();
     QStringList udid_list() const { return m_udidList; }
@@ -92,10 +97,14 @@ public:
     bool device_connected() const { return m_currentDevice != nullptr; }
     int battery() const { return m_currentDevice ? m_currentDevice->battery() : 0; }
     QString battery_string() const { return m_currentDevice ? QString::number(m_currentDevice->battery()) : QString("0"); }
+    QObject *storageInfo() const { return m_currentDevice ? m_currentDevice->storageInfo() : nullptr; }
+    bool storageSyncing() const { return m_currentDevice ? m_currentDevice->storageSyncing() : false; }
+    int storageSyncProgress() const { return m_currentDevice ? m_currentDevice->storageSyncProgress() : 0; }
 
 signals:
     void udidListChanged();
     void currentDeviceChanged();
+    void storageSyncChanged();
 
 private slots:
     void onDeviceConnected(const QString &udid, uint32_t deviceId);
@@ -105,6 +114,7 @@ private slots:
 
 private:
     void removeDeviceByUdid(const QString &udid);
+    void connectDeviceSignals(iDevice *dev);
 
     iDevice *m_currentDevice = nullptr;
     QStringList m_udidList;
