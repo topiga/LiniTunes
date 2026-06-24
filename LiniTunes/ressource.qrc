@@ -4,6 +4,5 @@
         <file>main.qml</file>
         <file>idevices.qml</file>
         <file>ressources/fonts/inter_variable_font.ttf</file>
-        <file>ressources/fonts/cabin_variable_font.ttf</file>
     </qresource>
 </RCC>

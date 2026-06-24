@@ -42,6 +42,20 @@ Window {
 
         property color batteryText: root.isDarkTheme ?                      "#3b3b3b" : "#F9F9F9"
 
+        property color violet : root.isDarkTheme ?                          "#9141ac" : "#c061cb"
+        property color darkViolet : root.isDarkTheme ?                      "#813d9c" : "#9141ac"
+        property color blue : root.isDarkTheme ?                            "#3584e4" : "#62a0ea"
+        property color darkBlue : root.isDarkTheme ?                        "#1c71d8" : "#3584e4"
+        property color green : root.isDarkTheme ?                           "#33d17a" : "#57e389"
+        property color darkGreen : root.isDarkTheme ?                       "#2ec27e" : "#33d17a"
+        property color yellow : root.isDarkTheme ?                          "#f6d32d" : "#f8e45c"
+        property color darkYellow : root.isDarkTheme ?                      "#f5c211" : "#f6d32d"
+        property color orange : root.isDarkTheme ?                          "#ff7800" : "#ffa348"
+        property color darkOrange : root.isDarkTheme ?                      "#e66100" : "#ff7800"
+        property color red : root.isDarkTheme ?                             "#e01b24" : "#ed333b"
+        property color darkRed : root.isDarkTheme ?                         "#c01c28" : "#e01b24"
+        property color brown : root.isDarkTheme ?                           "#986a44" : "#b5835a"
+        property color darkBrown : root.isDarkTheme ?                       "#865e3c" : "#986a44"
     }
 
     // Universal font for all platforms? Doesn't work. WIP
@@ -81,6 +95,39 @@ Window {
             devices_normal = true
             devices_extended = false
             devices_choice = false
+        }
+    }
+
+    property QtObject storageRatio: QtObject {
+        property real audioGb: 0
+        property real photosGb: 0
+        property real documentsGb: 0
+        property real appsGb: 0
+        property real otherGb: 0
+        property real availableGb: 0
+        property real totalGb: 0
+    }
+
+    Connections {
+        target: DeviceWatcher
+        function onStorageSyncChanged() {
+            if (DeviceWatcher.storage_sync_progress === 100) {
+                root.storageRatio.audioGb = DeviceWatcher.storage_info.audioGb
+                root.storageRatio.photosGb = DeviceWatcher.storage_info.photosGb
+                root.storageRatio.documentsGb = DeviceWatcher.storage_info.documentsGb
+                root.storageRatio.appsGb = DeviceWatcher.storage_info.appsGb
+                root.storageRatio.otherGb = DeviceWatcher.storage_info.otherGb
+                root.storageRatio.availableGb = DeviceWatcher.storage_info.availableGb
+                root.storageRatio.totalGb = DeviceWatcher.storage_info.totalGb
+            } else {
+                root.storageRatio.audioGb = 0
+                root.storageRatio.photosGb = 0
+                root.storageRatio.documentsGb = 0
+                root.storageRatio.appsGb = 0
+                root.storageRatio.otherGb = 0
+                root.storageRatio.availableGb = 0
+                root.storageRatio.totalGb = 0
+            }
         }
     }
 
@@ -231,6 +278,176 @@ Window {
                                 color: root.colors.cardBackgroundBottom
                             }
                             orientation: Gradient.Vertical
+                        }
+                        Rectangle {
+                            id: storage_ratio_audio
+                            border.width: 0
+                            bottomLeftRadius: 5
+                            topLeftRadius: 5
+                            anchors {
+                                left: parent.left
+                                top: parent.top
+                                bottom: parent.bottom
+                                topMargin: 0
+                                leftMargin: 0
+                                bottomMargin: 0
+                            }
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb) : 0
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 1
+                                    color: root.colors.violet
+                                }
+                                GradientStop {
+                                    position: 0
+                                    color: root.colors.darkViolet
+                                }
+                                orientation: Gradient.Vertical
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onStorageSyncChanged() {
+                                    if (DeviceWatcher.storage_sync_progress === 100) {
+                                        console.log(root.storageRatio.audioGb)
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            id: storage_ratio_photos
+                            border.width: 0
+                            bottomLeftRadius: 5
+                            topLeftRadius: 5
+                            anchors {
+                                left: storage_ratio_audio.left
+                                top: parent.top
+                                bottom: parent.bottom
+                                topMargin: 0
+                                leftMargin: 0
+                                bottomMargin: 0
+                            }
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb) : 0
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 1
+                                    color: root.colors.yellow
+                                }
+                                GradientStop {
+                                    position: 0
+                                    color: root.colors.darkYellow
+                                }
+                                orientation: Gradient.Vertical
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onStorageSyncChanged() {
+                                    if (DeviceWatcher.storage_sync_progress === 100) {
+                                        console.log(root.storageRatio.photosGb)
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            id: storage_ratio_apps
+                            border.width: 0
+                            bottomLeftRadius: 5
+                            topLeftRadius: 5
+                            anchors {
+                                left: storage_ratio_photos.left
+                                top: parent.top
+                                bottom: parent.bottom
+                                topMargin: 0
+                                leftMargin: 0
+                                bottomMargin: 0
+                            }
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.appsGb) : 0
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 1
+                                    color: root.colors.red
+                                }
+                                GradientStop {
+                                    position: 0
+                                    color: root.colors.darkRed
+                                }
+                                orientation: Gradient.Vertical
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onStorageSyncChanged() {
+                                    if (DeviceWatcher.storage_sync_progress === 100) {
+                                        console.log(root.storageRatio.appsGb)
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            id: storage_ratio_documents
+                            border.width: 0
+                            bottomLeftRadius: 5
+                            topLeftRadius: 5
+                            anchors {
+                                left: storage_ratio_apps.left
+                                top: parent.top
+                                bottom: parent.bottom
+                                topMargin: 0
+                                leftMargin: 0
+                                bottomMargin: 0
+                            }
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.documentsGb) : 0
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 1
+                                    color: root.colors.green
+                                }
+                                GradientStop {
+                                    position: 0
+                                    color: root.colors.darkGreen
+                                }
+                                orientation: Gradient.Vertical
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onStorageSyncChanged() {
+                                    if (DeviceWatcher.storage_sync_progress === 100) {
+                                        console.log(root.storageRatio.documentsGb)
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            id: storage_ratio_other
+                            border.width: 0
+                            bottomLeftRadius: 5
+                            topLeftRadius: 5
+                            anchors {
+                                left: storage_ratio_documents.left
+                                top: parent.top
+                                bottom: parent.bottom
+                                topMargin: 0
+                                leftMargin: 0
+                                bottomMargin: 0
+                            }
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.otherGb) : 0
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 1
+                                    color: root.colors.brown
+                                }
+                                GradientStop {
+                                    position: 0
+                                    color: root.colors.darkBrown
+                                }
+                                orientation: Gradient.Vertical
+                            }
+                            Connections {
+                                target: DeviceWatcher
+                                function onStorageSyncChanged() {
+                                    if (DeviceWatcher.storage_sync_progress === 100) {
+                                        console.log(root.storageRatio.otherGb)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
