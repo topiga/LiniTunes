@@ -1,6 +1,7 @@
 import QtQuick
 import Qt5Compat.GraphicalEffects
 import QtQuick.Effects
+import QtQuick.Controls
 
 Window {
     id: root
@@ -96,6 +97,12 @@ Window {
             devices_extended = false
             devices_choice = false
         }
+    }
+
+    function formatGbLabel(gb) {
+        if (gb >= 1) return gb.toFixed(1) + " GB"
+        if (gb >= 0.01) return (gb * 1024).toFixed(0) + " MB"
+        return gb.toFixed(2) + " GB"
     }
 
     property QtObject storageRatio: QtObject {
@@ -267,6 +274,19 @@ Window {
                             rightMargin: 1
                         }
                         clip: true
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            maskSource: Item {
+                                width: storage_ratio.width
+                                height: storage_ratio.height
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: storage_ratio.width
+                                    height: storage_ratio.height
+                                    radius: 5
+                                }
+                            }
+                        }
                         gradient: Gradient {
                             GradientStop {
                                 position: 1
@@ -282,8 +302,6 @@ Window {
                         Rectangle {
                             id: storage_ratio_audio
                             border.width: 0
-                            bottomLeftRadius: 5
-                            topLeftRadius: 5
                             anchors {
                                 left: parent.left
                                 top: parent.top
@@ -292,68 +310,72 @@ Window {
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.audioGb <= 3 ? 3 : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb)) : 0
                             gradient: Gradient {
-                                GradientStop {
-                                    position: 1
-                                    color: root.colors.violet
-                                }
-                                GradientStop {
-                                    position: 0
-                                    color: root.colors.darkViolet
-                                }
+                                GradientStop { position: 0; color: root.colors.violet }
+                                GradientStop { position: 1; color: root.colors.darkViolet }
                                 orientation: Gradient.Vertical
                             }
-                            Connections {
-                                target: DeviceWatcher
-                                function onStorageSyncChanged() {
-                                    if (DeviceWatcher.storage_sync_progress === 100) {
-                                        console.log(root.storageRatio.audioGb)
-                                    }
-                                }
+                            Text {
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 80 ? qsTr("Audio") : ""
+                                color: "#ffffff"
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                visible: audioMouse.containsMouse
+                                text: qsTr("Audio") + " — " + root.formatGbLabel(root.storageRatio.audioGb)
+                                delay: 400
+                            }
+                            MouseArea {
+                                id: audioMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                         Rectangle {
                             id: storage_ratio_photos
                             border.width: 0
-                            bottomLeftRadius: 5
-                            topLeftRadius: 5
                             anchors {
-                                left: storage_ratio_audio.left
+                                left: storage_ratio_audio.right
                                 top: parent.top
                                 bottom: parent.bottom
                                 topMargin: 0
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.photosGb <= 3 ? 3 : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb) ) : 0
                             gradient: Gradient {
-                                GradientStop {
-                                    position: 1
-                                    color: root.colors.yellow
-                                }
-                                GradientStop {
-                                    position: 0
-                                    color: root.colors.darkYellow
-                                }
+                                GradientStop { position: 0; color: root.colors.yellow }
+                                GradientStop { position: 1; color: root.colors.darkYellow }
                                 orientation: Gradient.Vertical
                             }
-                            Connections {
-                                target: DeviceWatcher
-                                function onStorageSyncChanged() {
-                                    if (DeviceWatcher.storage_sync_progress === 100) {
-                                        console.log(root.storageRatio.photosGb)
-                                    }
-                                }
+                            Text {
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 80 ? qsTr("Photos") : ""
+                                color: "#ffffff"
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                visible: photosMouse.containsMouse
+                                text: qsTr("Photos") + " — " + root.formatGbLabel(root.storageRatio.photosGb)
+                                delay: 400
+                            }
+                            MouseArea {
+                                id: photosMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                         Rectangle {
                             id: storage_ratio_apps
                             border.width: 0
-                            bottomLeftRadius: 5
-                            topLeftRadius: 5
                             anchors {
-                                left: storage_ratio_photos.left
+                                left: storage_ratio_photos.right
                                 top: parent.top
                                 bottom: parent.bottom
                                 topMargin: 0
@@ -362,32 +384,34 @@ Window {
                             }
                             width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.appsGb) : 0
                             gradient: Gradient {
-                                GradientStop {
-                                    position: 1
-                                    color: root.colors.red
-                                }
-                                GradientStop {
-                                    position: 0
-                                    color: root.colors.darkRed
-                                }
+                                GradientStop { position: 0; color: root.colors.red }
+                                GradientStop { position: 1; color: root.colors.darkRed }
                                 orientation: Gradient.Vertical
                             }
-                            Connections {
-                                target: DeviceWatcher
-                                function onStorageSyncChanged() {
-                                    if (DeviceWatcher.storage_sync_progress === 100) {
-                                        console.log(root.storageRatio.appsGb)
-                                    }
-                                }
+                            Text {
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 100 ? qsTr("Applications") : (parent.width > 60 ? qsTr("Apps") : "")
+                                color: "#ffffff"
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                visible: appsMouse.containsMouse
+                                text: qsTr("Applications") + " — " + root.formatGbLabel(root.storageRatio.appsGb)
+                                delay: 400
+                            }
+                            MouseArea {
+                                id: appsMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                         Rectangle {
                             id: storage_ratio_documents
                             border.width: 0
-                            bottomLeftRadius: 5
-                            topLeftRadius: 5
                             anchors {
-                                left: storage_ratio_apps.left
+                                left: storage_ratio_apps.right
                                 top: parent.top
                                 bottom: parent.bottom
                                 topMargin: 0
@@ -396,32 +420,34 @@ Window {
                             }
                             width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.documentsGb) : 0
                             gradient: Gradient {
-                                GradientStop {
-                                    position: 1
-                                    color: root.colors.green
-                                }
-                                GradientStop {
-                                    position: 0
-                                    color: root.colors.darkGreen
-                                }
+                                GradientStop { position: 0; color: root.colors.green }
+                                GradientStop { position: 1; color: root.colors.darkGreen }
                                 orientation: Gradient.Vertical
                             }
-                            Connections {
-                                target: DeviceWatcher
-                                function onStorageSyncChanged() {
-                                    if (DeviceWatcher.storage_sync_progress === 100) {
-                                        console.log(root.storageRatio.documentsGb)
-                                    }
-                                }
+                            Text {
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 140 ? qsTr("Documents and Data") : (parent.width > 60 ? qsTr("Docs & Data") : "")
+                                color: "#ffffff"
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                visible: docsMouse.containsMouse
+                                text: qsTr("Documents and Data") + " — " + root.formatGbLabel(root.storageRatio.documentsGb)
+                                delay: 400
+                            }
+                            MouseArea {
+                                id: docsMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                         Rectangle {
                             id: storage_ratio_other
                             border.width: 0
-                            bottomLeftRadius: 5
-                            topLeftRadius: 5
                             anchors {
-                                left: storage_ratio_documents.left
+                                left: storage_ratio_documents.right
                                 top: parent.top
                                 bottom: parent.bottom
                                 topMargin: 0
@@ -430,23 +456,57 @@ Window {
                             }
                             width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.otherGb) : 0
                             gradient: Gradient {
-                                GradientStop {
-                                    position: 1
-                                    color: root.colors.brown
-                                }
-                                GradientStop {
-                                    position: 0
-                                    color: root.colors.darkBrown
-                                }
+                                GradientStop { position: 0; color: root.colors.brown }
+                                GradientStop { position: 1; color: root.colors.darkBrown }
                                 orientation: Gradient.Vertical
                             }
-                            Connections {
-                                target: DeviceWatcher
-                                function onStorageSyncChanged() {
-                                    if (DeviceWatcher.storage_sync_progress === 100) {
-                                        console.log(root.storageRatio.otherGb)
-                                    }
-                                }
+                            Text {
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 60 ? qsTr("Other") : ""
+                                color: "#ffffff"
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                visible: otherMouse.containsMouse
+                                text: qsTr("Other") + " — " + root.formatGbLabel(root.storageRatio.otherGb)
+                                delay: 400
+                            }
+                            MouseArea {
+                                id: otherMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                            }
+                        }
+                        Rectangle {
+                            id: storage_ratio_free
+                            border.width: 0
+                            anchors {
+                                left: storage_ratio_other.right
+                                right: parent.right
+                                top: parent.top
+                                bottom: parent.bottom
+                            }
+                            color: "transparent"
+                            Text {
+                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 70 ? root.formatGbLabel(root.storageRatio.availableGb) + " " + qsTr("free") : (parent.width > 40 ? root.formatGbLabel(root.storageRatio.availableGb) : "")
+                                color: root.colors.textSecondary
+                                opacity: 0.7
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                visible: freeMouse.containsMouse
+                                text: qsTr("Available") + " — " + root.formatGbLabel(root.storageRatio.availableGb)
+                                delay: 400
+                            }
+                            MouseArea {
+                                id: freeMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                     }

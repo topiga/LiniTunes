@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QString>
 #include <cstdint>
-#include "storage_info.h"
 
 /// Worker that performs the Tier-2 storage sync on a background thread.
 /// Connects AFC + installation_proxy, scans filesystem, computes categories.
@@ -19,7 +18,10 @@ public slots:
 
 signals:
     void progress(int percent);
-    void finished(StorageInfo *result);
+    void syncData(uint64_t total, uint64_t free,
+                  uint64_t apps, uint64_t audio,
+                  uint64_t photos, uint64_t documents,
+                  uint64_t other);
     void failed(QString error);
 
 private:

@@ -102,8 +102,8 @@ iDevice::iDevice(QObject *parent)
     m_storageSyncWorker->moveToThread(&m_storageSyncThread);
     connect(&m_storageSyncThread, &QThread::finished,
             m_storageSyncWorker, &QObject::deleteLater);
-    connect(m_storageSyncWorker, &StorageSyncWorker::finished,
-            this, &iDevice::onStorageSyncFinished);
+    connect(m_storageSyncWorker, &StorageSyncWorker::syncData,
+            this, &iDevice::onStorageSyncData);
     connect(m_storageSyncWorker, &StorageSyncWorker::failed,
             this, &iDevice::onStorageSyncFailed);
 }
@@ -301,10 +301,13 @@ void iDevice::startStorageSync()
         Qt::QueuedConnection);
 }
 
-void iDevice::onStorageSyncFinished(StorageInfo *result)
+void iDevice::onStorageSyncData(uint64_t total, uint64_t free,
+                                   uint64_t apps, uint64_t audio,
+                                   uint64_t photos, uint64_t documents,
+                                   uint64_t other)
 {
-    qDebug("Storage sync finished: total=%.1f GB, free=%.1f GB",
-           result->totalGb(), result->availableGb());
+    if (m_storageInfo)
+        m_storageInfo->setSyncResult(total, free, apps, audio, photos, documents, other);
     m_storageSyncProgress = 100;
     emit storageSyncChanged();
 }

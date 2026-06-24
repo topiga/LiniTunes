@@ -208,6 +208,7 @@ void iDeviceWatcher::updateLists()
     if (Devices.isEmpty()) {
         m_currentDevice = nullptr;
         emit currentDeviceChanged();
+        emit storageSyncChanged();
     } else if (Devices.size() == 1) {
         switchCurrentDevice(Devices.at(0)->udid());
     } else if (m_currentDevice == nullptr) {
@@ -222,6 +223,7 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
     if (udid.isEmpty()) {
         m_currentDevice = nullptr;
         emit currentDeviceChanged();
+        emit storageSyncChanged();
         return;
     }
 
@@ -229,6 +231,7 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
         if (d->udid() == udid) {
             m_currentDevice = d;
             emit currentDeviceChanged();
+            emit storageSyncChanged();
             return;
         }
     }

@@ -53,7 +53,10 @@ signals:
     void storageSyncChanged();
 
 private slots:
-    void onStorageSyncFinished(StorageInfo *result);
+    void onStorageSyncData(uint64_t total, uint64_t free,
+                           uint64_t apps, uint64_t audio,
+                           uint64_t photos, uint64_t documents,
+                           uint64_t other);
     void onStorageSyncFailed(const QString &error);
 
 private:

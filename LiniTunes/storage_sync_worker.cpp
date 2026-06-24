@@ -6,6 +6,7 @@
 #include <idevice++/installation_proxy.hpp>
 #include <plist/plist.h>
 #include <cstring>
+#include "storage_info.h"
 
 StorageSyncWorker::StorageSyncWorker(QObject *parent)
     : QObject(parent) {}
@@ -100,34 +101,30 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
 
     emit progress(20);
 
-    // ---- Installation Proxy: get app sizes ----
-    auto ipResult = IdeviceFFI::InstallationProxy::connect(provider);
-    if (ipResult.is_err()) {
-        emit failed("Failed to connect installation_proxy");
-        return;
-    }
-    auto ip = std::move(ipResult.unwrap());
-
-    auto appsResult = ip.get_apps(
-        IdeviceFFI::Option<std::string>(),          // any type
-        IdeviceFFI::Option<std::vector<std::string>>() // all bundles
-    );
-
+    // ---- Installation Proxy: get app sizes with proper attributes ----
     uint64_t appsBytes = 0;
-    if (appsResult.is_ok()) {
-        auto apps = appsResult.unwrap();
-        for (auto &appNode : apps) {
-            uint64_t size = plist_dict_get_uint_val(appNode, "StaticDiskUsage");
-            if (size == 0) {
-                // Try ApplicationSINF as fallback
-                plist_t sinf = plist_dict_get_item(appNode, "ApplicationSINF");
-                if (sinf) {
-                    size = plist_dict_get_uint_val(sinf, "TotalDiskUsage");
-                }
+    auto ipResult = IdeviceFFI::InstallationProxy::connect(provider);
+    if (ipResult.is_ok()) {
+        auto ip = std::move(ipResult.unwrap());
+
+        // Build options plist: {"ReturnAttributes": ["StaticDiskUsage", "DynamicDiskUsage"]}
+        plist_t opts = plist_new_dict();
+        plist_t attrs = plist_new_array();
+        plist_array_append_item(attrs, plist_new_string("StaticDiskUsage"));
+        plist_array_append_item(attrs, plist_new_string("DynamicDiskUsage"));
+        plist_dict_set_item(opts, "ReturnAttributes", attrs);
+
+        auto appsResult = ip.browse(IdeviceFFI::Option<plist_t>(opts));
+        if (appsResult.is_ok()) {
+            auto apps = appsResult.unwrap();
+            for (auto &appNode : apps) {
+                appsBytes += plist_dict_get_uint_val(appNode, "StaticDiskUsage");
+                appsBytes += plist_dict_get_uint_val(appNode, "DynamicDiskUsage");
+                plist_free(appNode);
             }
-            appsBytes += size;
-            plist_free(appNode);
         }
+
+        plist_free(opts);
     }
 
     qDebug("Apps: %llu bytes (%.2f GB)", (unsigned long long)appsBytes,
@@ -179,10 +176,7 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
     }
 
     // Build result
-    auto *info = new StorageInfo();
-    info->setSyncResult(afcTotal, afcFree, appsBytes, audioBytes,
-                        photosBytes, documentsBytes, otherBytes);
-
     emit progress(100);
-    emit finished(info);
+    emit syncData(afcTotal, afcFree, appsBytes, audioBytes,
+                  photosBytes, documentsBytes, otherBytes);
 }

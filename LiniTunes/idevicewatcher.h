@@ -65,7 +65,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
     Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
-    Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY storageSyncChanged)
     Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
 
