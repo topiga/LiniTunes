@@ -24,23 +24,23 @@ Window {
         property color contentBackground: root.isDarkTheme ?                "#303030" : "#ffffff"
         property color sidebarBackground: root.isDarkTheme ?                "#353535" : "#f0efed"
         property color sidebarBackgroundTransparent: root.isDarkTheme ?     "#00353535" : "#00f0efed"
-        property color sidebarCardStroke: root.isDarkTheme ?                "#424242" : "#d5d4d2"
+        property color sidebarCardStroke: root.isDarkTheme ?                "#424242" : "#e1e1e1"
 
         property color textPrimary: root.isDarkTheme ?                      "#ffffff" : "#241f31"
         property color textSecondary: root.isDarkTheme ?                    "#d9d9d9" : "#3d3846"
         property color accent:                                              "#3284ff"
 
         property color buttonHover: root.isDarkTheme ?                      "#424242" : "#e0e0e0"
-        property color divider: root.isDarkTheme ?                          "#424242" : "#d5d4d2"
+        property color divider: root.isDarkTheme ?                          "#424242" : "#dededa"
 
-        property color cardBackgroundTop: root.isDarkTheme ?                "#3a3a3a" : "#ffffff"
-        property color cardBackgroundBottom: root.isDarkTheme ?             "#3e3e3e" : "#f0efed"
-        property color cardStroke: root.isDarkTheme ?                       "#424242" : "#d5d4d2"
+        property color cardBackgroundBottom: root.isDarkTheme ?             "#3e3e3e" : "#ffffff"
+        property color cardBackgroundTop: root.isDarkTheme ?                "#3a3a3a" : "#f6f5f4"
+        property color cardStroke: root.isDarkTheme ?                       "#424242" : "#e7e7e7"
 
         property color settingsButtonBg: root.isDarkTheme ?                 "#252525" : "#e0dfdd"
 
         property color sideTextInactive: root.isDarkTheme ?                 "#9A9A9A" : "#9a9996"
-        property color sideTextActive: root.isDarkTheme ?                   "#FFFFFF" : "#241f31"
+        property color sideTextActive:                                      "#FFFFFF"
 
         property color batteryText: root.isDarkTheme ?                      "#3b3b3b" : "#F9F9F9"
 
@@ -740,6 +740,39 @@ Window {
                         ]
                         state: "normal"
                     }
+                    ColorOverlay {
+                        id: content_develop_arrow_image_overlay
+                        anchors.fill: content_develop_arrow
+                        source: content_develop_arrow
+                        state: content_develop_arrow.state
+                        color: root.colors.textSecondary
+                        opacity: 0.5
+                        states: [ State {
+                                name: "normal"
+                                PropertyChanges {
+                                    content_develop_arrow_image_overlay {
+                                        rotation: 0
+                                    }
+                                }
+                            },
+                            State {
+                                name: "flipped"
+                                PropertyChanges {
+                                    content_develop_arrow_image_overlay {
+                                        rotation: 180
+                                    }
+                                }
+                            } ]
+                        transitions: [ Transition {
+                                to: "normal"
+                                NumberAnimation { properties: "rotation"; duration: 200; easing.type: Easing.OutCubic }
+                            },
+                            Transition {
+                                to: "flipped"
+                                NumberAnimation { properties: "rotation"; duration: 200; easing.type: Easing.OutCubic }
+                            }
+                        ]
+                    }
                     MouseArea {
                         id: m_content_develop_arrow
                         anchors.fill: content_develop_arrow
@@ -806,7 +839,7 @@ Window {
                                     if (DeviceWatcher.udid === modelData.udid) {
                                         color = root.colors.accent
                                         deviceNameTextColor = "#ffffff"
-                                        deviceProductTypeTextColor = root.colors.textSecondary
+                                        deviceProductTypeTextColor = "#d9d9d9"
                                     } else {
                                         deviceNameTextColor = root.colors.textPrimary
                                         deviceProductTypeTextColor = root.colors.textSecondary
@@ -950,18 +983,21 @@ Window {
                                         anchors.fill: deviceBatteryRect1
                                     }
                                 }
-                                MouseArea {
+                                MouseArea {//"#3d3846"
                                     anchors.fill: parent
-                                    onPressed: parent.color = "#203284ff"
+                                    onPressed: {
+                                        parent.color = "#403284ff"
+                                        parent.deviceNameTextColor = "#241f31"
+                                    }
                                     onReleased: {
                                         for (let i = 0; i < devices_repeater.count; i++) {
                                             devices_repeater.itemAt(i).color = "transparent"
                                             devices_repeater.itemAt(i).deviceNameTextColor = root.colors.textPrimary
-                                            devices_repeater.itemAt(i).deviceProductTypeTextColor = root.colors.textSecondary
+                                            devices_repeater.itemAt(i).deviceProductTypeTextColor = "#3d3846"
                                         }
                                         parent.color = root.colors.accent
                                         parent.deviceNameTextColor = "#ffffff"
-                                        parent.deviceProductTypeTextColor = root.colors.textSecondary
+                                        parent.deviceProductTypeTextColor = "#3d3846"
                                         if (DeviceWatcher.udid !== modelData.udid) {
                                             DeviceWatcher.switchCurrentDevice(modelData.udid)
                                         }
