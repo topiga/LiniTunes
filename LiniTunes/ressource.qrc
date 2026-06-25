@@ -3,6 +3,10 @@
         <file>general.qml</file>
         <file>main.qml</file>
         <file>idevices.qml</file>
+        <file>qml/components/qmldir</file>
+        <file>qml/components/StorageTooltip.qml</file>
+        <file>qml/components/StorageSegment.qml</file>
+        <file>qml/components/StorageStrokeContainer.qml</file>
         <file>ressources/fonts/inter_variable_font.ttf</file>
     </qresource>
 </RCC>

@@ -2,6 +2,7 @@ import QtQuick
 import Qt5Compat.GraphicalEffects
 import QtQuick.Effects
 import QtQuick.Controls
+import "qml/components"
 
 Window {
     id: root
@@ -21,25 +22,25 @@ Window {
     property QtObject colors: QtObject {
         property color background: root.isDarkTheme ?                       "#181818" : "#ffffff"
         property color contentBackground: root.isDarkTheme ?                "#303030" : "#ffffff"
-        property color sidebarBackground: root.isDarkTheme ?                "#353535" : "#f6f5f4"
-        property color sidebarBackgroundTransparent: root.isDarkTheme ?     "#00353535" : "#00f6f5f4"
-        property color sidebarCardStroke: root.isDarkTheme ?                "#424242" : "#deddda"
+        property color sidebarBackground: root.isDarkTheme ?                "#353535" : "#f0efed"
+        property color sidebarBackgroundTransparent: root.isDarkTheme ?     "#00353535" : "#00f0efed"
+        property color sidebarCardStroke: root.isDarkTheme ?                "#424242" : "#d5d4d2"
 
         property color textPrimary: root.isDarkTheme ?                      "#ffffff" : "#241f31"
         property color textSecondary: root.isDarkTheme ?                    "#d9d9d9" : "#3d3846"
         property color accent:                                              "#3284ff"
 
         property color buttonHover: root.isDarkTheme ?                      "#424242" : "#e0e0e0"
-        property color divider: root.isDarkTheme ?                          "#424242" : "#e0e0e0"
+        property color divider: root.isDarkTheme ?                          "#424242" : "#d5d4d2"
 
         property color cardBackgroundTop: root.isDarkTheme ?                "#3a3a3a" : "#ffffff"
-        property color cardBackgroundBottom: root.isDarkTheme ?             "#3e3e3e" : "#f6f5f4"
-        property color cardStroke: root.isDarkTheme ?                       "#424242" : "#f6f5f4"
+        property color cardBackgroundBottom: root.isDarkTheme ?             "#3e3e3e" : "#f0efed"
+        property color cardStroke: root.isDarkTheme ?                       "#424242" : "#d5d4d2"
 
-        property color settingsButtonBg: root.isDarkTheme ?                 "#252525" : "#f0f0f0"
+        property color settingsButtonBg: root.isDarkTheme ?                 "#252525" : "#e0dfdd"
 
-        property color sideTextInactive: root.isDarkTheme ?                 "#9A9A9A" : "#9a9996"  // 55% white or 55% black
-        property color sideTextActive:                                      "#FFFFFF"
+        property color sideTextInactive: root.isDarkTheme ?                 "#9A9A9A" : "#9a9996"
+        property color sideTextActive: root.isDarkTheme ?                   "#FFFFFF" : "#241f31"
 
         property color batteryText: root.isDarkTheme ?                      "#3b3b3b" : "#F9F9F9"
 
@@ -309,293 +310,116 @@ Window {
                             }
                             orientation: Gradient.Vertical
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_unknown
-                            border.width: 0
-                            anchors {
-                                left: parent.left
-                                top: parent.top
-                                bottom: parent.bottom
-                            }
-                            width: (DeviceWatcher.device_connected && DeviceWatcher.storage_sync_progress !== 100 && root.storageRatio.totalGb > 0)
+                            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                            barWidth: (DeviceWatcher.device_connected && DeviceWatcher.storage_sync_progress !== 100 && root.storageRatio.totalGb > 0)
                                 ? (root.storageRatio.availableGb !== 0 && root.storageRatio.availableGb < 2) ? (storage_ratio.width - (storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.availableGb + 2))
                                                                                                              : (storage_ratio.width - (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.availableGb)
                                 : 0
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.colors.gray }
-                                GradientStop { position: 1; color: root.colors.darkGray }
-                                orientation: Gradient.Vertical
-                            }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 80 ? qsTr("Unknown") : ""
-                                color: root.colors.textSecondary
-                                opacity: 0.7
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            ToolTip {
-                                id: storage_ratio_unknown_tooltip
-                                visible: unknownMouse.containsMouse
-                                text: qsTr("Unknown") + " — " + root.formatGbLabel(root.storageRatio.totalGb - root.storageRatio.availableGb)
-                                delay: 400
-                                y: -45
-                                contentItem: Text {
-                                    text: storage_ratio_unknown_tooltip.text
-                                    font: interFont.name
-                                    color: root.colors.textPrimary
-                                }
-                                background: Rectangle {
-                                    border.width: 0
-                                    radius: 5
-                                    gradient: Gradient {
-                                        GradientStop {position: 0; color: root.colors.cardStroke }
-                                        GradientStop {position: 1; color: "#02000000" }
-                                        orientation: Gradient.Vertical
-                                    }
-                                    Rectangle {
-                                        anchors {
-                                            left: parent.left
-                                            right: parent.right
-                                            top: parent.top
-                                            bottom: parent.bottom
-                                            topMargin: 1
-                                            leftMargin: 1
-                                            bottomMargin: 1
-                                            rightMargin: 1
-                                        }
-                                        radius: 5
-                                        border.width: 0
-                                        color: "#3e3e3e"
-                                    }
-                                }
-                            }
-                            MouseArea {
-                                id: unknownMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            color1: root.colors.gray
+                            color2: root.colors.darkGray
+                            textColor: root.colors.textSecondary
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            label: qsTr("Unknown")
+                            tipText: qsTr("Unknown") + " — " + root.formatGbLabel(root.storageRatio.totalGb - root.storageRatio.availableGb)
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_audio
-                            border.width: 0
-                            anchors {
-                                left: parent.left
-                                top: parent.top
-                                bottom: parent.bottom
-                                topMargin: 0
-                                leftMargin: 0
-                                bottomMargin: 0
-                            }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.audioGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.audioGb + 2)) : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb) - 2) : 0
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.colors.violet }
-                                GradientStop { position: 1; color: root.colors.darkViolet }
-                                orientation: Gradient.Vertical
-                            }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 80 ? qsTr("Audio") : ""
-                                color: "#ffffff"
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            ToolTip {
-                                visible: audioMouse.containsMouse
-                                text: qsTr("Audio") + " — " + root.formatGbLabel(root.storageRatio.audioGb)
-                                delay: 400
-                            }
-                            MouseArea {
-                                id: audioMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                            barWidth: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.audioGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.audioGb + 2)) : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb) - 2) : 0
+                            color1: root.colors.violet
+                            color2: root.colors.darkViolet
+                            textColor: "#ffffff"
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            label: qsTr("Audio")
+                            tipText: qsTr("Audio") + " — " + root.formatGbLabel(root.storageRatio.audioGb)
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_photos
-                            border.width: 0
-                            anchors {
-                                left: storage_ratio_audio.right
-                                top: parent.top
-                                bottom: parent.bottom
-                                topMargin: 0
-                                leftMargin: 0
-                                bottomMargin: 0
-                            }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.photosGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.photosGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb - 2) : 0
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.colors.yellow }
-                                GradientStop { position: 1; color: root.colors.darkYellow }
-                                orientation: Gradient.Vertical
-                            }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 80 ? qsTr("Photos") : ""
-                                color: "#ffffff"
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            ToolTip {
-                                visible: photosMouse.containsMouse
-                                text: qsTr("Photos") + " — " + root.formatGbLabel(root.storageRatio.photosGb)
-                                delay: 400
-                            }
-                            MouseArea {
-                                id: photosMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            anchors { left: storage_ratio_audio.right; top: parent.top; bottom: parent.bottom }
+                            barWidth: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.photosGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.photosGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb - 2) : 0
+                            color1: root.colors.yellow
+                            color2: root.colors.darkYellow
+                            textColor: "#ffffff"
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            label: qsTr("Photos")
+                            tipText: qsTr("Photos") + " — " + root.formatGbLabel(root.storageRatio.photosGb)
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_apps
-                            border.width: 0
-                            anchors {
-                                left: storage_ratio_photos.right
-                                top: parent.top
-                                bottom: parent.bottom
-                                topMargin: 0
-                                leftMargin: 0
-                                bottomMargin: 0
-                            }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.appsGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.appsGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.appsGb - 2) : 0
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.colors.red }
-                                GradientStop { position: 1; color: root.colors.darkRed }
-                                orientation: Gradient.Vertical
-                            }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 100 ? qsTr("Applications") : (parent.width > 60 ? qsTr("Apps") : "")
-                                color: "#ffffff"
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            ToolTip {
-                                visible: appsMouse.containsMouse
-                                text: qsTr("Applications") + " — " + root.formatGbLabel(root.storageRatio.appsGb)
-                                delay: 400
-                            }
-                            MouseArea {
-                                id: appsMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            anchors { left: storage_ratio_photos.right; top: parent.top; bottom: parent.bottom }
+                            barWidth: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.appsGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.appsGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.appsGb - 2) : 0
+                            color1: root.colors.red
+                            color2: root.colors.darkRed
+                            textColor: "#ffffff"
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            label: qsTr("Apps")
+                            labelFull: qsTr("Applications")
+                            fullLabelMinWidth: 100
+                            tipText: qsTr("Applications") + " — " + root.formatGbLabel(root.storageRatio.appsGb)
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_documents
-                            border.width: 0
-                            anchors {
-                                left: storage_ratio_apps.right
-                                top: parent.top
-                                bottom: parent.bottom
-                                topMargin: 0
-                                leftMargin: 0
-                                bottomMargin: 0
-                            }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.documentsGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.documentsGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.documentsGb - 2) : 0
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.colors.green }
-                                GradientStop { position: 1; color: root.colors.darkGreen }
-                                orientation: Gradient.Vertical
-                            }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 140 ? qsTr("Documents and Data") : (parent.width > 60 ? qsTr("Docs & Data") : "")
-                                color: "#ffffff"
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            ToolTip {
-                                visible: docsMouse.containsMouse
-                                text: qsTr("Documents and Data") + " — " + root.formatGbLabel(root.storageRatio.documentsGb)
-                                delay: 400
-                            }
-                            MouseArea {
-                                id: docsMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            anchors { left: storage_ratio_apps.right; top: parent.top; bottom: parent.bottom }
+                            barWidth: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.documentsGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.documentsGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.documentsGb - 2) : 0
+                            color1: root.colors.green
+                            color2: root.colors.darkGreen
+                            textColor: "#ffffff"
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            label: qsTr("Docs & Data")
+                            labelFull: qsTr("Documents and Data")
+                            fullLabelMinWidth: 140
+                            tipText: qsTr("Documents and Data") + " — " + root.formatGbLabel(root.storageRatio.documentsGb)
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_other
-                            border.width: 0
-                            anchors {
-                                left: storage_ratio_documents.right
-                                top: parent.top
-                                bottom: parent.bottom
-                                topMargin: 0
-                                leftMargin: 0
-                                bottomMargin: 0
-                            }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.otherGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.otherGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.otherGb - 1) : 0
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.colors.brown }
-                                GradientStop { position: 1; color: root.colors.darkBrown }
-                                orientation: Gradient.Vertical
-                            }
-                            Text {
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 60 ? qsTr("Other") : ""
-                                color: "#ffffff"
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            ToolTip {
-                                visible: otherMouse.containsMouse
-                                text: qsTr("Other") + " — " + root.formatGbLabel(root.storageRatio.otherGb)
-                                delay: 400
-                            }
-                            MouseArea {
-                                id: otherMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            anchors { left: storage_ratio_documents.right; top: parent.top; bottom: parent.bottom }
+                            barWidth: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.otherGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.otherGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.otherGb - 1) : 0
+                            color1: root.colors.brown
+                            color2: root.colors.darkBrown
+                            textColor: "#ffffff"
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            label: qsTr("Other")
+                            tipText: qsTr("Other") + " — " + root.formatGbLabel(root.storageRatio.otherGb)
                         }
-                        Rectangle {
+                        StorageSegment {
                             id: storage_ratio_free
-                            border.width: 0
                             anchors {
                                 left: DeviceWatcher.storage_sync_progress === 100 ? storage_ratio_other.right : storage_ratio_unknown.right
                                 right: parent.right
                                 top: parent.top
                                 bottom: parent.bottom
                             }
-                            color: "transparent"
-                            Text {
-                                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: {
-                                    if (!DeviceWatcher.device_connected || root.storageRatio.availableGb <= 0) return ""
-                                    if (parent.width > 70) return root.formatGbLabel(root.storageRatio.availableGb) + " " + qsTr("free")
-                                    if (parent.width > 40) return root.formatGbLabel(root.storageRatio.availableGb)
-                                    return ""
-                                }
-                                color: root.colors.textSecondary
-                                opacity: 0.7
-                                font.pointSize: 9
-                                font.family: interFont.name
-                                font.weight: Font.DemiBold
-                            }
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: DeviceWatcher.storage_sync_progress === 100 ? root.colors.gray : "#02000000"}
-                                GradientStop { position: 1; color: DeviceWatcher.storage_sync_progress === 100 ? root.colors.darkGray : "#02000000" }
-                                orientation: Gradient.Vertical
-                            }
-                            ToolTip {
-                                visible: freeMouse.containsMouse
-                                text: qsTr("Available") + " — " + root.formatGbLabel(root.storageRatio.availableGb)
-                                delay: 400
-                            }
-                            MouseArea {
-                                id: freeMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                            transparent: DeviceWatcher.storage_sync_progress !== 100
+                            textRight: true
+                            textColor: root.colors.textSecondary
+                            tipTextColor: root.colors.textPrimary
+                            tipBackgroundStroke: root.colors.cardStroke
+                            tipBackgroundFill: root.colors.settingsButtonBg
+                            transparentTextColor: root.colors.textSecondary
+                            color1: root.colors.gray
+                            color2: root.colors.darkGray
+                            label: root.formatGbLabel(root.storageRatio.availableGb)
+                            tipText: qsTr("Available") + " — " + root.formatGbLabel(root.storageRatio.availableGb)
                         }
                     }
                 }
@@ -980,9 +804,9 @@ Window {
                                         devices_repeater.height = devices_repeater.count*(height + 10)+8
                                     }
                                     if (DeviceWatcher.udid === modelData.udid) {
-                                        color = "#3284ff"
+                                        color = root.colors.accent
                                         deviceNameTextColor = "#ffffff"
-                                        deviceProductTypeTextColor = "#d9d9d9"
+                                        deviceProductTypeTextColor = root.colors.textSecondary
                                     } else {
                                         deviceNameTextColor = root.colors.textPrimary
                                         deviceProductTypeTextColor = root.colors.textSecondary
@@ -1135,9 +959,9 @@ Window {
                                             devices_repeater.itemAt(i).deviceNameTextColor = root.colors.textPrimary
                                             devices_repeater.itemAt(i).deviceProductTypeTextColor = root.colors.textSecondary
                                         }
-                                        parent.color = "#3284ff"
+                                        parent.color = root.colors.accent
                                         parent.deviceNameTextColor = "#ffffff"
-                                        parent.deviceProductTypeTextColor = "#d9d9d9"
+                                        parent.deviceProductTypeTextColor = root.colors.textSecondary
                                         if (DeviceWatcher.udid !== modelData.udid) {
                                             DeviceWatcher.switchCurrentDevice(modelData.udid)
                                         }
@@ -1742,7 +1566,7 @@ Window {
 
                 Rectangle {
                     id: clicked_rect
-                    color: "#3284ff"
+                    color: root.colors.accent
                     radius: 8
                     anchors {
                         right: sidebar_general_button.right
