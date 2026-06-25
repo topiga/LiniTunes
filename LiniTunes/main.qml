@@ -897,7 +897,7 @@ Window {
                                     id: deviceProductTypeText
                                     opacity: 1
                                     color: parent.deviceProductTypeTextColor
-                                    text: modelData.product_type
+                                    text: modelData.marketing_name
                                     anchors {
                                         left: deviceImage.right
                                         top: deviceNameText.bottom
@@ -2827,7 +2827,7 @@ Window {
                     right: parent.right
                     rightMargin: 14
                 }
-                color: "#252525"
+                color: root.colors.settingsButtonBg
                 radius: 27
 
                 Image {
@@ -2849,6 +2849,13 @@ Window {
                         parent.opacity=1.0
                         console.log("App settings not implemented yet")
                     }
+                }
+                ColorOverlay {
+                    id: app_settings_button_image_overlay
+                    anchors.fill: app_settings_button_image
+                    source: app_settings_button_image
+                    state: parent.state
+                    color: root.colors.textPrimary
                 }
             }
         }
