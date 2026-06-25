@@ -39,6 +39,12 @@ struct DeviceNameEntry {
 };
 
 static const DeviceNameEntry deviceNameTable[] = {
+    {"iPhone18,5",  "iPhone 17e"},
+    {"iPhone18,4",  "iPhone Air"},
+    {"iPhone18,1",  "iPhone 17 Pro"},
+    {"iPhone18,2",  "iPhone 17 Pro Max"},
+    {"iPhone18,3",  "iPhone 17"},
+    {"iPhone17,5",  "iPhone 16e"},
     {"iPhone17,1",  "iPhone 16 Pro"},
     {"iPhone17,2",  "iPhone 16 Pro Max"},
     {"iPhone17,3",  "iPhone 16"},
@@ -81,6 +87,19 @@ static const DeviceNameEntry deviceNameTable[] = {
     {"iPhone8,2",   "iPhone 6s Plus"},
     {"iPhone7,2",   "iPhone 6"},
     {"iPhone7,1",   "iPhone 6 Plus"},
+    {"iPhone6,1",   "iPhone 5S"},
+    {"iPhone6,2",   "iPhone 5S"},
+    {"iPhone5,3",   "iPhone 5C"},
+    {"iPhone5,4",   "iPhone 5C"},
+    {"iPhone5,1",   "iPhone 5"},
+    {"iPhone5,2",   "iPhone 5"},
+    {"iPhone4,1",   "iPhone 4S"},
+    {"iPhone3,1",   "iPhone 4"},
+    {"iPhone3,2",   "iPhone 4"},
+    {"iPhone3,3",   "iPhone 4"},
+    {"iPhone2,1",   "iPhone 3GS"},
+    {"iPhone1,2",   "iPhone 3G"},
+    {"iPhone1,1",   "iPhone"},
     {nullptr, nullptr}
 };
 

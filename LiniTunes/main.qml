@@ -57,6 +57,9 @@ Window {
         property color darkRed : root.isDarkTheme ?                         "#c01c28" : "#e01b24"
         property color brown : root.isDarkTheme ?                           "#986a44" : "#b5835a"
         property color darkBrown : root.isDarkTheme ?                       "#865e3c" : "#986a44"
+        property color gray : root.isDarkTheme ?                            "#77767b" : "#c0bfbc"
+        property color darkGray : root.isDarkTheme ?                        "#5e5c64" : "#9a9996"
+        property color darkerGray : root.isDarkTheme ?                      "#3d3846" : "#77767b"
     }
 
     // Universal font for all platforms? Doesn't work. WIP
@@ -117,8 +120,23 @@ Window {
 
     Connections {
         target: DeviceWatcher
+        function onCurrentDeviceChanged() {
+            // Copy Tier 1 values immediately on device change
+            if (DeviceWatcher.storage_info) {
+                root.storageRatio.availableGb = DeviceWatcher.storage_info.availableGb
+                root.storageRatio.totalGb = DeviceWatcher.storage_info.totalGb
+            } else {
+                root.storageRatio.availableGb = 0
+                root.storageRatio.totalGb = 0
+            }
+            root.storageRatio.audioGb = 0
+            root.storageRatio.photosGb = 0
+            root.storageRatio.documentsGb = 0
+            root.storageRatio.appsGb = 0
+            root.storageRatio.otherGb = 0
+        }
         function onStorageSyncChanged() {
-            if (DeviceWatcher.storage_sync_progress === 100) {
+            if (DeviceWatcher.storage_sync_progress === 100 && DeviceWatcher.storage_info) {
                 root.storageRatio.audioGb = DeviceWatcher.storage_info.audioGb
                 root.storageRatio.photosGb = DeviceWatcher.storage_info.photosGb
                 root.storageRatio.documentsGb = DeviceWatcher.storage_info.documentsGb
@@ -126,14 +144,6 @@ Window {
                 root.storageRatio.otherGb = DeviceWatcher.storage_info.otherGb
                 root.storageRatio.availableGb = DeviceWatcher.storage_info.availableGb
                 root.storageRatio.totalGb = DeviceWatcher.storage_info.totalGb
-            } else {
-                root.storageRatio.audioGb = 0
-                root.storageRatio.photosGb = 0
-                root.storageRatio.documentsGb = 0
-                root.storageRatio.appsGb = 0
-                root.storageRatio.otherGb = 0
-                root.storageRatio.availableGb = 0
-                root.storageRatio.totalGb = 0
             }
         }
     }
@@ -300,6 +310,74 @@ Window {
                             orientation: Gradient.Vertical
                         }
                         Rectangle {
+                            id: storage_ratio_unknown
+                            border.width: 0
+                            anchors {
+                                left: parent.left
+                                top: parent.top
+                                bottom: parent.bottom
+                            }
+                            width: (DeviceWatcher.device_connected && DeviceWatcher.storage_sync_progress !== 100 && root.storageRatio.totalGb > 0)
+                                ? (root.storageRatio.availableGb !== 0 && root.storageRatio.availableGb < 2) ? (storage_ratio.width - (storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.availableGb + 2))
+                                                                                                             : (storage_ratio.width - (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.availableGb)
+                                : 0
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: root.colors.gray }
+                                GradientStop { position: 1; color: root.colors.darkGray }
+                                orientation: Gradient.Vertical
+                            }
+                            Text {
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                text: parent.width > 80 ? qsTr("Unknown") : ""
+                                color: root.colors.textSecondary
+                                opacity: 0.7
+                                font.pointSize: 9
+                                font.family: interFont.name
+                                font.weight: Font.DemiBold
+                            }
+                            ToolTip {
+                                id: storage_ratio_unknown_tooltip
+                                visible: unknownMouse.containsMouse
+                                text: qsTr("Unknown") + " — " + root.formatGbLabel(root.storageRatio.totalGb - root.storageRatio.availableGb)
+                                delay: 400
+                                y: -45
+                                contentItem: Text {
+                                    text: storage_ratio_unknown_tooltip.text
+                                    font: interFont.name
+                                    color: root.colors.textPrimary
+                                }
+                                background: Rectangle {
+                                    border.width: 0
+                                    radius: 5
+                                    gradient: Gradient {
+                                        GradientStop {position: 0; color: root.colors.cardStroke }
+                                        GradientStop {position: 1; color: "#02000000" }
+                                        orientation: Gradient.Vertical
+                                    }
+                                    Rectangle {
+                                        anchors {
+                                            left: parent.left
+                                            right: parent.right
+                                            top: parent.top
+                                            bottom: parent.bottom
+                                            topMargin: 1
+                                            leftMargin: 1
+                                            bottomMargin: 1
+                                            rightMargin: 1
+                                        }
+                                        radius: 5
+                                        border.width: 0
+                                        color: "#3e3e3e"
+                                    }
+                                }
+                            }
+                            MouseArea {
+                                id: unknownMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                            }
+                        }
+                        Rectangle {
                             id: storage_ratio_audio
                             border.width: 0
                             anchors {
@@ -310,7 +388,7 @@ Window {
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.audioGb <= 3 ? 3 : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb)) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? (root.storageRatio.audioGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.audioGb + 2)) : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.audioGb) - 2) : 0
                             gradient: Gradient {
                                 GradientStop { position: 0; color: root.colors.violet }
                                 GradientStop { position: 1; color: root.colors.darkViolet }
@@ -346,7 +424,7 @@ Window {
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.photosGb <= 3 ? 3 : ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb) ) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.photosGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.photosGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.photosGb - 2) : 0
                             gradient: Gradient {
                                 GradientStop { position: 0; color: root.colors.yellow }
                                 GradientStop { position: 1; color: root.colors.darkYellow }
@@ -382,7 +460,7 @@ Window {
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.appsGb) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.appsGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.appsGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.appsGb - 2) : 0
                             gradient: Gradient {
                                 GradientStop { position: 0; color: root.colors.red }
                                 GradientStop { position: 1; color: root.colors.darkRed }
@@ -418,7 +496,7 @@ Window {
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.documentsGb) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.documentsGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.documentsGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.documentsGb - 2) : 0
                             gradient: Gradient {
                                 GradientStop { position: 0; color: root.colors.green }
                                 GradientStop { position: 1; color: root.colors.darkGreen }
@@ -454,7 +532,7 @@ Window {
                                 leftMargin: 0
                                 bottomMargin: 0
                             }
-                            width: DeviceWatcher.storage_sync_progress === 100 ? ((storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.otherGb) : 0
+                            width: DeviceWatcher.storage_sync_progress === 100 ? ( root.storageRatio.otherGb <= 4 ? ((storage_ratio.width / root.storageRatio.totalGb) * (root.storageRatio.otherGb + 2)) : (storage_ratio.width / root.storageRatio.totalGb) * root.storageRatio.otherGb - 1) : 0
                             gradient: Gradient {
                                 GradientStop { position: 0; color: root.colors.brown }
                                 GradientStop { position: 1; color: root.colors.darkBrown }
@@ -483,7 +561,7 @@ Window {
                             id: storage_ratio_free
                             border.width: 0
                             anchors {
-                                left: storage_ratio_other.right
+                                left: DeviceWatcher.storage_sync_progress === 100 ? storage_ratio_other.right : storage_ratio_unknown.right
                                 right: parent.right
                                 top: parent.top
                                 bottom: parent.bottom
@@ -491,12 +569,22 @@ Window {
                             color: "transparent"
                             Text {
                                 anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                                text: parent.width > 70 ? root.formatGbLabel(root.storageRatio.availableGb) + " " + qsTr("free") : (parent.width > 40 ? root.formatGbLabel(root.storageRatio.availableGb) : "")
+                                text: {
+                                    if (!DeviceWatcher.device_connected || root.storageRatio.availableGb <= 0) return ""
+                                    if (parent.width > 70) return root.formatGbLabel(root.storageRatio.availableGb) + " " + qsTr("free")
+                                    if (parent.width > 40) return root.formatGbLabel(root.storageRatio.availableGb)
+                                    return ""
+                                }
                                 color: root.colors.textSecondary
                                 opacity: 0.7
                                 font.pointSize: 9
                                 font.family: interFont.name
                                 font.weight: Font.DemiBold
+                            }
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: DeviceWatcher.storage_sync_progress === 100 ? root.colors.gray : "#02000000"}
+                                GradientStop { position: 1; color: DeviceWatcher.storage_sync_progress === 100 ? root.colors.darkGray : "#02000000" }
+                                orientation: Gradient.Vertical
                             }
                             ToolTip {
                                 visible: freeMouse.containsMouse
@@ -538,6 +626,7 @@ Window {
                         orientation: Gradient.Vertical
                     }
 
+                    opacity: DeviceWatcher.device_connected ? 1.0 : 0.5
                     Rectangle {
                         id: strorage_sync_button
                         y: 0
@@ -579,10 +668,12 @@ Window {
                         }
                         MouseArea {
                             anchors.fill: parent
+                            enabled: DeviceWatcher.device_connected
                             onPressed: parent.opacity=0.7
                             onReleased: {
                                 parent.opacity=1
-                                DeviceWatcher.startStorageSync()
+                                if (DeviceWatcher.device_connected)
+                                    DeviceWatcher.startStorageSync()
                             }
                         }
                     }

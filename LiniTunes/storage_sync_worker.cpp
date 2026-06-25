@@ -165,14 +165,11 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
     // Known categories
     uint64_t knownBytes = appsBytes + audioBytes + photosBytes;
     uint64_t documentsBytes = 0;
-    uint64_t otherBytes = 0;
+    uint64_t otherBytes = systemBytes;
 
-    // Remaining used space not in known categories
+    // Remaining used space = Documents & Data
     if (afcUsed > knownBytes + systemBytes) {
-        uint64_t uncategorized = afcUsed - knownBytes - systemBytes;
-        // Split arbitrarily: half documents, half other
-        documentsBytes = uncategorized / 2;
-        otherBytes = uncategorized - documentsBytes;
+        documentsBytes = afcUsed - knownBytes - systemBytes;
     }
 
     // Build result

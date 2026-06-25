@@ -158,5 +158,13 @@
         <file>images/glyphs/book.png</file>
         <file>images/glyphs/audiobook.png</file>
         <file>images/iphone.png</file>
+        <file>images/devices/iPhone15,4.png</file>
+        <file>images/devices/iPhone17,4.png</file>
+        <file>images/devices/iPhone17,3.png</file>
+        <file>images/devices/iPhone17,2.png</file>
+        <file>images/devices/iPhone17,1.png</file>
+        <file>images/devices/iPhone16,2.png</file>
+        <file>images/devices/iPhone16,1.png</file>
+        <file>images/devices/iPhone15,5.png</file>
     </qresource>
 </RCC>
