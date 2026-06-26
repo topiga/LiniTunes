@@ -17,6 +17,50 @@ set(IDEVICE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/idevice"
     CACHE PATH "Path to idevice repository root")
 set(IDEVICE_FFI_PATH "${IDEVICE_ROOT}/target/release/libidevice_ffi.a"
     CACHE FILEPATH "Path to libidevice_ffi.a")
+set(IDEVICE_FFI_FEATURES "usbmuxd,diagnostics_relay,pair,afc,installation_proxy"
+    CACHE STRING "Cargo features for idevice-ffi build")
+
+# Auto-build Rust FFI static library if missing
+if(NOT EXISTS "${IDEVICE_FFI_PATH}")
+    message(STATUS "libidevice_ffi.a not found at ${IDEVICE_FFI_PATH}")
+    message(STATUS "Building idevice-ffi from source (this may take a minute)...")
+
+    # Ensure submodules are initialized
+    if(NOT EXISTS "${IDEVICE_ROOT}/cpp/plist_ffi/cpp/CMakeLists.txt")
+        message(STATUS "Initializing idevice submodules...")
+        execute_process(
+            COMMAND git submodule update --init --recursive --depth 1
+            WORKING_DIRECTORY "${IDEVICE_ROOT}"
+            RESULT_VARIABLE SUBMODULE_RESULT
+        )
+        if(NOT SUBMODULE_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to initialize idevice submodules")
+        endif()
+    endif()
+
+    # Build the Rust FFI static library
+    execute_process(
+        COMMAND cargo build --release -p idevice-ffi --features "${IDEVICE_FFI_FEATURES}"
+        WORKING_DIRECTORY "${IDEVICE_ROOT}"
+        RESULT_VARIABLE CARGO_RESULT
+    )
+    if(NOT CARGO_RESULT EQUAL 0)
+        message(FATAL_ERROR "cargo build failed. Is Rust installed? https://rustup.rs")
+    endif()
+
+    if(NOT EXISTS "${IDEVICE_FFI_PATH}")
+        message(FATAL_ERROR "cargo build succeeded but ${IDEVICE_FFI_PATH} not found")
+    endif()
+
+    message(STATUS "idevice-ffi built successfully: ${IDEVICE_FFI_PATH}")
+endif()
+
+# Rebuild target for manual invocation: cmake --build build --target cargo-rebuild
+add_custom_target(cargo-rebuild
+    COMMAND cargo build --release -p idevice-ffi --features "${IDEVICE_FFI_FEATURES}"
+    WORKING_DIRECTORY "${IDEVICE_ROOT}"
+    COMMENT "Rebuilding idevice-ffi Rust static library"
+)
 
 # Build the C++ wrapper library (idevice++)
 add_subdirectory("${IDEVICE_ROOT}/cpp"
