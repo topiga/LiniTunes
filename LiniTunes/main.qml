@@ -25,6 +25,8 @@ Window {
         property color sidebarBackground: root.isDarkTheme ?                "#353535" : "#f0efed"
         property color sidebarBackgroundTransparent: root.isDarkTheme ?     "#00353535" : "#00f0efed"
         property color sidebarCardStroke: root.isDarkTheme ?                "#424242" : "#e1e1e1"
+        property color sidebarCardBackgroundBottom: root.isDarkTheme ?      "#3e3e3e" : "#f6f5f4"
+        property color sidebarCardBackgroundTop: root.isDarkTheme ?         "#3a3a3a" : cardBackgroundBottom
 
         property color textPrimary: root.isDarkTheme ?                      "#ffffff" : "#241f31"
         property color textSecondary: root.isDarkTheme ?                    "#d9d9d9" : "#3d3846"
@@ -34,10 +36,10 @@ Window {
         property color divider: root.isDarkTheme ?                          "#424242" : "#dededa"
 
         property color cardBackgroundBottom: root.isDarkTheme ?             "#3e3e3e" : "#ffffff"
-        property color cardBackgroundTop: root.isDarkTheme ?                "#3a3a3a" : "#f6f5f4"
+        property color cardBackgroundTop: root.isDarkTheme ?                "#3a3a3a" : "#f2f1f0"
         property color cardStroke: root.isDarkTheme ?                       "#424242" : "#e7e7e7"
 
-        property color settingsButtonBg: root.isDarkTheme ?                 "#252525" : "#e0dfdd"
+        property color settingsButtonBg: root.isDarkTheme ?                 "#252525" : "#e1e0df"
 
         property color sideTextInactive: root.isDarkTheme ?                 "#9A9A9A" : "#9a9996"
         property color sideTextActive:                                      "#FFFFFF"
@@ -58,9 +60,9 @@ Window {
         property color darkRed : root.isDarkTheme ?                         "#c01c28" : "#e01b24"
         property color brown : root.isDarkTheme ?                           "#986a44" : "#b5835a"
         property color darkBrown : root.isDarkTheme ?                       "#865e3c" : "#986a44"
-        property color gray : root.isDarkTheme ?                            "#77767b" : "#c0bfbc"
-        property color darkGray : root.isDarkTheme ?                        "#5e5c64" : "#9a9996"
-        property color darkerGray : root.isDarkTheme ?                      "#3d3846" : "#77767b"
+        property color gray : root.isDarkTheme ?                            "#77767b" : "#deddda"
+        property color darkGray : root.isDarkTheme ?                        "#5e5c64" : "#c0bfbc"
+        property color darkerGray : root.isDarkTheme ?                      "#3d3846" : "#9a9996"
     }
 
     // Universal font for all platforms? Doesn't work. WIP
@@ -403,6 +405,7 @@ Window {
                         }
                         StorageSegment {
                             id: storage_ratio_free
+                            visible: DeviceWatcher.device_connected
                             anchors {
                                 left: DeviceWatcher.storage_sync_progress === 100 ? storage_ratio_other.right : storage_ratio_unknown.right
                                 right: parent.right
@@ -660,12 +663,12 @@ Window {
                         orientation: Gradient.Vertical
                         GradientStop {
                             position: 1
-                            color: root.colors.cardBackgroundTop
+                            color: root.colors.sidebarCardBackgroundTop
                         }
 
                         GradientStop {
                             position: 0
-                            color: root.colors.cardBackgroundBottom
+                            color: root.colors.sidebarCardBackgroundBottom
                         }
                     }
 
@@ -839,14 +842,14 @@ Window {
                                     if (DeviceWatcher.udid === modelData.udid) {
                                         color = root.colors.accent
                                         deviceNameTextColor = "#ffffff"
-                                        deviceProductTypeTextColor = "#d9d9d9"
+                                        deviceProductTypeTextColor = "#e1e0df"
                                     } else {
                                         deviceNameTextColor = root.colors.textPrimary
                                         deviceProductTypeTextColor = root.colors.textSecondary
                                     }
                                 }
                                 property color deviceNameTextColor : "#ffffff"
-                                property color deviceProductTypeTextColor : "#d9d9d9"
+                                property color deviceProductTypeTextColor : "#e1e0df"
                                 anchors {
                                     left: parent.left
                                     leftMargin: 10
@@ -988,16 +991,17 @@ Window {
                                     onPressed: {
                                         parent.color = "#403284ff"
                                         parent.deviceNameTextColor = "#241f31"
+                                        parent.deviceProductTypeTextColor = "#3d3846"
                                     }
                                     onReleased: {
                                         for (let i = 0; i < devices_repeater.count; i++) {
                                             devices_repeater.itemAt(i).color = "transparent"
                                             devices_repeater.itemAt(i).deviceNameTextColor = root.colors.textPrimary
-                                            devices_repeater.itemAt(i).deviceProductTypeTextColor = "#3d3846"
+                                            devices_repeater.itemAt(i).deviceProductTypeTextColor = root.colors.textSecondary
                                         }
                                         parent.color = root.colors.accent
                                         parent.deviceNameTextColor = "#ffffff"
-                                        parent.deviceProductTypeTextColor = "#3d3846"
+                                        parent.deviceProductTypeTextColor = "#e1e0df"
                                         if (DeviceWatcher.udid !== modelData.udid) {
                                             DeviceWatcher.switchCurrentDevice(modelData.udid)
                                         }
