@@ -17,7 +17,7 @@ set(IDEVICE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/idevice"
     CACHE PATH "Path to idevice repository root")
 set(IDEVICE_FFI_PATH "${IDEVICE_ROOT}/target/release/libidevice_ffi.a"
     CACHE FILEPATH "Path to libidevice_ffi.a")
-set(IDEVICE_FFI_FEATURES "usbmuxd,diagnostics_relay,pair,afc,installation_proxy"
+set(IDEVICE_FFI_FEATURES "usbmuxd,diagnostics_relay,pair,afc,installation_proxy,mobilebackup2"
     CACHE STRING "Cargo features for idevice-ffi build")
 
 # Auto-build Rust FFI static library if missing
@@ -90,6 +90,8 @@ set(SOURCE_FILES
     idevicewatcher.cpp
     storage_info.h storage_info.cpp
     storage_sync_worker.h storage_sync_worker.cpp
+    backup_info.h backup_info.cpp
+    backup_worker.h backup_worker.cpp
     main.cpp
 )
 

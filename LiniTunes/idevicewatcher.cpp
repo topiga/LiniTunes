@@ -146,6 +146,8 @@ void iDeviceWatcher::connectDeviceSignals(iDevice *dev)
 {
     connect(dev, &iDevice::storageSyncChanged,
             this, &iDeviceWatcher::storageSyncChanged);
+    connect(dev, &iDevice::backupChanged,
+            this, &iDeviceWatcher::backupChanged);
 }
 
 void iDeviceWatcher::onDeviceConnected(const QString &udid, uint32_t deviceId)
@@ -272,4 +274,16 @@ void iDeviceWatcher::startStorageSync()
 {
     if (m_currentDevice)
         m_currentDevice->startStorageSync();
+}
+
+void iDeviceWatcher::startBackup(const QString &path)
+{
+    if (m_currentDevice)
+        m_currentDevice->startBackup(path);
+}
+
+void iDeviceWatcher::stopBackup()
+{
+    if (m_currentDevice)
+        m_currentDevice->stopBackup();
 }

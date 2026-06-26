@@ -1,6 +1,7 @@
 #include "linitunes_device.h"
 #include <QDebug>
 #include <QFile>
+#include <QCoreApplication>
 #include <plist/plist.h>
 #include <idevice++/provider.hpp>
 #include <idevice++/lockdown.hpp>
@@ -125,12 +126,30 @@ iDevice::iDevice(QObject *parent)
             this, &iDevice::onStorageSyncData);
     connect(m_storageSyncWorker, &StorageSyncWorker::failed,
             this, &iDevice::onStorageSyncFailed);
+
+    // Backup worker setup
+    m_backupInfo = new BackupInfo();
+    m_backupInfo->moveToThread(QCoreApplication::instance()->thread());
+    m_backupWorker = new BackupWorker();
+    m_backupWorker->moveToThread(&m_backupThread);
+    connect(&m_backupThread, &QThread::finished,
+            m_backupWorker, &QObject::deleteLater);
+    connect(m_backupWorker, &BackupWorker::progress,
+            this, &iDevice::onBackupProgress);
+    connect(m_backupWorker, &BackupWorker::finished,
+            this, &iDevice::onBackupFinished);
+    connect(m_backupWorker, &BackupWorker::failed,
+            this, &iDevice::onBackupFailed);
+    connect(m_backupWorker, &BackupWorker::cancelled,
+            this, &iDevice::onBackupCancelled);
 }
 
 iDevice::~iDevice()
 {
     m_storageSyncThread.quit();
     m_storageSyncThread.wait();
+    m_backupThread.quit();
+    m_backupThread.wait();
 }
 
 bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr)
@@ -337,4 +356,57 @@ void iDevice::onStorageSyncFailed(const QString &error)
     if (m_storageInfo)
         m_storageInfo->setSyncing(false);
     emit storageSyncChanged();
+}
+
+void iDevice::startBackup(const QString &path)
+{
+    if (backupRunning() || !m_connected)
+        return;
+
+    m_backupInfo->reset();
+    m_backupInfo->setStatus(BackupInfo::Status::Running);
+    emit backupChanged();
+
+    if (!m_backupThread.isRunning())
+        m_backupThread.start();
+
+    QMetaObject::invokeMethod(m_backupWorker,
+        [this, path]() { m_backupWorker->runBackup(m_udid, m_deviceId, path); },
+        Qt::QueuedConnection);
+}
+
+void iDevice::stopBackup()
+{
+    if (m_backupWorker)
+        m_backupWorker->cancel();
+}
+
+bool iDevice::backupRunning() const
+{
+    return m_backupInfo && m_backupInfo->status() == "running";
+}
+
+void iDevice::onBackupProgress(quint64 bytesDone, quint64 bytesTotal, double overall)
+{
+    m_backupInfo->setOverallProgress(overall * 100.0);
+    Q_UNUSED(bytesDone);
+    Q_UNUSED(bytesTotal);
+}
+
+void iDevice::onBackupFinished()
+{
+    m_backupInfo->setStatus(BackupInfo::Status::Completed);
+    emit backupChanged();
+}
+
+void iDevice::onBackupFailed(const QString &error)
+{
+    m_backupInfo->setError(error);
+    emit backupChanged();
+}
+
+void iDevice::onBackupCancelled()
+{
+    m_backupInfo->setStatus(BackupInfo::Status::Cancelled);
+    emit backupChanged();
 }

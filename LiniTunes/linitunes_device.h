@@ -6,6 +6,8 @@
 #include <QString>
 #include "storage_info.h"
 #include "storage_sync_worker.h"
+#include "backup_info.h"
+#include "backup_worker.h"
 
 // Forward-declare
 namespace IdeviceFFI {
@@ -47,10 +49,17 @@ public:
     bool storageSyncing() const { return m_storageInfo ? m_storageInfo->syncing() : false; }
     int storageSyncProgress() const { return m_storageSyncProgress; }
 
+    // Backup
+    BackupInfo *backupInfo() const { return m_backupInfo; }
+    Q_INVOKABLE void startBackup(const QString &path);
+    Q_INVOKABLE void stopBackup();
+    bool backupRunning() const;
+
     static QString format_bytes(uint64_t bytes, bool decimals=true);
 
 signals:
     void storageSyncChanged();
+    void backupChanged();
 
 private slots:
     void onStorageSyncData(uint64_t total, uint64_t free,
@@ -58,6 +67,10 @@ private slots:
                            uint64_t photos, uint64_t documents,
                            uint64_t other);
     void onStorageSyncFailed(const QString &error);
+    void onBackupProgress(quint64 bytesDone, quint64 bytesTotal, double overall);
+    void onBackupFinished();
+    void onBackupFailed(const QString &error);
+    void onBackupCancelled();
 
 private:
     QString m_udid;
@@ -81,6 +94,10 @@ private:
     QThread m_storageSyncThread;
     StorageSyncWorker *m_storageSyncWorker = nullptr;
     int m_storageSyncProgress = 0;
+
+    BackupInfo *m_backupInfo = nullptr;
+    QThread m_backupThread;
+    BackupWorker *m_backupWorker = nullptr;
 };
 
 #endif // LINTUNES_IDEVICE_H

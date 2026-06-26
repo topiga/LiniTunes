@@ -68,6 +68,8 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY storageSyncChanged)
     Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
+    Q_PROPERTY(QObject* backup_info READ backupInfo NOTIFY backupChanged)
+    Q_PROPERTY(bool backup_running READ backupRunning NOTIFY backupChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -80,6 +82,8 @@ public:
     Q_INVOKABLE void switchCurrentDevice(const QString &udid = QString());
     Q_INVOKABLE QVariantList getModel();
     Q_INVOKABLE void startStorageSync();
+    Q_INVOKABLE void startBackup(const QString &path);
+    Q_INVOKABLE void stopBackup();
 
     void updateLists();
     QStringList udid_list() const { return m_udidList; }
@@ -100,11 +104,14 @@ public:
     QObject *storageInfo() const { return m_currentDevice ? m_currentDevice->storageInfo() : nullptr; }
     bool storageSyncing() const { return m_currentDevice ? m_currentDevice->storageSyncing() : false; }
     int storageSyncProgress() const { return m_currentDevice ? m_currentDevice->storageSyncProgress() : 0; }
+    QObject *backupInfo() const { return m_currentDevice ? m_currentDevice->backupInfo() : nullptr; }
+    bool backupRunning() const { return m_currentDevice ? m_currentDevice->backupRunning() : false; }
 
 signals:
     void udidListChanged();
     void currentDeviceChanged();
     void storageSyncChanged();
+    void backupChanged();
 
 private slots:
     void onDeviceConnected(const QString &udid, uint32_t deviceId);

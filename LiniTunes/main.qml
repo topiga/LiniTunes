@@ -483,7 +483,11 @@ Window {
                         }
                         Text {
                             id: strorage_sync_button_text
-                            text: qsTr("Sync")
+                            text: {
+                                if (DeviceWatcher.storage_syncing)
+                                    return DeviceWatcher.storage_sync_progress + "%"
+                                return qsTr("Sync")
+                            }
                             color: root.colors.textPrimary
                             font.weight: Font.DemiBold
                             font.family: interFont.name
