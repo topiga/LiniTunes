@@ -479,11 +479,9 @@ Window {
                         }
                         Text {
                             id: strorage_sync_button_text
-                            text: {
-                                if (DeviceWatcher.storage_syncing)
-                                    return DeviceWatcher.storage_sync_progress + "%"
-                                return qsTr("Sync")
-                            }
+                            text: DeviceWatcher.storage_syncing
+                                  ? qsTr("Syncing…")
+                                  : qsTr("Sync")
                             color: root.colors.textPrimary
                             font.weight: Font.DemiBold
                             font.family: AppFontFamily

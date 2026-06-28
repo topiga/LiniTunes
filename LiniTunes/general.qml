@@ -102,7 +102,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: DeviceWatcher.backup_running ? qsTr("Cancel") : qsTr("Backup")
+                        text: generalPage.backupButtonText()
                         color: "#ffffff"
                         font.pixelSize: 14
                         font.family: AppFontFamily
@@ -114,13 +114,25 @@ Item {
                         enabled: DeviceWatcher.device_connected || DeviceWatcher.backup_running
                         onClicked: {
                             if (DeviceWatcher.backup_running) {
+                                generalPage.cancellationRequested = true
                                 DeviceWatcher.stopBackup()
                             } else if (generalPage.backupPath !== "") {
+                                generalPage.cancellationRequested = false
                                 DeviceWatcher.startBackup(generalPage.backupPath)
                             }
                         }
                     }
                 }
+            }
+
+            Text {
+                visible: DeviceWatcher.backup_running
+                text: qsTr("Keep your iPhone unlocked and connected until the backup finishes.")
+                color: root.colors.textSecondary
+                font.pixelSize: 12
+                font.family: AppFontFamily
+                wrapMode: Text.WordWrap
+                width: parent.width
             }
 
             // Backup progress
@@ -130,23 +142,8 @@ Item {
                 spacing: 6
 
                 Text {
-                    text: {
-                        if (!DeviceWatcher.backup_info) return ""
-                        var s = DeviceWatcher.backup_info.status
-                        if (s === "running") return qsTr("Backing up... ") + DeviceWatcher.backup_info.progress + "%"
-                        if (s === "completed") return qsTr("Backup completed!")
-                        if (s === "failed") return qsTr("Backup failed: ") + DeviceWatcher.backup_info.error
-                        if (s === "cancelled") return qsTr("Backup cancelled")
-                        return ""
-                    }
-                    color: {
-                        if (!DeviceWatcher.backup_info) return root.colors.textSecondary
-                        var s = DeviceWatcher.backup_info.status
-                        if (s === "completed") return root.colors.green
-                        if (s === "failed") return root.colors.red
-                        if (s === "cancelled") return root.colors.yellow
-                        return root.colors.textPrimary
-                    }
+                    text: generalPage.backupStatusText()
+                    color: generalPage.backupStatusColor()
                     font.pixelSize: 14
                     font.family: AppFontFamily
                     font.weight: Font.DemiBold
@@ -186,6 +183,15 @@ Item {
     }
 
     property string backupPath: ""
+    property bool cancellationRequested: false
+
+    Connections {
+        target: DeviceWatcher
+        function onBackupChanged() {
+            if (!DeviceWatcher.backup_running)
+                generalPage.cancellationRequested = false
+        }
+    }
 
     FolderDialog {
         id: backupFolderDialog
@@ -193,6 +199,64 @@ Item {
         onAccepted: {
             generalPage.backupPath = selectedFolder.toString().replace("file://", "")
         }
+    }
+
+    function backupButtonText() {
+        if (generalPage.cancellationRequested && DeviceWatcher.backup_running)
+            return qsTr("Cancelling...")
+        if (DeviceWatcher.backup_running)
+            return qsTr("Cancel")
+        return qsTr("Backup")
+    }
+
+    function backupStatusText() {
+        if (!DeviceWatcher.backup_info)
+            return ""
+
+        var status = DeviceWatcher.backup_info.status
+        if (status === "running") {
+            if (generalPage.cancellationRequested)
+                return qsTr("Cancelling...")
+            return qsTr("Backing up... ") + DeviceWatcher.backup_info.progress.toFixed(1) + "%"
+        }
+        if (status === "completed")
+            return qsTr("Completed")
+        if (status === "completed_with_warnings")
+            return qsTr("Completed with warnings: ") + DeviceWatcher.backup_info.warning
+        if (status === "failed")
+            return qsTr("Failed: ") + generalPage.friendlyBackupError(DeviceWatcher.backup_info.error)
+        if (status === "cancelled")
+            return qsTr("Cancelled")
+        return ""
+    }
+
+    function backupStatusColor() {
+        if (!DeviceWatcher.backup_info)
+            return root.colors.textSecondary
+
+        var status = DeviceWatcher.backup_info.status
+        if (status === "completed")
+            return root.colors.green
+        if (status === "completed_with_warnings" || status === "cancelled")
+            return root.colors.yellow
+        if (status === "failed")
+            return root.colors.red
+        return root.colors.textPrimary
+    }
+
+    function friendlyBackupError(error) {
+        if (!error) return qsTr("Unknown error")
+        var lower = error.toLowerCase()
+        if (lower.indexOf("insufficient free disk space") >= 0 || lower.indexOf("not enough free disk space") >= 0 || lower.indexOf("mberrordomain/105") >= 0) {
+            return qsTr("Not enough free disk space to complete this backup. Free up space on the backup drive or choose another backup folder.")
+        }
+        if (lower.indexOf("lock") >= 0 || lower.indexOf("passcode") >= 0 || lower.indexOf("unavailable") >= 0 || lower.indexOf("connection") >= 0) {
+            return error + qsTr(" Please unlock the iPhone, keep it connected, and try again.")
+        }
+        if (lower.indexOf("incomplete") >= 0) {
+            return error + qsTr(" Keep the iPhone unlocked and retry the backup.")
+        }
+        return error
     }
 
     function formatBytes(bytes) {
