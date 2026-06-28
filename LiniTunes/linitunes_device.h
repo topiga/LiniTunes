@@ -69,6 +69,7 @@ private slots:
     void onStorageSyncFailed(const QString &error);
     void onBackupProgress(quint64 bytesDone, quint64 bytesTotal, double overall);
     void onBackupFinished();
+    void onBackupFinishedWithWarnings(const QString &warning);
     void onBackupFailed(const QString &error);
     void onBackupCancelled();
 

@@ -6,6 +6,8 @@
 #include <atomic>
 #include <cstdint>
 
+class QProcess;
+
 /// Worker that performs device backup on a background thread.
 /// Uses MobileBackup2 delegate callbacks for filesystem I/O.
 class BackupWorker : public QObject
@@ -21,11 +23,16 @@ public slots:
 signals:
     void progress(quint64 bytesDone, quint64 bytesTotal, double overall);
     void finished();
+    void finishedWithWarnings(QString warning);
     void failed(QString error);
     void cancelled();
 
 private:
+    bool runIdevicebackup2(const QString &udid, const QString &backupPath);
+    void runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &backupPath);
+
     std::atomic<bool> m_cancelled{false};
+    QProcess *m_process = nullptr;
 };
 
 #endif // BACKUP_WORKER_H

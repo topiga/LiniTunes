@@ -6,28 +6,33 @@
 #include <idevice++/provider.hpp>
 #include <idevice++/lockdown.hpp>
 #include <idevice++/usbmuxd.hpp>
+#include <cstdlib>
 
-// Helper: get string from plist dictionary using raw C API
 static QString plist_dict_get_string(const plist_t dict, const char *key)
 {
     if (!dict || plist_get_node_type(dict) != PLIST_DICT)
         return {};
+
     plist_t node = plist_dict_get_item(dict, key);
     if (!node)
         return {};
+
     char *val = nullptr;
     plist_get_string_val(node, &val);
-    return val ? QString::fromUtf8(val) : QString();
+    const QString result = val ? QString::fromUtf8(val) : QString();
+    free(val);
+    return result;
 }
 
-// Helper: get uint64 from plist dictionary using raw C API
 static QString plist_dict_get_uint_str(const plist_t dict, const char *key)
 {
     if (!dict)
         return {};
+
     plist_t node = plist_dict_get_item(dict, key);
     if (!node)
         return {};
+
     uint64_t val = 0;
     plist_get_uint_val(node, &val);
     return QString::number(val);
@@ -138,6 +143,8 @@ iDevice::iDevice(QObject *parent)
             this, &iDevice::onBackupProgress);
     connect(m_backupWorker, &BackupWorker::finished,
             this, &iDevice::onBackupFinished);
+    connect(m_backupWorker, &BackupWorker::finishedWithWarnings,
+            this, &iDevice::onBackupFinishedWithWarnings);
     connect(m_backupWorker, &BackupWorker::failed,
             this, &iDevice::onBackupFailed);
     connect(m_backupWorker, &BackupWorker::cancelled,
@@ -212,14 +219,6 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
         uint64_t val = 0;
         plist_get_uint_val(node, &val);
         m_batteryCapacity = static_cast<int>(val);
-        plist_free(node);
-    }
-
-    auto charging_result = lockdown.get_value("BatteryIsCharging", "com.apple.mobile.battery");
-    if (charging_result.is_ok()) {
-        plist_t node = charging_result.unwrap();
-        uint8_t val = 0;
-        plist_get_bool_val(node, &val);
         plist_free(node);
     }
 
@@ -396,6 +395,12 @@ void iDevice::onBackupProgress(quint64 bytesDone, quint64 bytesTotal, double ove
 void iDevice::onBackupFinished()
 {
     m_backupInfo->setStatus(BackupInfo::Status::Completed);
+    emit backupChanged();
+}
+
+void iDevice::onBackupFinishedWithWarnings(const QString &warning)
+{
+    m_backupInfo->setWarning(warning);
     emit backupChanged();
 }
 

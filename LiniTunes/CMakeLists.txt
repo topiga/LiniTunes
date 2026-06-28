@@ -91,6 +91,7 @@ set(SOURCE_FILES
     storage_info.h storage_info.cpp
     storage_sync_worker.h storage_sync_worker.cpp
     backup_info.h backup_info.cpp
+    backup_validator.h backup_validator.cpp
     backup_worker.h backup_worker.cpp
     main.cpp
 )
