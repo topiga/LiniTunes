@@ -56,8 +56,8 @@ Rectangle {
             return ""
         }
         color: root.transparent ? root.transparentTextColor : root.textColor
-        font.pointSize: 9
-        font.family: interFont.name
+        font.pixelSize: 12
+        font.family: AppFontFamily
         font.weight: Font.DemiBold
     }
 

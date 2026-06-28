@@ -65,11 +65,7 @@ Window {
         property color darkerGray : root.isDarkTheme ?                      "#3d3846" : "#9a9996"
     }
 
-    // Universal font for all platforms? Doesn't work. WIP
-    FontLoader {
-        id: interFont
-        source: "qrc:/ressources/fonts/inter_variable_font.ttf"
-    }
+    // Loaded in main.cpp and exposed to QML as AppFontFamily.
 
     function swicthDevicesMode(mode) {
         if (mode === "devices_choice" || mode === "device_choice") {
@@ -490,8 +486,8 @@ Window {
                             }
                             color: root.colors.textPrimary
                             font.weight: Font.DemiBold
-                            font.family: interFont.name
-                            font.pointSize: 10
+                            font.family: AppFontFamily
+                            font.pixelSize: 14
                             anchors {
                                 horizontalCenter: parent.horizontalCenter
                                 verticalCenter: parent.verticalCenter
@@ -687,7 +683,7 @@ Window {
                             topMargin: 8
                             leftMargin: 10
                         }
-                        font.pointSize: 9
+                        font.pixelSize: 12
                         states: [ State {
                                 name: "devices_normal"
                                 PropertyChanges {
@@ -893,8 +889,8 @@ Window {
                                     }
                                     font {
                                         weight: Font.DemiBold
-                                        pointSize: 12
-                                        family: interFont.name
+                                        pixelSize: 16
+                                        family: AppFontFamily
                                     }
                                     maximumLineCount: 1
                                     wrapMode: Text.Wrap
@@ -912,9 +908,9 @@ Window {
                                         topMargin: 1
                                     }
                                     font {
-                                        family: interFont.name
+                                        family: AppFontFamily
                                         weight: Font.Medium
-                                        pointSize: 9
+                                        pixelSize: 12
                                     }
                                     wrapMode: Text.WordWrap
                                 }
@@ -984,9 +980,9 @@ Window {
                                         text: modelData.battery_string
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
-                                        font.family: interFont.name
+                                        font.family: AppFontFamily
                                         font.weight: Font.Bold
-                                        font.pointSize: 9
+                                        font.pixelSize: 12
                                         anchors.fill: deviceBatteryRect1
                                     }
                                 }
@@ -1090,8 +1086,8 @@ Window {
                             }
                             font {
                                 weight: Font.DemiBold
-                                pointSize: 12
-                                family: interFont.name
+                                pixelSize: 16
+                                family: AppFontFamily
                             }
                             maximumLineCount: 2
                             wrapMode: Text.Wrap
@@ -1137,8 +1133,8 @@ Window {
                                 verticalAlignment: Text.AlignVCenter
                                 color: root.colors.textPrimary
                                 anchors.fill: parent
-                                font.family: interFont.name
-                                font.pointSize: 9
+                                font.family: AppFontFamily
+                                font.pixelSize: 12
                                 font.bold: true
                             }
                             MouseArea {
@@ -1172,9 +1168,9 @@ Window {
                                 rightMargin: 40
                             }
                             font {
-                                family: interFont.name
+                                family: AppFontFamily
                                 weight: Font.Medium
-                                pointSize: 9
+                                pixelSize: 12
                             }
                             wrapMode: Text.WordWrap
                             Connections {
@@ -1218,8 +1214,8 @@ Window {
                                 }
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
-                                font.pointSize: 8
-                                font.family: interFont.name
+                                font.pixelSize: 11
+                                font.family: AppFontFamily
                                 wrapMode: Text.WordWrap
                                 Connections {
                                     target: DeviceWatcher
@@ -1249,8 +1245,8 @@ Window {
                             }
                             font {
                                 weight: Font.Medium
-                                pointSize: 9
-                                family: interFont.name
+                                pixelSize: 12
+                                family: AppFontFamily
                             }
                             visible: false
                             // TotalDataAvailable doesn't give the real storage left. To investigate.
@@ -1359,9 +1355,9 @@ Window {
                                 text: qsTr("82")
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
-                                font.family: interFont.name
+                                font.family: AppFontFamily
                                 font.weight: Font.Bold
-                                font.pointSize: 9
+                                font.pixelSize: 12
                                 anchors.fill: device_battery_rect1
                             }
                             Connections {
@@ -1456,7 +1452,7 @@ Window {
                                     topMargin: 4
                                     leftMargin: 6
                                 }
-                                font.pointSize: 8
+                                font.pixelSize: 11
                             }
                             Text {
                                 id: serial_info_text
@@ -1468,7 +1464,7 @@ Window {
                                     topMargin: 1
                                     leftMargin: 0
                                 }
-                                font.pointSize: 8
+                                font.pixelSize: 11
                             }
                             Text {
                                 id: imei_text
@@ -1481,7 +1477,7 @@ Window {
                                     topMargin: 4
                                     leftMargin: parent.width/2
                                 }
-                                font.pointSize: 8
+                                font.pixelSize: 11
                             }
                             Text {
                                 id: imei_info_text
@@ -1493,7 +1489,7 @@ Window {
                                     topMargin: 1
                                     leftMargin: 0
                                 }
-                                font.pointSize: 8
+                                font.pixelSize: 11
                             }
                             MouseArea {
                                 id: ecid_imei_mousearea
@@ -1527,7 +1523,7 @@ Window {
                                     topMargin: 2
                                     leftMargin: 6
                                 }
-                                font.pointSize: 8
+                                font.pixelSize: 11
                             }
                             Text {
                                 id: udid_info_text
@@ -1539,7 +1535,7 @@ Window {
                                     topMargin: 1
                                     leftMargin: 0
                                 }
-                                font.pointSize: 8
+                                font.pixelSize: 11
                             }
                             Connections {
                                 target: DeviceWatcher
@@ -1593,8 +1589,8 @@ Window {
                 }
                 horizontalAlignment: Text.AlignLeft
                 verticalAlignment: Text.AlignTop
-                font.family: interFont.name
-                font.pointSize: 18
+                font.family: AppFontFamily
+                font.pixelSize: 24
                 font.styleName: "Bold"
             }
 
@@ -1796,8 +1792,8 @@ Window {
                             leftMargin: 8
                         }
                         font.weight: Font.DemiBold
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         color: root.colors.sideTextActive
                         state: parent.state
                         states: [
@@ -1914,8 +1910,8 @@ Window {
                             left: sidebar_music_button_image.right
                             leftMargin: 8
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2033,8 +2029,8 @@ Window {
                             left: sidebar_movies_button_image.right
                             leftMargin: 8
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2153,8 +2149,8 @@ Window {
                             leftMargin: 8
                             rightMargin: 10
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2272,8 +2268,8 @@ Window {
                             left: sidebar_podcasts_button_image.right
                             leftMargin: 8
                         }
-                        font.pointSize: 10
-                        font.family: interFont.name
+                        font.pixelSize: 14
+                        font.family: AppFontFamily
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2391,8 +2387,8 @@ Window {
                             left: sidebar_audiobooks_button_image.right
                             leftMargin: 8
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2511,8 +2507,8 @@ Window {
                             left: sidebar_books_button_image.right
                             leftMargin: 8
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2630,8 +2626,8 @@ Window {
                             left: sidebar_photos_button_image.right
                             leftMargin: 8
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state
@@ -2749,8 +2745,8 @@ Window {
                             left: sidebar_files_button_image.right
                             leftMargin: 8
                         }
-                        font.family: interFont.name
-                        font.pointSize: 10
+                        font.family: AppFontFamily
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: root.colors.sideTextInactive
                         state: parent.state

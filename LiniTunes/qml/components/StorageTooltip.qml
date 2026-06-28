@@ -17,7 +17,8 @@ ToolTip {
     contentItem: Text {
         text: root.text
         color: root.textColor
-        font.pointSize: 9
+        font.pixelSize: 12
+        font.family: AppFontFamily
     }
 
     background: Rectangle {

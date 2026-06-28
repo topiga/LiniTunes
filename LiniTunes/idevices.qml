@@ -44,8 +44,8 @@ Item {
                     topMargin: 5
                 }
                 font {
-                    family: "Helvetica"
-                    pointSize: 10.5
+                    family: AppFontFamily
+                    pixelSize: 14
                 }
                 color: rootWindow.color_text
                 maximumLineCount: 1
@@ -78,8 +78,8 @@ Item {
                 }
                 font {
     //                bold: true
-                    family: "Helvetica"
-                    pointSize: 10.5
+                    family: AppFontFamily
+                    pixelSize: 14
                 }
                 color: rootWindow.color_text
                 maximumLineCount: 1

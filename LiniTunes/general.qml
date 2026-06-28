@@ -22,8 +22,8 @@ Item {
             Text {
                 text: qsTr("Device Info")
                 color: root.colors.textPrimary
-                font.pointSize: 14
-                font.family: interFont.name
+                font.pixelSize: 19
+                font.family: AppFontFamily
                 font.weight: Font.Bold
             }
 
@@ -41,8 +41,8 @@ Item {
                       + qsTr("Battery: ") + DeviceWatcher.battery_string + "%"
                     : qsTr("No device connected")
                 color: root.colors.textSecondary
-                font.pointSize: 10
-                font.family: interFont.name
+                font.pixelSize: 14
+                font.family: AppFontFamily
                 lineHeight: 1.4
             }
 
@@ -50,8 +50,8 @@ Item {
             Text {
                 text: qsTr("Backup")
                 color: root.colors.textPrimary
-                font.pointSize: 14
-                font.family: interFont.name
+                font.pixelSize: 19
+                font.family: AppFontFamily
                 font.weight: Font.Bold
             }
 
@@ -77,8 +77,8 @@ Item {
                         anchors.centerIn: parent
                         text: generalPage.backupPath === "" ? qsTr("Choose backup folder...") : generalPage.backupPath
                         color: generalPage.backupPath === "" ? root.colors.sideTextInactive : root.colors.textPrimary
-                        font.pointSize: 9
-                        font.family: interFont.name
+                        font.pixelSize: 12
+                        font.family: AppFontFamily
                         elide: Text.ElideMiddle
                         width: parent.width - 16
                     }
@@ -90,7 +90,7 @@ Item {
                 }
 
                 Rectangle {
-                    width: 80
+                    width: 110
                     height: 32
                     radius: 6
                     color: {
@@ -104,8 +104,8 @@ Item {
                         anchors.centerIn: parent
                         text: DeviceWatcher.backup_running ? qsTr("Cancel") : qsTr("Backup")
                         color: "#ffffff"
-                        font.pointSize: 10
-                        font.family: interFont.name
+                        font.pixelSize: 14
+                        font.family: AppFontFamily
                         font.weight: Font.DemiBold
                     }
 
@@ -147,9 +147,11 @@ Item {
                         if (s === "cancelled") return root.colors.yellow
                         return root.colors.textPrimary
                     }
-                    font.pointSize: 10
-                    font.family: interFont.name
+                    font.pixelSize: 14
+                    font.family: AppFontFamily
                     font.weight: Font.DemiBold
+                    wrapMode: Text.WordWrap
+                    width: parent.width
                 }
 
                 Rectangle {
@@ -176,8 +178,8 @@ Item {
                         return formatBytes(DeviceWatcher.backup_info.bytesDone) + " / " + formatBytes(DeviceWatcher.backup_info.bytesTotal)
                     }
                     color: root.colors.textSecondary
-                    font.pointSize: 9
-                    font.family: interFont.name
+                    font.pixelSize: 12
+                    font.family: AppFontFamily
                 }
             }
         }
