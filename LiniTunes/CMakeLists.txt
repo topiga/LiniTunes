@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Qt6 COMPONENTS Core Quick REQUIRED)
+find_package(Qt6 COMPONENTS Core Quick Svg REQUIRED)
 find_package(Threads REQUIRED)
 
 # ---- idevice++ integration ------------------------------------------------
@@ -107,6 +107,7 @@ add_executable(LiniTunes
 target_link_libraries(LiniTunes PRIVATE
     Qt6::Core
     Qt6::Quick
+    Qt6::Svg
     idevice++
     plist_ffi_cpp
 )

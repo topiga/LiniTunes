@@ -57,10 +57,13 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString serial READ serial NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString imei READ imei NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString product_type READ product_type NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString product_version READ product_version NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString build_version READ build_version NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_name READ device_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString storage_capacity READ storage_capacity NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString storage_left READ storage_left NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_image READ device_image NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString software_image READ software_image NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString marketing_name READ marketing_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
@@ -70,6 +73,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
     Q_PROPERTY(QObject* backup_info READ backupInfo NOTIFY backupChanged)
     Q_PROPERTY(bool backup_running READ backupRunning NOTIFY backupChanged)
+    Q_PROPERTY(bool backup_encrypted READ backupEncrypted NOTIFY backupChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -82,8 +86,13 @@ public:
     Q_INVOKABLE void switchCurrentDevice(const QString &udid = QString());
     Q_INVOKABLE QVariantList getModel();
     Q_INVOKABLE void startStorageSync();
-    Q_INVOKABLE void startBackup(const QString &path);
+    Q_INVOKABLE void startBackup(const QString &path, bool enableEncryption = false,
+                                  const QString &password = QString());
     Q_INVOKABLE void stopBackup();
+    Q_INVOKABLE void disableBackupEncryption(const QString &path, const QString &password);
+    Q_INVOKABLE void changeBackupPassword(const QString &path, const QString &oldPassword,
+                                          const QString &newPassword);
+    Q_INVOKABLE QVariantList listBackups(const QString &path);
 
     void updateLists();
     QStringList udid_list() const { return m_udidList; }
@@ -93,10 +102,13 @@ public:
     QString ecid() const { return m_currentDevice ? m_currentDevice->ecid() : QString(); }
     QString imei() const { return m_currentDevice ? m_currentDevice->imei() : QString(); }
     QString product_type() const { return m_currentDevice ? m_currentDevice->product_type() : QString(); }
+    QString product_version() const { return m_currentDevice ? m_currentDevice->product_version() : QString(); }
+    QString build_version() const { return m_currentDevice ? m_currentDevice->build_version() : QString(); }
     QString device_name() const { return m_currentDevice ? m_currentDevice->device_name() : QString(); }
     QString storage_capacity() const { return m_currentDevice ? m_currentDevice->storage_capacity() : QString(); }
     QString storage_left() const { return m_currentDevice ? m_currentDevice->storage_left() : QString(); }
     QString device_image() const { return m_currentDevice ? m_currentDevice->device_image() : QString(); }
+    QString software_image() const { return m_currentDevice ? m_currentDevice->software_image() : QString(); }
     QString marketing_name() const { return m_currentDevice ? m_currentDevice->marketing_name() : QString(); }
     bool device_connected() const { return m_currentDevice != nullptr; }
     int battery() const { return m_currentDevice ? m_currentDevice->battery() : 0; }
@@ -106,6 +118,7 @@ public:
     int storageSyncProgress() const { return m_currentDevice ? m_currentDevice->storageSyncProgress() : 0; }
     QObject *backupInfo() const { return m_currentDevice ? m_currentDevice->backupInfo() : nullptr; }
     bool backupRunning() const { return m_currentDevice ? m_currentDevice->backupRunning() : false; }
+    bool backupEncrypted() const { return m_currentDevice ? m_currentDevice->backupEncrypted() : false; }
 
 signals:
     void udidListChanged();

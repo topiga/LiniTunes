@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024.001" height="1024.001" viewBox="0 0 1024.001 1024.001">
+  <defs>
+    <linearGradient id="linear-gradient" x1="0.5" x2="0.5" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#545454"/>
+      <stop offset="0.528"/>
+      <stop offset="1"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="0.598" x2="0.5" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#a3a3a3"/>
+      <stop offset="0.297" stop-color="#fff"/>
+      <stop offset="0.311" stop-color="#717171"/>
+      <stop offset="0.707" stop-color="#5d5d5d"/>
+      <stop offset="0.901" stop-color="#ccc"/>
+      <stop offset="1" stop-color="#dedede"/>
+    </linearGradient>
+  </defs>
+  <g id="App-Icon-_-Apple-_-Phone-_" data-name="App-Icon-/-Apple-/-Phone-/" transform="translate(0.001 0.001)">
+    <path id="Origin-Color" d="M198,0H826c109.352,0,198,88.648,198,198V826c0,109.352-88.648,198-198,198H198C88.648,1024,0,935.352,0,826V198C0,88.648,88.648,0,198,0Z" fill="url(#linear-gradient)"/>
+    <path id="Path_13" data-name="Path 13" d="M469.07,550.065V363.9h94.773V258.975H469.07V-183.3h-163.6L5.358,273.642V363.9H338.193V550.065ZM138.492,258.975v-2.257L273.882,55.89c22.565-40.617,41.745-77.85,64.31-124.108h4.513c-2.256,44-4.513,85.747-4.513,127.493v199.7Z" transform="translate(227.399 328.618)" fill="url(#linear-gradient-2)"/>
+    <path id="Path_13_-_Outline" data-name="Path 13 - Outline" d="M469.07,550.065V363.9h94.773V258.975H469.07V-183.3h-163.6L5.358,273.642V363.9H338.193V550.065H469.07M338.193-68.218h4.513c-2.256,44-4.513,85.747-4.513,127.493v199.7h-199.7v-2.257L273.882,55.89c22.565-40.617,41.745-77.85,64.311-124.108M474.07,555.065H333.193V368.9H.358V272.147L302.775-188.3H474.07V253.975h94.773V368.9H474.07Zm-327.7-301.089H333.193V59.274c0-37.4,1.794-74.581,3.8-113.668-20.935,42.562-38.807,76.84-58.736,112.711l-.1.188-.12.179Z" transform="translate(227.399 328.618)" fill="#898989"/>
+    <path id="Intersection_1" data-name="Intersection 1" d="M-12388,1494.921V1326.38a236.93,236.93,0,0,1,10.379-69.811A198.09,198.09,0,0,1-12190,1122h628a198.089,198.089,0,0,1,187.622,134.57A236.9,236.9,0,0,1-11364,1326.38l-2.54,156.559c-71.148,88.917-420.983,135.119-516.743,135.119C-12062.64,1609.832-12198.48,1607.976-12388,1494.921Z" transform="translate(12388 -1122)" fill="rgba(255,255,255,0.17)"/>
+  </g>
+</svg>

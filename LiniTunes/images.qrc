@@ -166,5 +166,30 @@
         <file>images/devices/iPhone16,2.png</file>
         <file>images/devices/iPhone16,1.png</file>
         <file>images/devices/iPhone15,5.png</file>
+        <file>images/software/Background_AppleOS.png</file>
+        <file>images/software/Generic_AppleOS.png</file>
+        <file>images/software/Generic_iOS.png</file>
+        <file>images/software/iOS1.svg</file>
+        <file>images/software/iOS10.svg</file>
+        <file>images/software/iOS11.svg</file>
+        <file>images/software/iOS12.svg</file>
+        <file>images/software/iOS13.svg</file>
+        <file>images/software/iOS14.svg</file>
+        <file>images/software/iOS15.svg</file>
+        <file>images/software/iOS16.png</file>
+        <file>images/software/iOS17.png</file>
+        <file>images/software/iOS18.png</file>
+        <file>images/software/iOS2.svg</file>
+        <file>images/software/iOS26.png</file>
+        <file>images/software/iOS27.png</file>
+        <file>images/software/iOS3.png</file>
+        <file>images/software/iOS4.svg</file>
+        <file>images/software/iOS5.png</file>
+        <file>images/software/iOS6.png</file>
+        <file>images/software/iOS7.svg</file>
+        <file>images/software/iOS8.svg</file>
+        <file>images/software/iOS9.png</file>
+        <file>images/software/iPadOS17.png</file>
+        <file>images/software/iPadOS18.png</file>
     </qresource>
 </RCC>

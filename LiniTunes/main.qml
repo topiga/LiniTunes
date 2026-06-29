@@ -107,6 +107,24 @@ Window {
         return gb.toFixed(2) + " GB"
     }
 
+    function backupProgress() {
+        if (!DeviceWatcher.backup_info)
+            return 0
+        return Math.min(100, Math.max(0, DeviceWatcher.backup_info.progress))
+    }
+
+    function backupProgressStarted() {
+        return DeviceWatcher.backup_info && DeviceWatcher.backup_info.progress >= 0.1
+    }
+
+    function syncButtonText() {
+        if (DeviceWatcher.backup_running)
+            return qsTr("Cancel")
+        if (DeviceWatcher.storage_syncing)
+            return qsTr("Syncing…")
+        return qsTr("Sync")
+    }
+
     property QtObject storageRatio: QtObject {
         property real audioGb: 0
         property real photosGb: 0
@@ -401,7 +419,7 @@ Window {
                         }
                         StorageSegment {
                             id: storage_ratio_free
-                            visible: DeviceWatcher.device_connected
+                            visible: DeviceWatcher.device_connected && !DeviceWatcher.backup_running
                             anchors {
                                 left: DeviceWatcher.storage_sync_progress === 100 ? storage_ratio_other.right : storage_ratio_unknown.right
                                 right: parent.right
@@ -419,6 +437,65 @@ Window {
                             color2: root.colors.darkGray
                             label: root.formatGbLabel(root.storageRatio.availableGb)
                             tipText: qsTr("Available") + " — " + root.formatGbLabel(root.storageRatio.availableGb)
+                        }
+
+                        Rectangle {
+                            id: backup_progress_overlay
+                            anchors.fill: parent
+                            visible: DeviceWatcher.backup_running
+                            z: 20
+                            radius: 5
+                            clip: true
+                            gradient: Gradient {
+                                orientation: Gradient.Vertical
+                                GradientStop { position: 1; color: root.colors.cardBackgroundTop }
+                                GradientStop { position: 0; color: root.colors.cardBackgroundBottom }
+                            }
+
+                            Rectangle {
+                                id: backup_progress_fill
+                                visible: root.backupProgressStarted()
+                                anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                                width: parent.width * root.backupProgress() / 100
+                                color: root.colors.accent
+                                Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                            }
+
+                            Rectangle {
+                                id: backup_progress_loader
+                                visible: !root.backupProgressStarted()
+                                width: Math.max(48, parent.width * 0.18)
+                                height: parent.height
+                                radius: 5
+                                gradient: Gradient {
+                                    orientation: Gradient.Horizontal
+                                    GradientStop { position: 0; color: "#00ffffff" }
+                                    GradientStop { position: 0.5; color: root.colors.accent }
+                                    GradientStop { position: 1; color: "#00ffffff" }
+                                }
+
+                                SequentialAnimation on x {
+                                    running: backup_progress_loader.visible
+                                    loops: Animation.Infinite
+                                    NumberAnimation {
+                                        from: -backup_progress_loader.width
+                                        to: storage_ratio.width
+                                        duration: 1100
+                                        easing.type: Easing.InOutQuad
+                                    }
+                                }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.backupProgressStarted()
+                                      ? root.backupProgress().toFixed(1) + "%"
+                                      : qsTr("Preparing backup…")
+                                color: root.colors.textPrimary
+                                font.weight: Font.DemiBold
+                                font.family: AppFontFamily
+                                font.pixelSize: 13
+                            }
                         }
                     }
                 }
@@ -449,7 +526,7 @@ Window {
                         orientation: Gradient.Vertical
                     }
 
-                    opacity: DeviceWatcher.device_connected ? 1.0 : 0.5
+                    opacity: (DeviceWatcher.device_connected || DeviceWatcher.backup_running) ? 1.0 : 0.5
                     Rectangle {
                         id: strorage_sync_button
                         y: 0
@@ -468,20 +545,18 @@ Window {
                         gradient: Gradient {
                             GradientStop {
                                 position: 1
-                                color: root.colors.cardBackgroundTop
+                                color: DeviceWatcher.backup_running ? root.colors.red : root.colors.cardBackgroundTop
                             }
 
                             GradientStop {
                                 position: 0
-                                color: root.colors.cardBackgroundBottom
+                                color: DeviceWatcher.backup_running ? root.colors.red : root.colors.cardBackgroundBottom
                             }
                             orientation: Gradient.Vertical
                         }
                         Text {
                             id: strorage_sync_button_text
-                            text: DeviceWatcher.storage_syncing
-                                  ? qsTr("Syncing…")
-                                  : qsTr("Sync")
+                            text: root.syncButtonText()
                             color: root.colors.textPrimary
                             font.weight: Font.DemiBold
                             font.family: AppFontFamily
@@ -493,11 +568,13 @@ Window {
                         }
                         MouseArea {
                             anchors.fill: parent
-                            enabled: DeviceWatcher.device_connected
+                            enabled: DeviceWatcher.device_connected || DeviceWatcher.backup_running
                             onPressed: parent.opacity=0.7
                             onReleased: {
                                 parent.opacity=1
-                                if (DeviceWatcher.device_connected)
+                                if (DeviceWatcher.backup_running)
+                                    DeviceWatcher.stopBackup()
+                                else if (DeviceWatcher.device_connected)
                                     DeviceWatcher.startStorageSync()
                             }
                         }
@@ -853,7 +930,7 @@ Window {
                                     leftMargin: 10
                                     right: parent.right
                                     rightMargin: 10
-                                    top: index === devices_repeater.count-1 ? devices_repeater.top : devices_repeater.itemAt(index+1).bottom // I have absolutely no idea why this works, but it works. I think a repeater counts backwards.
+                                    top: (index === devices_repeater.count-1 || devices_repeater.itemAt(index+1) === null) ? devices_repeater.top : devices_repeater.itemAt(index+1).bottom // Repeater items may not all exist during creation.
                                     topMargin: index === devices_repeater.count-1 ? 8 : 10
                                 }
 
@@ -980,7 +1057,7 @@ Window {
                                         verticalAlignment: Text.AlignVCenter
                                         font.family: AppFontFamily
                                         font.weight: Font.Bold
-                                        font.pixelSize: 12
+                                        font.pixelSize: 11
                                         anchors.fill: deviceBatteryRect1
                                     }
                                 }
@@ -1355,7 +1432,7 @@ Window {
                                 verticalAlignment: Text.AlignVCenter
                                 font.family: AppFontFamily
                                 font.weight: Font.Bold
-                                font.pixelSize: 12
+                                font.pixelSize: 11
                                 anchors.fill: device_battery_rect1
                             }
                             Connections {

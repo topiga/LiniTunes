@@ -1,5 +1,12 @@
 #include "idevicewatcher.h"
 #include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QDateTime>
+#include <QLocale>
+#include <plist/plist.h>
+#include <cstdlib>
+#include <initializer_list>
 #include <idevice++/usbmuxd.hpp>
 
 extern "C" {
@@ -160,11 +167,9 @@ void iDeviceWatcher::onDeviceConnected(const QString &udid, uint32_t deviceId)
 
 void iDeviceWatcher::onDeviceDisconnected(uint32_t deviceId)
 {
-    if (m_deviceIdToUdid.contains(deviceId)) {
-        QString udid = m_deviceIdToUdid[deviceId];
-        m_deviceIdToUdid.remove(deviceId);
+    const QString udid = m_deviceIdToUdid.take(deviceId);
+    if (!udid.isEmpty())
         removeDeviceByUdid(udid);
-    }
 }
 
 void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
@@ -211,6 +216,7 @@ void iDeviceWatcher::updateLists()
         m_currentDevice = nullptr;
         emit currentDeviceChanged();
         emit storageSyncChanged();
+        emit backupChanged();
     } else if (Devices.size() == 1) {
         switchCurrentDevice(Devices.at(0)->udid());
     } else if (m_currentDevice == nullptr) {
@@ -226,6 +232,7 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
         m_currentDevice = nullptr;
         emit currentDeviceChanged();
         emit storageSyncChanged();
+        emit backupChanged();
         return;
     }
 
@@ -234,6 +241,7 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
             m_currentDevice = d;
             emit currentDeviceChanged();
             emit storageSyncChanged();
+            emit backupChanged();
             return;
         }
     }
@@ -276,14 +284,114 @@ void iDeviceWatcher::startStorageSync()
         m_currentDevice->startStorageSync();
 }
 
-void iDeviceWatcher::startBackup(const QString &path)
+void iDeviceWatcher::startBackup(const QString &path, bool enableEncryption, const QString &password)
 {
     if (m_currentDevice)
-        m_currentDevice->startBackup(path);
+        m_currentDevice->startBackup(path, enableEncryption, password);
 }
 
 void iDeviceWatcher::stopBackup()
 {
     if (m_currentDevice)
         m_currentDevice->stopBackup();
+}
+
+void iDeviceWatcher::disableBackupEncryption(const QString &path, const QString &password)
+{
+    if (m_currentDevice)
+        m_currentDevice->disableBackupEncryption(path, password);
+}
+
+void iDeviceWatcher::changeBackupPassword(const QString &path, const QString &oldPassword, const QString &newPassword)
+{
+    if (m_currentDevice)
+        m_currentDevice->changeBackupPassword(path, oldPassword, newPassword);
+}
+
+static QString plistStringAtPath(const QString &path, const char *key)
+{
+    plist_t plist = nullptr;
+    const QByteArray bytes = path.toUtf8();
+    if (plist_read_from_file(bytes.constData(), &plist, nullptr) != PLIST_ERR_SUCCESS || !plist)
+        return {};
+
+    plist_t node = plist_dict_get_item(plist, key);
+    char *value = nullptr;
+    if (node)
+        plist_get_string_val(node, &value);
+    const QString result = value ? QString::fromUtf8(value) : QString();
+    free(value);
+    plist_free(plist);
+    return result;
+}
+
+static QDateTime newestModified(std::initializer_list<QFileInfo> files)
+{
+    QDateTime newest;
+    for (const QFileInfo &file : files) {
+        if (file.lastModified() > newest)
+            newest = file.lastModified();
+    }
+    return newest;
+}
+
+static QVariantMap backupSave(const QString &path, const QDateTime &modified, qint64 size)
+{
+    QVariantMap save;
+    save["name"] = modified.isValid()
+        ? QObject::tr("Backup from %1").arg(QLocale().toString(modified, QLocale::ShortFormat))
+        : QObject::tr("Backup");
+    save["path"] = path;
+    save["size"] = size;
+    return save;
+}
+
+QVariantList iDeviceWatcher::listBackups(const QString &path)
+{
+    QVariantList devices;
+    QDir root(path);
+    if (path.isEmpty() || !root.exists())
+        return devices;
+
+    const QFileInfoList deviceDirs = root.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &deviceDirInfo : deviceDirs) {
+        QDir deviceDir(deviceDirInfo.absoluteFilePath());
+        QVariantMap device;
+        const QString infoPath = deviceDir.filePath(QStringLiteral("Info.plist"));
+        QString displayName = plistStringAtPath(infoPath, "Display Name");
+        if (displayName.isEmpty())
+            displayName = plistStringAtPath(infoPath, "Device Name");
+        if (displayName.isEmpty())
+            displayName = deviceDirInfo.fileName();
+
+        device["name"] = displayName;
+        device["udid"] = deviceDirInfo.fileName();
+
+        QVariantList saves;
+        QFileInfo manifest(deviceDir.filePath(QStringLiteral("Manifest.db")));
+        QFileInfo status(deviceDir.filePath(QStringLiteral("Status.plist")));
+        QFileInfo manifestPlist(deviceDir.filePath(QStringLiteral("Manifest.plist")));
+        if (manifest.exists() || status.exists() || manifestPlist.exists()) {
+            saves.append(backupSave(
+                deviceDirInfo.absoluteFilePath(),
+                newestModified({manifest, status, manifestPlist}),
+                manifest.exists() ? manifest.size() : 0));
+        }
+
+        const QFileInfoList subDirs = deviceDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time);
+        for (const QFileInfo &subDirInfo : subDirs) {
+            QFileInfo subManifest(QDir(subDirInfo.absoluteFilePath()).filePath(QStringLiteral("Manifest.db")));
+            if (!subManifest.exists())
+                continue;
+            saves.append(backupSave(
+                subDirInfo.absoluteFilePath(),
+                subManifest.lastModified(),
+                subManifest.size()));
+        }
+
+        device["saves"] = saves;
+        devices.append(device);
+    }
+
+    return devices;
 }

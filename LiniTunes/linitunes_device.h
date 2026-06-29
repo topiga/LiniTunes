@@ -20,6 +20,7 @@ class iDevice : public QObject
     Q_PROPERTY(QObject* storage_info READ storageInfo CONSTANT)
     Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
+    Q_PROPERTY(bool backup_encrypted READ backupEncrypted NOTIFY backupChanged)
 
 public:
     explicit iDevice(QObject *parent = nullptr);
@@ -33,11 +34,14 @@ public:
     QString ecid() const { return m_ecid; }
     QString imei() const { return m_imei; }
     QString product_type() const { return m_productType; }
+    QString product_version() const { return m_productVersion; }
+    QString build_version() const { return m_buildVersion; }
     QString device_name() const { return m_deviceName; }
     QString storage_capacity() const { return m_storageCapacity; }
     QString storage_left() const { return m_storageLeft; }
     QString device_class() const { return m_deviceClass; }
     QString device_image() const;
+    QString software_image() const;
     QString marketing_name() const { return m_marketingName; }
     int battery() const { return m_batteryCapacity; }
     bool device_connected() const { return m_connected; }
@@ -51,9 +55,14 @@ public:
 
     // Backup
     BackupInfo *backupInfo() const { return m_backupInfo; }
-    Q_INVOKABLE void startBackup(const QString &path);
+    Q_INVOKABLE void startBackup(const QString &path, bool enableEncryption = false,
+                                 const QString &password = QString());
     Q_INVOKABLE void stopBackup();
+    Q_INVOKABLE void disableBackupEncryption(const QString &path, const QString &password);
+    Q_INVOKABLE void changeBackupPassword(const QString &path, const QString &oldPassword,
+                                          const QString &newPassword);
     bool backupRunning() const;
+    bool backupEncrypted() const { return m_backupEncrypted; }
 
     static QString format_bytes(uint64_t bytes, bool decimals=true);
 
@@ -76,6 +85,8 @@ private slots:
 private:
     QString m_udid;
     QString m_productType;
+    QString m_productVersion;
+    QString m_buildVersion;
     QString m_deviceClass;
     QString m_deviceName;
     QString m_serial;
@@ -89,6 +100,7 @@ private:
     QString m_storageLeft;
     int m_batteryCapacity = 0;
     bool m_connected = false;
+    bool m_backupEncrypted = false;
 
     StorageInfo *m_storageInfo = nullptr;
 

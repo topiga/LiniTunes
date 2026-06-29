@@ -18,7 +18,6 @@
 #include <map>
 #include <stdexcept>
 #include <cstdlib>
-#include <sys/stat.h>
 #include <sys/statvfs.h>
 
 namespace {
@@ -152,6 +151,16 @@ bool generateInfoPlist(IdeviceFFI::Provider &provider, const QString &udid, cons
     return ok;
 }
 
+bool plistBoolValue(plist_t node)
+{
+    if (!node || plist_get_node_type(node) != PLIST_BOOLEAN)
+        return false;
+
+    uint8_t value = 0;
+    plist_get_bool_val(node, &value);
+    return value != 0;
+}
+
 QString findIdevicebackup2()
 {
     QString executable = QStandardPaths::findExecutable(QStringLiteral("idevicebackup2"));
@@ -173,6 +182,144 @@ QString findIdevicebackup2()
 
     return {};
 }
+
+bool queryBackupEncryption(IdeviceFFI::Provider &provider)
+{
+    auto lockdownResult = IdeviceFFI::Lockdown::connect(provider);
+    if (lockdownResult.is_err())
+        return false;
+
+    auto lockdown = std::move(lockdownResult.unwrap());
+    auto pairingResult = provider.get_pairing_file();
+    if (pairingResult.is_ok()) {
+        auto pairingFile = std::move(pairingResult.unwrap());
+        auto sessionResult = lockdown.start_session(pairingFile);
+        if (sessionResult.is_err())
+            qDebug("BackupWorker: Could not start lockdown session for encryption status");
+    }
+
+    auto encryptionResult = lockdown.get_value("WillEncrypt", "com.apple.mobile.backup");
+    if (encryptionResult.is_err())
+        return false;
+
+    plist_t node = encryptionResult.unwrap();
+    const bool encrypted = plistBoolValue(node);
+    plist_free(node);
+    return encrypted;
+}
+
+bool ensureBackupEncryption(IdeviceFFI::MobileBackup2 &backupClient,
+                            const QString &backupPath,
+                            const QString &password,
+                            IdeviceFFI::BackupDelegateCallbacks &delegate)
+{
+    if (password.isEmpty())
+        return false;
+
+    QDir().mkpath(backupPath);
+    auto result = backupClient.change_password(
+        backupPath.toStdString(),
+        IdeviceFFI::Option<std::string>(),
+        IdeviceFFI::Option<std::string>(password.toStdString()),
+        delegate);
+
+    if (result.is_err()) {
+        auto &err = result.unwrap_err();
+        qDebug("BackupWorker: Failed to enable encrypted backups: %s", err.message.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+void configureFilesystemDelegate(IdeviceFFI::BackupDelegateCallbacks &delegate,
+                                 std::map<std::string, std::ofstream> &openFiles)
+{
+    delegate.get_free_disk_space = [](const std::string &path) -> uint64_t {
+        struct statvfs st{};
+        if (statvfs(path.c_str(), &st) == 0)
+            return static_cast<uint64_t>(st.f_bavail) * static_cast<uint64_t>(st.f_frsize);
+        return 0;
+    };
+
+    delegate.open_file_read = [](const std::string &path) -> std::vector<uint8_t> {
+        std::ifstream f(path, std::ios::binary | std::ios::ate);
+        if (!f) {
+            if (path.find("Status.plist") != std::string::npos ||
+                path.find("Manifest.plist") != std::string::npos ||
+                path.find("Info.plist") != std::string::npos) {
+                qDebug("BackupWorker: No previous backup metadata found: %s", path.c_str());
+            } else {
+                qDebug("BackupWorker: Requested backup file is missing: %s", path.c_str());
+            }
+            throw std::runtime_error("file not found: " + path);
+        }
+
+        auto size = f.tellg();
+        if (size < 0) {
+            qDebug("BackupWorker: Could not determine file size: %s", path.c_str());
+            throw std::runtime_error("could not determine file size: " + path);
+        }
+
+        f.seekg(0);
+        std::vector<uint8_t> buf(static_cast<size_t>(size));
+        if (size > 0 && !f.read(reinterpret_cast<char*>(buf.data()), size)) {
+            qDebug("BackupWorker: Failed reading file: %s", path.c_str());
+            throw std::runtime_error("failed reading file: " + path);
+        }
+        return buf;
+    };
+
+    delegate.create_file_write = [&openFiles](const std::string &path) {
+        openFiles[path] = std::ofstream(path, std::ios::binary | std::ios::trunc);
+    };
+
+    delegate.write_chunk = [&openFiles](const std::string &path, const uint8_t *data, size_t len) {
+        auto it = openFiles.find(path);
+        if (it != openFiles.end())
+            it->second.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(len));
+    };
+
+    delegate.close_file = [&openFiles](const std::string &path) {
+        auto it = openFiles.find(path);
+        if (it != openFiles.end()) {
+            it->second.close();
+            openFiles.erase(it);
+        }
+    };
+
+    delegate.create_dir_all = [](const std::string &path) {
+        QDir().mkpath(QString::fromStdString(path));
+    };
+
+    delegate.remove = [](const std::string &path) {
+        QFileInfo fi(QString::fromStdString(path));
+        if (fi.isDir())
+            QDir(QString::fromStdString(path)).removeRecursively();
+        else
+            QFile::remove(QString::fromStdString(path));
+    };
+
+    delegate.rename = [](const std::string &from, const std::string &to) {
+        QFile::rename(QString::fromStdString(from), QString::fromStdString(to));
+    };
+
+    delegate.copy = [](const std::string &src, const std::string &dst) {
+        QFileInfo fi(QString::fromStdString(src));
+        if (fi.isDir())
+            QDir().mkpath(QString::fromStdString(dst));
+        else
+            QFile::copy(QString::fromStdString(src), QString::fromStdString(dst));
+    };
+
+    delegate.exists = [](const std::string &path) -> bool {
+        return QFile::exists(QString::fromStdString(path));
+    };
+
+    delegate.is_dir = [](const std::string &path) -> bool {
+        return QFileInfo(QString::fromStdString(path)).isDir();
+    };
+}
 }
 
 BackupWorker::BackupWorker(QObject *parent)
@@ -185,7 +332,91 @@ void BackupWorker::cancel()
         m_process->terminate();
 }
 
-void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QString &backupPath)
+void BackupWorker::disableEncryption(const QString &udid, uint32_t deviceId, const QString &backupPath,
+                                     const QString &password)
+{
+    QString error;
+    if (password.isEmpty()) {
+        emit encryptionFailed(QStringLiteral("Current backup password is required."));
+        return;
+    }
+
+    if (runPasswordChange(udid, deviceId, backupPath, password, QString(), &error))
+        emit encryptionDisabled();
+    else
+        emit encryptionFailed(error);
+}
+
+void BackupWorker::changeEncryptionPassword(const QString &udid, uint32_t deviceId, const QString &backupPath,
+                                            const QString &oldPassword, const QString &newPassword)
+{
+    QString error;
+    if (oldPassword.isEmpty() || newPassword.isEmpty()) {
+        emit encryptionFailed(QStringLiteral("Current and new backup passwords are required."));
+        return;
+    }
+
+    if (runPasswordChange(udid, deviceId, backupPath, oldPassword, newPassword, &error))
+        emit encryptionPasswordChanged();
+    else
+        emit encryptionFailed(error);
+}
+
+bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, const QString &backupPath,
+                                     const QString &oldPassword, const QString &newPassword,
+                                     QString *error)
+{
+    qDebug("BackupWorker: Changing backup encryption state for %s", qPrintable(udid));
+
+    QString rootPath = backupPath;
+    if (rootPath.isEmpty())
+        rootPath = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation)).filePath(QStringLiteral("backup-encryption"));
+    QDir().mkpath(rootPath);
+
+    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
+    auto provResult = IdeviceFFI::Provider::usbmuxd_new(
+        std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes-backup-password");
+    if (provResult.is_err()) {
+        if (error) *error = QStringLiteral("Failed to create provider.");
+        return false;
+    }
+
+    auto provider = std::move(provResult.unwrap());
+    auto backupResult = IdeviceFFI::MobileBackup2::connect(provider);
+    if (backupResult.is_err()) {
+        auto &err = backupResult.unwrap_err();
+        if (error) *error = QStringLiteral("Failed to connect to MobileBackup2: %1").arg(QString::fromStdString(err.message));
+        return false;
+    }
+
+    auto backupClient = std::move(backupResult.unwrap());
+    std::map<std::string, std::ofstream> openFiles;
+    IdeviceFFI::BackupDelegateCallbacks delegate;
+    configureFilesystemDelegate(delegate, openFiles);
+
+    IdeviceFFI::Option<std::string> oldOption = oldPassword.isEmpty()
+        ? IdeviceFFI::Option<std::string>()
+        : IdeviceFFI::Option<std::string>(oldPassword.toStdString());
+    IdeviceFFI::Option<std::string> newOption = newPassword.isEmpty()
+        ? IdeviceFFI::Option<std::string>()
+        : IdeviceFFI::Option<std::string>(newPassword.toStdString());
+
+    auto result = backupClient.change_password(rootPath.toStdString(), oldOption, newOption, delegate);
+    for (auto &[path, stream] : openFiles)
+        stream.close();
+    backupClient.disconnect();
+
+    if (result.is_err()) {
+        auto &err = result.unwrap_err();
+        if (error) *error = QStringLiteral("Could not change backup encryption: %1").arg(QString::fromStdString(err.message));
+        return false;
+    }
+
+    return true;
+}
+
+void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QString &backupPath,
+                             bool enableEncryption, const QString &password)
 {
     m_cancelled = false;
 
@@ -196,6 +427,11 @@ void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QStri
     if (requestedBackend == QStringLiteral("idevicebackup2")
         || requestedBackend == QStringLiteral("libimobiledevice")
         || requestedBackend == QStringLiteral("cli")) {
+        if (enableEncryption) {
+            emit failed(QStringLiteral("Enabling encrypted backups is only supported by the direct MobileBackup2 backend."));
+            return;
+        }
+
         if (runIdevicebackup2(udid, backupPath))
             return;
 
@@ -204,7 +440,7 @@ void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QStri
     }
 
     qDebug("BackupWorker: using direct third_party/idevice MobileBackup2 backend");
-    runDirectMobileBackup2(udid, deviceId, backupPath);
+    runDirectMobileBackup2(udid, deviceId, backupPath, enableEncryption, password);
 }
 
 bool BackupWorker::runIdevicebackup2(const QString &udid, const QString &backupPath)
@@ -270,7 +506,8 @@ bool BackupWorker::runIdevicebackup2(const QString &udid, const QString &backupP
     return true;
 }
 
-void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &backupPath)
+void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &backupPath,
+                                          bool enableEncryption, const QString &password)
 {
     m_cancelled = false;
     qDebug("BackupWorker::runBackup(%s, id=%u, path=%s)",
@@ -294,6 +531,8 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     // values and is used by Finder/iTunes/libimobiledevice for display and
     // compatibility.
     generateInfoPlist(provider, udid, backupPath);
+
+    const bool encryptionAlreadyEnabled = queryBackupEncryption(provider);
 
     // Connect to mobilebackup2 service
     auto backup_result = IdeviceFFI::MobileBackup2::connect(provider);
@@ -347,96 +586,9 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     std::string backup_root = backupPath.toStdString();
     qDebug("BackupWorker: Backup directory: %s", backup_root.c_str());
 
-    // Track open write files
     std::map<std::string, std::ofstream> open_files;
-
-    // Set up filesystem delegate callbacks
     IdeviceFFI::BackupDelegateCallbacks delegate;
-
-    delegate.get_free_disk_space = [](const std::string &path) -> uint64_t {
-        struct statvfs st{};
-        if (statvfs(path.c_str(), &st) == 0)
-            return static_cast<uint64_t>(st.f_bavail) * static_cast<uint64_t>(st.f_frsize);
-        return 0;
-    };
-
-    delegate.open_file_read = [](const std::string &path) -> std::vector<uint8_t> {
-        std::ifstream f(path, std::ios::binary | std::ios::ate);
-        if (!f) {
-            if (path.find("Status.plist") != std::string::npos ||
-                path.find("Manifest.plist") != std::string::npos ||
-                path.find("Info.plist") != std::string::npos) {
-                qDebug("BackupWorker: No previous backup metadata found: %s", path.c_str());
-            } else {
-                qDebug("BackupWorker: Requested backup file is missing: %s", path.c_str());
-            }
-            throw std::runtime_error("file not found: " + path);
-        }
-
-        auto size = f.tellg();
-        if (size < 0) {
-            qDebug("BackupWorker: Could not determine file size: %s", path.c_str());
-            throw std::runtime_error("could not determine file size: " + path);
-        }
-
-        f.seekg(0);
-        std::vector<uint8_t> buf(static_cast<size_t>(size));
-        if (size > 0 && !f.read(reinterpret_cast<char*>(buf.data()), size)) {
-            qDebug("BackupWorker: Failed reading file: %s", path.c_str());
-            throw std::runtime_error("failed reading file: " + path);
-        }
-        return buf;
-    };
-
-    delegate.create_file_write = [&open_files](const std::string &path) {
-        open_files[path] = std::ofstream(path, std::ios::binary | std::ios::trunc);
-    };
-
-    delegate.write_chunk = [&open_files](const std::string &path, const uint8_t *data, size_t len) {
-        auto it = open_files.find(path);
-        if (it != open_files.end())
-            it->second.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(len));
-    };
-
-    delegate.close_file = [&open_files](const std::string &path) {
-        auto it = open_files.find(path);
-        if (it != open_files.end()) {
-            it->second.close();
-            open_files.erase(it);
-        }
-    };
-
-    delegate.create_dir_all = [](const std::string &path) {
-        QDir().mkpath(QString::fromStdString(path));
-    };
-
-    delegate.remove = [](const std::string &path) {
-        QFileInfo fi(QString::fromStdString(path));
-        if (fi.isDir())
-            QDir(QString::fromStdString(path)).removeRecursively();
-        else
-            QFile::remove(QString::fromStdString(path));
-    };
-
-    delegate.rename = [](const std::string &from, const std::string &to) {
-        QFile::rename(QString::fromStdString(from), QString::fromStdString(to));
-    };
-
-    delegate.copy = [](const std::string &src, const std::string &dst) {
-        QFileInfo fi(QString::fromStdString(src));
-        if (fi.isDir())
-            QDir().mkpath(QString::fromStdString(dst));
-        else
-            QFile::copy(QString::fromStdString(src), QString::fromStdString(dst));
-    };
-
-    delegate.exists = [](const std::string &path) -> bool {
-        return QFile::exists(QString::fromStdString(path));
-    };
-
-    delegate.is_dir = [](const std::string &path) -> bool {
-        return QFileInfo(QString::fromStdString(path)).isDir();
-    };
+    configureFilesystemDelegate(delegate, open_files);
 
     delegate.on_progress = [this](uint64_t bytes_done, uint64_t bytes_total, double overall) {
         // overall is device-reported progress (0-100 range, sometimes > 100)
@@ -448,6 +600,33 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
             emit progress(0, 0, 1.0);
         }
     };
+
+    bool encryptionEnabledThisRun = false;
+    auto withEncryptionNote = [&encryptionEnabledThisRun](const QString &message) {
+        if (!encryptionEnabledThisRun)
+            return message;
+        return message + QStringLiteral("\nEncrypted backups were enabled on this device. Future backups will stay encrypted until disabled with the backup password.");
+    };
+
+    if (enableEncryption && !encryptionAlreadyEnabled) {
+        if (password.isEmpty()) {
+            backup_client.disconnect();
+            emit failed(QStringLiteral("Encrypted backup requires a password."));
+            return;
+        }
+
+        qDebug("BackupWorker: Enabling encrypted backups before backup");
+        if (!ensureBackupEncryption(backup_client, backupPath, password, delegate)) {
+            backup_client.disconnect();
+            emit failed(QStringLiteral("Could not enable encrypted backups. Unlock the iPhone, confirm the passcode prompt if shown, and try again."));
+            return;
+        }
+        qDebug("BackupWorker: Encrypted backups enabled");
+        encryptionEnabledThisRun = true;
+        emit encryptionEnabled();
+    } else if (enableEncryption) {
+        qDebug("BackupWorker: Encrypted backups already enabled");
+    }
 
     // Run backup (blocks until complete). Match idevicebackup2 --full by
     // requesting a full backup from the device.
@@ -478,7 +657,7 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     if (result.is_err()) {
         auto &err = result.unwrap_err();
         qDebug("BackupWorker: Backup failed: code=%d msg=%s", err.code, err.message.c_str());
-        emit failed(QString::fromStdString(err.message));
+        emit failed(withEncryptionNote(QString::fromStdString(err.message)));
         return;
     }
 
@@ -520,7 +699,7 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
                     free(err_desc);
                 plist_free(response);
                 backup_client.disconnect();
-                emit failed(msg);
+                emit failed(withEncryptionNote(msg));
                 return;
             } else if (err_code == 205 && validateBackup().readable) {
                 qDebug("BackupWorker: MobileBackup2 reported error 205, but backup metadata validates");
@@ -537,7 +716,7 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
                     free(err_desc);
                 plist_free(response);
                 backup_client.disconnect();
-                emit failed(msg);
+                emit failed(withEncryptionNote(msg));
                 return;
             }
         }
@@ -549,7 +728,7 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     if (!validation.readable) {
         qDebug("BackupWorker: Backup incomplete: %s", qPrintable(validation.error));
         backup_client.disconnect();
-        emit failed(QStringLiteral("Backup incomplete: %1").arg(validation.error));
+        emit failed(withEncryptionNote(QStringLiteral("Backup incomplete: %1").arg(validation.error)));
         return;
     }
 

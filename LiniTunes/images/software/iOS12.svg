@@ -1,0 +1,33 @@
+<svg xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" width="1014px" height="1024px" viewBox="0 0 1014 1024" version="1.1" id="svg1" sodipodi:docname="IOS_12_logo.svg" inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)">
+  <sodipodi:namedview id="namedview1" pagecolor="#7e7e7e" bordercolor="#000000" borderopacity="0.25" inkscape:showpageshadow="2" inkscape:pageopacity="0.0" inkscape:pagecheckerboard="0" inkscape:deskcolor="#d1d1d1" inkscape:zoom="0.49707031" inkscape:cx="443.59921" inkscape:cy="485.84676" inkscape:window-width="1366" inkscape:window-height="705" inkscape:window-x="-8" inkscape:window-y="-8" inkscape:window-maximized="1" inkscape:current-layer="svg1"/>
+  <defs id="defs1">
+    <linearGradient id="linearGradient11" inkscape:collect="always">
+      <stop style="stop-color:#ff1c1c;stop-opacity:1;" offset="0.287251" id="stop14"/>
+      <stop style="stop-color:#ff1cc0;stop-opacity:1;" offset="0.42180189" id="stop15"/>
+      <stop style="stop-color:#ff1cc0;stop-opacity:1;" offset="0.52235681" id="stop17"/>
+      <stop style="stop-color:#21b8de;stop-opacity:1;" offset="0.63938427" id="stop18"/>
+      <stop style="stop-color:#31d3ff;stop-opacity:1;" offset="1" id="stop13"/>
+    </linearGradient>
+    <linearGradient id="linearGradient6" inkscape:collect="always">
+      <stop style="stop-color:#ff166c;stop-opacity:1;" offset="0" id="stop7"/>
+      <stop style="stop-color:#ff1c1c;stop-opacity:1;" offset="0.29404813" id="stop9"/>
+      <stop style="stop-color:#ff1c1c;stop-opacity:1;" offset="0.52202404" id="stop11"/>
+      <stop style="stop-color:#cd17a0;stop-opacity:1;" offset="0.75" id="stop10"/>
+      <stop style="stop-color:#198eab;stop-opacity:1;" offset="1" id="stop8"/>
+    </linearGradient>
+    <linearGradient inkscape:collect="always" xlink:href="#linearGradient6" id="linearGradient8" x1="313.01334" y1="167.23224" x2="313.52588" y2="841.18115" gradientUnits="userSpaceOnUse"/>
+    <linearGradient inkscape:collect="always" xlink:href="#linearGradient11" id="linearGradient13" x1="463.79575" y1="157.75554" x2="911.30957" y2="843.77521" gradientUnits="userSpaceOnUse"/>
+  </defs>
+  <metadata id="metadata1">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:title>Untitled 2</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g id="g18">
+    <rect style="font-variation-settings:normal;display:inline;opacity:1;vector-effect:none;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke-width:55.0001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000;stop-opacity:1" id="rect1" width="1014" height="1024" x="0" y="0" ry="199.16698" rx="241.41454"/>
+    <path d="m 284.14587,847.33569 h 62.59218 V 163.08946 H 283.19751 L 98.740277,289.69635 v 65.91146 L 282.24914,232.3202 h 1.89673 z" id="text3" style="font-weight:300;font-size:971.127px;line-height:0;font-family:'SF Pro Display';-inkscape-font-specification:'SF Pro Display Light';letter-spacing:-6.74394px;word-spacing:0px;display:inline;fill:url(#linearGradient8);stroke:none;stroke-width:6.00002;paint-order:stroke fill markers" aria-label="1"/>
+    <path d="M 465.10328,847.33569 H 911.30959 V 789.48535 H 555.19807 v -2.37091 L 738.23275,596.49283 C 859.62363,471.30849 893.76482,415.35488 893.76482,341.8565 v -0.94837 c 0,-106.21702 -88.67225,-188.72488 -210.53731,-188.72488 -123.28761,0 -219.54678,84.40459 -221.44351,198.68272 v 4.26765 h 62.59217 l 0.47418,-3.79346 c 1.89674,-80.13695 68.28237,-142.25494 159.79971,-142.25494 83.45623,0 144.15167,57.37616 144.62585,134.66801 v 0.94836 c 0,59.74708 -24.18334,101.00101 -122.33924,202.95038 L 465.10328,801.81411 Z" id="text2" style="font-weight:300;font-size:971.127px;line-height:0;font-family:'SF Pro Display';-inkscape-font-specification:'SF Pro Display Light';letter-spacing:-6.74394px;word-spacing:0px;display:inline;fill:url(#linearGradient13);stroke-width:6.00002;paint-order:stroke fill markers" aria-label="2"/>
+  </g>
+</svg>
