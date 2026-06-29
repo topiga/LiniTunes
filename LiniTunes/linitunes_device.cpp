@@ -1,4 +1,5 @@
 #include "linitunes_device.h"
+#include "plist_helpers.h"
 #include <QDebug>
 #include <QFile>
 #include <QCoreApplication>
@@ -8,45 +9,9 @@
 #include <idevice++/usbmuxd.hpp>
 #include <cstdlib>
 
-static QString plist_dict_get_string(const plist_t dict, const char *key)
-{
-    if (!dict || plist_get_node_type(dict) != PLIST_DICT)
-        return {};
-
-    plist_t node = plist_dict_get_item(dict, key);
-    if (!node)
-        return {};
-
-    char *val = nullptr;
-    plist_get_string_val(node, &val);
-    const QString result = val ? QString::fromUtf8(val) : QString();
-    free(val);
-    return result;
-}
-
-static QString plist_dict_get_uint_str(const plist_t dict, const char *key)
-{
-    if (!dict)
-        return {};
-
-    plist_t node = plist_dict_get_item(dict, key);
-    if (!node)
-        return {};
-
-    uint64_t val = 0;
-    plist_get_uint_val(node, &val);
-    return QString::number(val);
-}
-
-static bool plist_bool_value(plist_t node)
-{
-    if (!node || plist_get_node_type(node) != PLIST_BOOLEAN)
-        return false;
-
-    uint8_t val = 0;
-    plist_get_bool_val(node, &val);
-    return val != 0;
-}
+using plist_helpers::stringVal;
+using plist_helpers::uintStr;
+using plist_helpers::boolVal;
 
 static QString existing_resource_path(const QString &path)
 {
@@ -157,27 +122,13 @@ iDevice::iDevice(QObject *parent)
     connect(m_backupWorker, &BackupWorker::progress,
             this, &iDevice::onBackupProgress);
     connect(m_backupWorker, &BackupWorker::encryptionEnabled,
-            this, [this]() {
-                m_backupEncrypted = true;
-                emit backupChanged();
-            });
+            this, [this]() { finishBackupEncryptionChange(QStringLiteral("enabled"), false); });
     connect(m_backupWorker, &BackupWorker::encryptionDisabled,
-            this, [this]() {
-                m_backupEncrypted = false;
-                m_backupInfo->reset();
-                emit backupChanged();
-            });
+            this, [this]() { finishBackupEncryptionChange(QStringLiteral("disabled"), true); });
     connect(m_backupWorker, &BackupWorker::encryptionPasswordChanged,
-            this, [this]() {
-                m_backupEncrypted = true;
-                m_backupInfo->reset();
-                emit backupChanged();
-            });
+            this, [this]() { finishBackupEncryptionChange(QStringLiteral("enabled"), true); });
     connect(m_backupWorker, &BackupWorker::encryptionFailed,
-            this, [this](const QString &error) {
-                m_backupInfo->setError(error);
-                emit backupChanged();
-            });
+            this, &iDevice::failBackupEncryptionChange);
     connect(m_backupWorker, &BackupWorker::finished,
             this, &iDevice::onBackupFinished);
     connect(m_backupWorker, &BackupWorker::finishedWithWarnings,
@@ -236,14 +187,14 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     plist_t all_dict = all_values_result.unwrap();
 
     // Parse using raw C plist API (avoids PList::Dictionary memory corruption)
-    m_productType       = plist_dict_get_string(all_dict, "ProductType");
-    m_productVersion    = plist_dict_get_string(all_dict, "ProductVersion");
-    m_buildVersion      = plist_dict_get_string(all_dict, "BuildVersion");
-    m_deviceClass       = plist_dict_get_string(all_dict, "DeviceClass");
-    m_deviceName        = plist_dict_get_string(all_dict, "DeviceName");
-    m_serial            = plist_dict_get_string(all_dict, "SerialNumber");
-    m_ecid              = plist_dict_get_uint_str(all_dict, "UniqueChipID");
-    m_imei              = plist_dict_get_string(all_dict, "InternationalMobileEquipmentIdentity");
+    m_productType       = stringVal(all_dict, "ProductType");
+    m_productVersion    = stringVal(all_dict, "ProductVersion");
+    m_buildVersion      = stringVal(all_dict, "BuildVersion");
+    m_deviceClass       = stringVal(all_dict, "DeviceClass");
+    m_deviceName        = stringVal(all_dict, "DeviceName");
+    m_serial            = stringVal(all_dict, "SerialNumber");
+    m_ecid              = uintStr(all_dict, "UniqueChipID");
+    m_imei              = stringVal(all_dict, "InternationalMobileEquipmentIdentity");
 
     // Lookup marketing name
     m_marketingName = lookup_marketing_name(m_productType);
@@ -255,8 +206,10 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     auto encryption_result = lockdown.get_value("WillEncrypt", "com.apple.mobile.backup");
     if (encryption_result.is_ok()) {
         plist_t node = encryption_result.unwrap();
-        m_backupEncrypted = plist_bool_value(node);
+        m_backupEncryptionStatus = boolVal(node) ? QStringLiteral("enabled") : QStringLiteral("disabled");
         plist_free(node);
+    } else {
+        m_backupEncryptionStatus = QStringLiteral("unknown");
     }
 
     // Battery
@@ -472,10 +425,37 @@ void iDevice::stopBackup()
         m_backupWorker->cancel();
 }
 
+void iDevice::beginBackupEncryptionChange()
+{
+    m_backupEncryptionBusy = true;
+    m_backupEncryptionError.clear();
+    emit backupChanged();
+}
+
+void iDevice::finishBackupEncryptionChange(const QString &status, bool resetBackupInfo)
+{
+    m_backupEncryptionStatus = status;
+    m_backupEncryptionBusy = false;
+    m_backupEncryptionError.clear();
+    if (resetBackupInfo)
+        m_backupInfo->reset();
+    emit backupChanged();
+}
+
+void iDevice::failBackupEncryptionChange(const QString &error)
+{
+    m_backupEncryptionBusy = false;
+    m_backupEncryptionError = error;
+    m_backupInfo->setError(error);
+    emit backupChanged();
+}
+
 void iDevice::disableBackupEncryption(const QString &path, const QString &password)
 {
-    if (!m_connected || !m_backupWorker || password.isEmpty())
+    if (!m_connected || !m_backupWorker || password.isEmpty() || m_backupEncryptionBusy || backupRunning())
         return;
+
+    beginBackupEncryptionChange();
 
     if (!m_backupThread.isRunning())
         m_backupThread.start();
@@ -489,8 +469,10 @@ void iDevice::disableBackupEncryption(const QString &path, const QString &passwo
 
 void iDevice::changeBackupPassword(const QString &path, const QString &oldPassword, const QString &newPassword)
 {
-    if (!m_connected || !m_backupWorker || oldPassword.isEmpty() || newPassword.isEmpty())
+    if (!m_connected || !m_backupWorker || oldPassword.isEmpty() || newPassword.isEmpty() || m_backupEncryptionBusy || backupRunning())
         return;
+
+    beginBackupEncryptionChange();
 
     if (!m_backupThread.isRunning())
         m_backupThread.start();
@@ -507,11 +489,9 @@ bool iDevice::backupRunning() const
     return m_backupInfo && m_backupInfo->status() == "running";
 }
 
-void iDevice::onBackupProgress(quint64 bytesDone, quint64 bytesTotal, double overall)
+void iDevice::onBackupProgress(double overall)
 {
     m_backupInfo->setOverallProgress(overall * 100.0);
-    Q_UNUSED(bytesDone);
-    Q_UNUSED(bytesTotal);
 }
 
 void iDevice::onBackupFinished()

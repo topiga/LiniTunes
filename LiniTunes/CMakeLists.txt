@@ -93,6 +93,7 @@ set(SOURCE_FILES
     backup_info.h backup_info.cpp
     backup_validator.h backup_validator.cpp
     backup_worker.h backup_worker.cpp
+    plist_helpers.h
     main.cpp
 )
 

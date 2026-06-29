@@ -1,9 +1,12 @@
 #include "backup_validator.h"
+#include "plist_helpers.h"
 
 #include <QDir>
 #include <QFileInfo>
 #include <idevice++/bindings.hpp>
 #include <cstdlib>
+
+using plist_helpers::stringVal;
 
 namespace {
 
@@ -18,19 +21,6 @@ bool existsAndNonEmpty(const QString &path)
     return fi.exists() && fi.isFile() && fi.size() > 0;
 }
 
-QString plistStringValue(plist_t dict, const char *key)
-{
-    plist_t node = plist_dict_get_item(dict, key);
-    if (!node)
-        return {};
-
-    char *value = nullptr;
-    plist_get_string_val(node, &value);
-    const QString result = value ? QString::fromUtf8(value) : QString();
-    free(value);
-    return result;
-}
-
 }
 
 BackupValidationResult BackupValidator::validate(const QString &backupRoot, const QString &udid)
@@ -43,14 +33,15 @@ BackupValidationResult BackupValidator::validate(const QString &backupRoot, cons
         QStringLiteral("Manifest.db")
     };
 
+    QStringList missingOrEmptyFiles;
     for (const QString &requiredFile : requiredFiles) {
         if (!existsAndNonEmpty(deviceBackupPath(backupRoot, udid, requiredFile)))
-            result.missingOrEmptyFiles << requiredFile;
+            missingOrEmptyFiles << requiredFile;
     }
 
-    if (!result.missingOrEmptyFiles.isEmpty()) {
+    if (!missingOrEmptyFiles.isEmpty()) {
         result.error = QStringLiteral("Missing or empty backup metadata: %1")
-                           .arg(result.missingOrEmptyFiles.join(QStringLiteral(", ")));
+                           .arg(missingOrEmptyFiles.join(QStringLiteral(", ")));
         return result;
     }
 
@@ -59,15 +50,12 @@ BackupValidationResult BackupValidator::validate(const QString &backupRoot, cons
                                       .absoluteFilePath()
                                       .toUtf8();
     if (plist_read_from_file(statusPath.constData(), &statusPlist, nullptr) == PLIST_ERR_SUCCESS && statusPlist) {
-        result.snapshotState = plistStringValue(statusPlist, "SnapshotState");
-        result.statusParsed = !result.snapshotState.isEmpty();
-        result.snapshotFinished = result.snapshotState == QStringLiteral("finished");
+        const QString snapshotState = stringVal(statusPlist, "SnapshotState");
         plist_free(statusPlist);
-    }
-
-    if (result.statusParsed && !result.snapshotFinished) {
-        result.error = QStringLiteral("Backup snapshot is not finished: %1").arg(result.snapshotState);
-        return result;
+        if (!snapshotState.isEmpty() && snapshotState != QStringLiteral("finished")) {
+            result.error = QStringLiteral("Backup snapshot is not finished: %1").arg(snapshotState);
+            return result;
+        }
     }
 
     result.readable = true;

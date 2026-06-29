@@ -9,15 +9,6 @@ void BackupInfo::setStatus(Status s)
     }
 }
 
-void BackupInfo::setProgress(quint64 done, quint64 total)
-{
-    if (m_bytesDone != done || m_bytesTotal != total) {
-        m_bytesDone = done;
-        m_bytesTotal = total;
-        emit changed();
-    }
-}
-
 void BackupInfo::setOverallProgress(double pct)
 {
     const double clamped = qBound(0.0, pct, 100.0);
@@ -46,8 +37,6 @@ void BackupInfo::setWarning(const QString &msg)
 void BackupInfo::reset()
 {
     m_status = Status::Idle;
-    m_bytesDone = 0;
-    m_bytesTotal = 0;
     m_overallPercent = 0;
     m_error.clear();
     m_warning.clear();
@@ -71,9 +60,4 @@ QString BackupInfo::status() const
         return QStringLiteral("cancelled");
     }
     return QStringLiteral("idle");
-}
-
-double BackupInfo::progress() const
-{
-    return m_overallPercent;
 }

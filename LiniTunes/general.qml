@@ -1,13 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import "qml/components"
 
 Item {
     id: generalPage
 
     property string backupPath: ""
     property bool cancellationRequested: false
-    property int backupMode: DeviceWatcher.backup_encrypted ? 1 : 0 // 0 = important data, 1 = all data/encrypted
+    property int backupMode: DeviceWatcher.backup_encryption_status === "enabled" ? 1 : 0 // 0 = standard local backup, 1 = encrypted local backup
     property string backupPasswordForRun: ""
     property bool pendingBackupAfterPassword: false
     property string backupPasswordError: ""
@@ -15,125 +16,6 @@ Item {
     property string changePasswordError: ""
     property var backupDevices: []
     property string pendingFolderAction: ""
-
-    component Card: Rectangle {
-        id: cardRoot
-        property string title: ""
-        default property alias content: cardContent.data
-
-        width: parent ? parent.width : 0
-        implicitHeight: cardTitle.implicitHeight + cardContent.implicitHeight + 30
-        radius: 8
-        border.width: 0
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0; color: root.colors.cardStroke }
-            GradientStop { position: 1.5; color: "#02000000" }
-        }
-
-        Rectangle {
-            id: cardInner
-            anchors.fill: parent
-            anchors.margins: 1
-            radius: 8
-            border.width: 0
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop { position: 1.2; color: root.colors.cardBackgroundTop }
-                GradientStop { position: 0; color: root.colors.cardBackgroundBottom }
-            }
-        }
-
-        Text {
-            id: cardTitle
-            opacity: 0.5
-            color: root.colors.textPrimary
-            text: cardRoot.title
-            font.pixelSize: 12
-            font.family: AppFontFamily
-            anchors {
-                left: cardInner.left
-                top: cardInner.top
-                leftMargin: 10
-                topMargin: 8
-            }
-        }
-
-        Column {
-            id: cardContent
-            anchors {
-                left: cardInner.left
-                right: cardInner.right
-                top: cardTitle.bottom
-                margins: 14
-                topMargin: 8
-            }
-            spacing: 10
-        }
-    }
-
-    component SyncStyleButton: Rectangle {
-        id: buttonRoot
-        property string label: "Button"
-        property bool destructive: false
-        property bool primary: false
-        signal clicked()
-
-        width: Math.max(118, buttonText.implicitWidth + 28)
-        height: 32
-        radius: 5
-        opacity: enabled ? 1.0 : 0.45
-        border.width: destructive || primary ? 0 : 1
-        border.color: root.colors.cardStroke
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 1; color: buttonRoot.topColor() }
-            GradientStop { position: 0; color: buttonRoot.bottomColor() }
-        }
-
-        function topColor() {
-            if (destructive)
-                return root.colors.darkRed
-            if (primary)
-                return root.colors.accent
-            return root.colors.cardBackgroundTop
-        }
-
-        function bottomColor() {
-            if (destructive)
-                return root.colors.red
-            if (primary)
-                return root.colors.accent
-            return root.colors.cardBackgroundBottom
-        }
-
-        function labelColor() {
-            if (destructive || primary)
-                return "#ffffff"
-            return root.colors.textPrimary
-        }
-
-        Text {
-            id: buttonText
-            anchors.centerIn: parent
-            text: buttonRoot.label
-            color: buttonRoot.labelColor()
-            font.weight: Font.DemiBold
-            font.family: AppFontFamily
-            font.pixelSize: 13
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            enabled: buttonRoot.enabled
-            onPressed: buttonRoot.opacity = 0.7
-            onCanceled: buttonRoot.opacity = buttonRoot.enabled ? 1.0 : 0.45
-            onReleased: {
-                buttonRoot.opacity = buttonRoot.enabled ? 1.0 : 0.45
-                buttonRoot.clicked()
-            }
-        }
-    }
 
     component BackupOption: Rectangle {
         id: optionRoot
@@ -156,17 +38,10 @@ Item {
             color: "transparent"
             border.width: 1
             border.color: optionRoot.checked ? root.colors.accent : root.colors.textSecondary
-            anchors {
-                left: parent.left
-                top: parent.top
-                leftMargin: 0
-                topMargin: 2
-            }
+            anchors { left: parent.left; top: parent.top; leftMargin: 0; topMargin: 2 }
 
             Rectangle {
-                width: 8
-                height: 8
-                radius: 4
+                width: 8; height: 8; radius: 4
                 visible: optionRoot.checked
                 color: root.colors.accent
                 anchors.centerIn: parent
@@ -175,129 +50,26 @@ Item {
 
         Column {
             id: optionTextColumn
-            anchors {
-                left: radioOuter.right
-                right: parent.right
-                top: parent.top
-                leftMargin: 10
-            }
+            anchors { left: radioOuter.right; right: parent.right; top: parent.top; leftMargin: 10 }
             spacing: 4
 
             Text {
                 text: optionRoot.title
                 color: root.colors.textPrimary
-                font.pixelSize: 13
-                font.family: AppFontFamily
-                font.weight: Font.DemiBold
-                wrapMode: Text.WordWrap
-                width: parent.width
+                font.pixelSize: 13; font.family: AppFontFamily; font.weight: Font.DemiBold
+                wrapMode: Text.WordWrap; width: parent.width
             }
-
             Text {
                 text: optionRoot.details
                 color: root.colors.textSecondary
-                font.pixelSize: 12
-                font.family: AppFontFamily
-                wrapMode: Text.WordWrap
-                width: parent.width
+                font.pixelSize: 12; font.family: AppFontFamily
+                wrapMode: Text.WordWrap; width: parent.width
             }
         }
 
         MouseArea {
-            anchors {
-                left: radioOuter.left
-                right: optionTextColumn.right
-                top: radioOuter.top
-                bottom: optionTextColumn.bottom
-            }
+            anchors { left: radioOuter.left; right: optionTextColumn.right; top: radioOuter.top; bottom: optionTextColumn.bottom }
             onClicked: optionRoot.selected()
-        }
-    }
-
-    component ModalPanel: Popup {
-        id: popupRoot
-        property string title: ""
-        default property alias content: popupContent.data
-
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        width: Math.min(520, generalPage.width - 40)
-        x: Math.round((generalPage.width - width) / 2)
-        y: Math.max(24, Math.round((generalPage.height - height) / 2))
-        padding: 0
-        scale: 1.0
-        opacity: 1.0
-        Overlay.modal: Rectangle { color: "#88000000" }
-        enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 160; easing.type: Easing.OutCubic }
-            NumberAnimation { property: "scale"; from: 0.96; to: 1.0; duration: 160; easing.type: Easing.OutCubic }
-        }
-        exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120; easing.type: Easing.InCubic }
-            NumberAnimation { property: "scale"; from: 1.0; to: 0.97; duration: 120; easing.type: Easing.InCubic }
-        }
-        background: Rectangle {
-            radius: 10
-            border.width: 0
-            gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop { position: 0; color: root.colors.cardStroke }
-                GradientStop { position: 1; color: "#02000000" }
-            }
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: 1
-                radius: 10
-                gradient: Gradient {
-                    orientation: Gradient.Vertical
-                    GradientStop { position: 0; color: root.colors.cardBackgroundTop }
-                    GradientStop { position: 1; color: root.colors.cardBackgroundBottom }
-                }
-            }
-        }
-
-        contentItem: Column {
-            width: popupRoot.width
-            spacing: 14
-            padding: 18
-
-            Text {
-                text: popupRoot.title
-                color: root.colors.textPrimary
-                font.pixelSize: 16
-                font.family: AppFontFamily
-                font.weight: Font.Bold
-                wrapMode: Text.WordWrap
-                width: parent.width - parent.leftPadding - parent.rightPadding
-            }
-
-            Rectangle {
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                height: 1
-                color: root.colors.divider
-            }
-
-            Column {
-                id: popupContent
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                spacing: 12
-            }
-        }
-    }
-
-    component PasswordField: TextField {
-        height: 34
-        echoMode: TextInput.Password
-        color: root.colors.textPrimary
-        placeholderTextColor: root.colors.sideTextInactive
-        font.pixelSize: 12
-        font.family: AppFontFamily
-        background: Rectangle {
-            radius: 6
-            color: root.colors.cardBackgroundTop
-            border.color: root.colors.cardStroke
-            border.width: 1
         }
     }
 
@@ -322,6 +94,7 @@ Item {
                 spacing: 12
 
                 Card {
+    colors: root.colors
                     title: qsTr("Software")
 
                     Row {
@@ -399,23 +172,24 @@ Item {
                             width: 150
                             spacing: 6
 
-                            SyncStyleButton {
+                            AppButton {
+    colors: root.colors
                                 width: parent.width
                                 label: qsTr("Check for Updates")
-                                enabled: DeviceWatcher.device_connected
-                                onClicked: console.log("Check for Updates not implemented yet")
+                                enabled: false
                             }
-                            SyncStyleButton {
+                            AppButton {
+    colors: root.colors
                                 width: parent.width
                                 label: qsTr("Restore...")
-                                enabled: DeviceWatcher.device_connected
-                                onClicked: console.log("Software Restore not implemented yet")
+                                enabled: false
                             }
                         }
                     }
                 }
 
                 Card {
+    colors: root.colors
                     title: qsTr("Backups")
 
                     Text {
@@ -436,16 +210,16 @@ Item {
 
                         BackupOption {
                             title: qsTr("Back up your most important data of this device to this computer")
-                            details: DeviceWatcher.backup_encrypted
+                            details: DeviceWatcher.backup_encryption_status === "enabled"
                                      ? qsTr("Uses the current local unencrypted backup behavior.")
                                      : qsTr("Uses a local unencrypted backup behavior.")
                             checked: generalPage.backupMode === 0
-                            onSelected: generalPage.requestImportantBackupMode()
+                            onSelected: generalPage.requestStandardBackupMode()
                         }
 
                         BackupOption {
                             title: qsTr("Back up all of the data of this iPhone to this computer (Encrypted)")
-                            details: DeviceWatcher.backup_encrypted
+                            details: DeviceWatcher.backup_encryption_status === "enabled"
                                      ? qsTr("Encrypted local backup is enabled for this device.")
                                      : qsTr("Encrypt local backup. A password is required and cannot be recovered if forgotten.")
                             checked: generalPage.backupMode === 1
@@ -455,7 +229,7 @@ Item {
 
                     Text {
                         visible: DeviceWatcher.backup_running
-                        text: DeviceWatcher.backup_encrypted || generalPage.backupMode === 1
+                        text: DeviceWatcher.backup_encryption_status === "enabled" || generalPage.backupMode === 1
                               ? qsTr("Keep your iPhone unlocked and connected. If prompted, confirm backup encryption on the iPhone.")
                               : qsTr("Keep your iPhone unlocked and connected until the backup finishes.")
                         color: root.colors.textSecondary
@@ -486,17 +260,31 @@ Item {
                         width: parent.width
                     }
 
+                    Text {
+                        visible: DeviceWatcher.backup_encryption_busy || DeviceWatcher.backup_encryption_error !== ""
+                        text: DeviceWatcher.backup_encryption_busy
+                              ? qsTr("Updating backup encryption…")
+                              : generalPage.friendlyBackupError(DeviceWatcher.backup_encryption_error)
+                        color: DeviceWatcher.backup_encryption_busy ? root.colors.textSecondary : root.colors.red
+                        font.pixelSize: 12
+                        font.family: AppFontFamily
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
                     Row {
                         spacing: 10
-                        SyncStyleButton {
+                        AppButton {
+    colors: root.colors
                             label: qsTr("Manage Backups")
                             onClicked: generalPage.ensureBackupFolder("manage")
                         }
-                        SyncStyleButton {
+                        AppButton {
+    colors: root.colors
                             label: DeviceWatcher.backup_running ? qsTr("Cancel") : qsTr("Back Up Now")
                             primary: !DeviceWatcher.backup_running
                             destructive: DeviceWatcher.backup_running
-                            enabled: DeviceWatcher.device_connected && (generalPage.backupPath !== "" || DeviceWatcher.backup_running)
+                            enabled: DeviceWatcher.device_connected && !DeviceWatcher.backup_encryption_busy
                             onClicked: {
                                 if (DeviceWatcher.backup_running) {
                                     generalPage.cancellationRequested = true
@@ -506,14 +294,15 @@ Item {
                                 }
                             }
                         }
-                        SyncStyleButton {
+                        AppButton {
+    colors: root.colors
                             label: qsTr("Restore Backup")
-                            enabled: DeviceWatcher.device_connected
-                            onClicked: generalPage.ensureBackupFolder("restore")
+                            enabled: false
                         }
-                        SyncStyleButton {
+                        AppButton {
+    colors: root.colors
                             label: qsTr("Change Password")
-                            enabled: DeviceWatcher.device_connected && DeviceWatcher.backup_encrypted
+                            enabled: DeviceWatcher.device_connected && DeviceWatcher.backup_encryption_status === "enabled" && !DeviceWatcher.backup_encryption_busy
                             onClicked: changePasswordPopup.open()
                         }
                     }
@@ -525,19 +314,19 @@ Item {
     Connections {
         target: DeviceWatcher
         function onBackupChanged() {
-            if (DeviceWatcher.backup_encrypted)
+            if (DeviceWatcher.backup_encryption_status === "enabled")
                 generalPage.backupMode = 1
             if (!DeviceWatcher.backup_running) {
                 generalPage.cancellationRequested = false
                 generalPage.backupPasswordForRun = ""
                 generalPage.pendingBackupAfterPassword = false
             }
-            if (!DeviceWatcher.backup_encrypted && generalPage.backupMode === 1 && !generalPage.pendingBackupAfterPassword)
+            if (DeviceWatcher.backup_encryption_status === "disabled" && generalPage.backupMode === 1 && !generalPage.pendingBackupAfterPassword)
                 generalPage.backupMode = 0
         }
 
         function onCurrentDeviceChanged() {
-            generalPage.backupMode = DeviceWatcher.backup_encrypted ? 1 : 0
+            generalPage.backupMode = DeviceWatcher.backup_encryption_status === "enabled" ? 1 : 0
             generalPage.backupPasswordError = ""
             generalPage.disablePasswordError = ""
             generalPage.changePasswordError = ""
@@ -556,6 +345,7 @@ Item {
     }
 
     ModalPanel {
+    colors: root.colors
         id: chooseBackupFolderPopup
         title: qsTr("Choose Backup Folder")
 
@@ -581,14 +371,16 @@ Item {
         Row {
             spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Cancel")
                 onClicked: {
                     generalPage.pendingFolderAction = ""
                     chooseBackupFolderPopup.close()
                 }
             }
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Choose Folder")
                 primary: true
                 onClicked: {
@@ -600,6 +392,7 @@ Item {
     }
 
     ModalPanel {
+    colors: root.colors
         id: passwordSetupPopup
         title: qsTr("Set Backup Password")
         onClosed: {
@@ -617,12 +410,14 @@ Item {
         }
 
         PasswordField {
+    colors: root.colors
             id: setupPasswordField
             width: parent.width
             placeholderText: qsTr("Backup password")
         }
 
         PasswordField {
+    colors: root.colors
             id: setupPasswordConfirmField
             width: parent.width
             placeholderText: qsTr("Confirm password")
@@ -641,14 +436,17 @@ Item {
         Row {
             spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Cancel")
                 onClicked: {
                     generalPage.pendingBackupAfterPassword = false
+                    generalPage.backupMode = DeviceWatcher.backup_encryption_status === "enabled" ? 1 : 0
                     passwordSetupPopup.close()
                 }
             }
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Use Password")
                 primary: true
                 onClicked: generalPage.acceptBackupPasswordSetup()
@@ -657,6 +455,7 @@ Item {
     }
 
     ModalPanel {
+    colors: root.colors
         id: disableEncryptionConfirmPopup
         title: qsTr("Disable Encrypted Backups?")
 
@@ -672,11 +471,13 @@ Item {
         Row {
             spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Go Back")
                 onClicked: disableEncryptionConfirmPopup.close()
             }
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Disable Encryption")
                 destructive: true
                 onClicked: {
@@ -688,6 +489,7 @@ Item {
     }
 
     ModalPanel {
+    colors: root.colors
         id: disablePasswordPopup
         title: qsTr("Enter Current Backup Password")
         onClosed: disablePasswordField.text = ""
@@ -702,6 +504,7 @@ Item {
         }
 
         PasswordField {
+    colors: root.colors
             id: disablePasswordField
             width: parent.width
             placeholderText: qsTr("Current backup password")
@@ -720,19 +523,23 @@ Item {
         Row {
             spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Cancel")
                 onClicked: disablePasswordPopup.close()
             }
-            SyncStyleButton {
-                label: qsTr("Disable")
+            AppButton {
+    colors: root.colors
+                label: DeviceWatcher.backup_encryption_busy ? qsTr("Disabling…") : qsTr("Disable")
                 destructive: true
+                enabled: !DeviceWatcher.backup_encryption_busy
                 onClicked: generalPage.disableEncryptionWithPassword()
             }
         }
     }
 
     ModalPanel {
+    colors: root.colors
         id: changePasswordPopup
         title: qsTr("Change Backup Password")
         onClosed: {
@@ -751,16 +558,19 @@ Item {
         }
 
         PasswordField {
+    colors: root.colors
             id: changeOldPasswordField
             width: parent.width
             placeholderText: qsTr("Current password")
         }
         PasswordField {
+    colors: root.colors
             id: changeNewPasswordField
             width: parent.width
             placeholderText: qsTr("New password")
         }
         PasswordField {
+    colors: root.colors
             id: changeConfirmPasswordField
             width: parent.width
             placeholderText: qsTr("Confirm new password")
@@ -779,19 +589,23 @@ Item {
         Row {
             spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Cancel")
                 onClicked: changePasswordPopup.close()
             }
-            SyncStyleButton {
-                label: qsTr("Change Password")
+            AppButton {
+    colors: root.colors
+                label: DeviceWatcher.backup_encryption_busy ? qsTr("Changing…") : qsTr("Change Password")
                 primary: true
+                enabled: !DeviceWatcher.backup_encryption_busy
                 onClicked: generalPage.changeBackupPassword()
             }
         }
     }
 
     ModalPanel {
+    colors: root.colors
         id: manageBackupsPopup
         title: qsTr("Manage Backups")
         width: Math.min(620, generalPage.width - 40)
@@ -849,7 +663,8 @@ Item {
         Row {
             spacing: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            SyncStyleButton {
+            AppButton {
+    colors: root.colors
                 label: qsTr("Close")
                 onClicked: manageBackupsPopup.close()
             }
@@ -877,14 +692,18 @@ Item {
             generalPage.openManageBackupsPopup()
             break
         case "restore":
-            console.log("Restore Backup not implemented yet")
+            generalPage.backupPasswordError = qsTr("Restore Backup is not available yet.")
             break
         }
     }
 
-    function requestImportantBackupMode() {
+    function unknownEncryptionStatusMessage() {
+        return qsTr("LiniTunes could not confirm the current backup encryption state. Unlock the iPhone and reconnect it before changing encryption.")
+    }
+
+    function requestStandardBackupMode() {
         generalPage.backupPasswordError = ""
-        if (DeviceWatcher.backup_encrypted) {
+        if (DeviceWatcher.backup_encryption_status === "enabled") {
             disableEncryptionConfirmPopup.open()
             return
         }
@@ -895,7 +714,12 @@ Item {
     function requestEncryptedBackupMode() {
         generalPage.backupPasswordError = ""
         generalPage.backupMode = 1
-        if (!DeviceWatcher.backup_encrypted && generalPage.backupPasswordForRun === "")
+        if (DeviceWatcher.backup_encryption_status === "unknown") {
+            generalPage.backupPasswordError = generalPage.unknownEncryptionStatusMessage()
+            generalPage.backupMode = 0
+            return
+        }
+        if (DeviceWatcher.backup_encryption_status !== "enabled" && generalPage.backupPasswordForRun === "")
             passwordSetupPopup.open()
     }
 
@@ -925,8 +749,9 @@ Item {
             return
         }
 
+        var encryptionStatus = DeviceWatcher.backup_encryption_status
         if (generalPage.backupMode === 0) {
-            if (DeviceWatcher.backup_encrypted) {
+            if (encryptionStatus === "enabled") {
                 disableEncryptionConfirmPopup.open()
                 return
             }
@@ -934,8 +759,14 @@ Item {
             return
         }
 
-        if (DeviceWatcher.backup_encrypted) {
+        if (encryptionStatus === "enabled") {
             DeviceWatcher.startBackup(generalPage.backupPath, false, "")
+            return
+        }
+
+        if (encryptionStatus === "unknown") {
+            generalPage.backupPasswordError = generalPage.unknownEncryptionStatusMessage()
+            generalPage.backupMode = 0
             return
         }
 
@@ -998,35 +829,37 @@ Item {
         if (!DeviceWatcher.backup_info)
             return ""
 
-        var status = DeviceWatcher.backup_info.status
-        if (status === "running") {
-            if (generalPage.cancellationRequested)
-                return qsTr("Cancelling...")
-            return qsTr("Backing up…")
-        }
-        if (status === "completed")
+        switch (DeviceWatcher.backup_info.status) {
+        case "running":
+            return generalPage.cancellationRequested ? qsTr("Cancelling...") : qsTr("Backing up…")
+        case "completed":
             return qsTr("Backup completed")
-        if (status === "completed_with_warnings")
+        case "completed_with_warnings":
             return qsTr("Completed with warnings: ") + DeviceWatcher.backup_info.warning
-        if (status === "failed")
+        case "failed":
             return qsTr("Failed: ") + generalPage.friendlyBackupError(DeviceWatcher.backup_info.error)
-        if (status === "cancelled")
+        case "cancelled":
             return qsTr("Backup cancelled")
-        return ""
+        default:
+            return ""
+        }
     }
 
     function backupStatusColor() {
         if (!DeviceWatcher.backup_info)
             return root.colors.textSecondary
 
-        var status = DeviceWatcher.backup_info.status
-        if (status === "completed")
+        switch (DeviceWatcher.backup_info.status) {
+        case "completed":
             return root.colors.green
-        if (status === "completed_with_warnings" || status === "cancelled")
+        case "completed_with_warnings":
+        case "cancelled":
             return root.colors.yellow
-        if (status === "failed")
+        case "failed":
             return root.colors.red
-        return root.colors.textPrimary
+        default:
+            return root.colors.textPrimary
+        }
     }
 
     function friendlyBackupError(error) {

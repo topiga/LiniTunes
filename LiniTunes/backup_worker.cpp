@@ -1,5 +1,6 @@
 #include "backup_worker.h"
 #include "backup_validator.h"
+#include "plist_helpers.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -22,32 +23,10 @@
 
 namespace {
 
-QString plistDictString(plist_t dict, const char *key)
-{
-    if (!dict || plist_get_node_type(dict) != PLIST_DICT)
-        return {};
-
-    plist_t node = plist_dict_get_item(dict, key);
-    if (!node || plist_get_node_type(node) != PLIST_STRING)
-        return {};
-
-    char *value = nullptr;
-    plist_get_string_val(node, &value);
-    const QString result = value ? QString::fromUtf8(value) : QString();
-    free(value);
-    return result;
-}
-
-void plistDictSetString(plist_t dict, const char *key, const QString &value)
-{
-    if (!value.isEmpty())
-        plist_dict_set_item(dict, key, plist_new_string(value.toUtf8().constData()));
-}
-
-void plistDictSetCurrentDate(plist_t dict, const char *key)
-{
-    plist_dict_set_item(dict, key, plist_new_unix_date(QDateTime::currentSecsSinceEpoch()));
-}
+using plist_helpers::stringVal;
+using plist_helpers::setString;
+using plist_helpers::setCurrentDate;
+using plist_helpers::boolVal;
 
 bool writePlistToFile(plist_t plist, const QString &path)
 {
@@ -102,13 +81,13 @@ bool generateInfoPlist(IdeviceFFI::Provider &provider, const QString &udid, cons
     }
 
     plist_t values = valuesResult.unwrap();
-    const QString deviceName = plistDictString(values, "DeviceName");
-    const QString productType = plistDictString(values, "ProductType");
-    const QString productVersion = plistDictString(values, "ProductVersion");
-    const QString buildVersion = plistDictString(values, "BuildVersion");
-    const QString serialNumber = plistDictString(values, "SerialNumber");
-    const QString imei = plistDictString(values, "InternationalMobileEquipmentIdentity");
-    const QString meid = plistDictString(values, "MobileEquipmentIdentifier");
+    const QString deviceName = stringVal(values, "DeviceName");
+    const QString productType = stringVal(values, "ProductType");
+    const QString productVersion = stringVal(values, "ProductVersion");
+    const QString buildVersion = stringVal(values, "BuildVersion");
+    const QString serialNumber = stringVal(values, "SerialNumber");
+    const QString imei = stringVal(values, "InternationalMobileEquipmentIdentity");
+    const QString meid = stringVal(values, "MobileEquipmentIdentifier");
 
     const QString displayName = deviceName.isEmpty() ? udid : deviceName;
     const QString guid = QUuid::createUuid()
@@ -117,15 +96,15 @@ bool generateInfoPlist(IdeviceFFI::Provider &provider, const QString &udid, cons
                              .toUpper();
 
     plist_t info = plist_new_dict();
-    plistDictSetString(info, "Build Version", buildVersion);
-    plistDictSetString(info, "Device Name", displayName);
-    plistDictSetString(info, "Display Name", displayName);
+    setString(info, "Build Version", buildVersion);
+    setString(info, "Device Name", displayName);
+    setString(info, "Display Name", displayName);
     plist_dict_set_item(info, "GUID", plist_new_string(guid.toUtf8().constData()));
-    plistDictSetString(info, "IMEI", imei);
-    plistDictSetString(info, "MEID", meid.isEmpty() && imei.size() >= 14 ? imei.left(14) : meid);
-    plistDictSetString(info, "Product Type", productType);
-    plistDictSetString(info, "Product Version", productVersion);
-    plistDictSetString(info, "Serial Number", serialNumber);
+    setString(info, "IMEI", imei);
+    setString(info, "MEID", meid.isEmpty() && imei.size() >= 14 ? imei.left(14) : meid);
+    setString(info, "Product Type", productType);
+    setString(info, "Product Version", productVersion);
+    setString(info, "Serial Number", serialNumber);
     plist_dict_set_item(info, "Target Identifier", plist_new_string(udid.toUtf8().constData()));
     plist_dict_set_item(info, "Target Type", plist_new_string("Device"));
     plist_dict_set_item(info, "Unique Identifier", plist_new_string(udid.toUtf8().constData()));
@@ -134,7 +113,7 @@ bool generateInfoPlist(IdeviceFFI::Provider &provider, const QString &udid, cons
     plist_dict_set_item(info, "Applications", plist_new_dict());
     plist_dict_set_item(info, "iTunes Files", plist_new_dict());
     plist_dict_set_item(info, "iTunes Settings", plist_new_dict());
-    plistDictSetCurrentDate(info, "Last Backup Date");
+    setCurrentDate(info, "Last Backup Date");
 
     const QString deviceBackupDir = QDir(backupPath).filePath(udid);
     QDir().mkpath(deviceBackupDir);
@@ -149,16 +128,6 @@ bool generateInfoPlist(IdeviceFFI::Provider &provider, const QString &udid, cons
     plist_free(info);
     plist_free(values);
     return ok;
-}
-
-bool plistBoolValue(plist_t node)
-{
-    if (!node || plist_get_node_type(node) != PLIST_BOOLEAN)
-        return false;
-
-    uint8_t value = 0;
-    plist_get_bool_val(node, &value);
-    return value != 0;
 }
 
 QString findIdevicebackup2()
@@ -183,11 +152,31 @@ QString findIdevicebackup2()
     return {};
 }
 
-bool queryBackupEncryption(IdeviceFFI::Provider &provider)
+enum class BackupEncryptionState {
+    Unknown,
+    Disabled,
+    Enabled
+};
+
+bool matchesRequestedEncryptionState(BackupEncryptionState state, bool encrypted)
+{
+    return encrypted
+        ? state == BackupEncryptionState::Enabled
+        : state == BackupEncryptionState::Disabled;
+}
+
+IdeviceFFI::Option<std::string> optionalPassword(const QString &password)
+{
+    return password.isEmpty()
+        ? IdeviceFFI::Option<std::string>()
+        : IdeviceFFI::Option<std::string>(password.toStdString());
+}
+
+BackupEncryptionState queryBackupEncryption(IdeviceFFI::Provider &provider)
 {
     auto lockdownResult = IdeviceFFI::Lockdown::connect(provider);
     if (lockdownResult.is_err())
-        return false;
+        return BackupEncryptionState::Unknown;
 
     auto lockdown = std::move(lockdownResult.unwrap());
     auto pairingResult = provider.get_pairing_file();
@@ -200,36 +189,24 @@ bool queryBackupEncryption(IdeviceFFI::Provider &provider)
 
     auto encryptionResult = lockdown.get_value("WillEncrypt", "com.apple.mobile.backup");
     if (encryptionResult.is_err())
-        return false;
+        return BackupEncryptionState::Unknown;
 
     plist_t node = encryptionResult.unwrap();
-    const bool encrypted = plistBoolValue(node);
+    const bool encrypted = boolVal(node);
     plist_free(node);
-    return encrypted;
+    return encrypted ? BackupEncryptionState::Enabled : BackupEncryptionState::Disabled;
 }
 
-bool ensureBackupEncryption(IdeviceFFI::MobileBackup2 &backupClient,
-                            const QString &backupPath,
-                            const QString &password,
-                            IdeviceFFI::BackupDelegateCallbacks &delegate)
+BackupEncryptionState queryBackupEncryption(const QString &udid, uint32_t deviceId)
 {
-    if (password.isEmpty())
-        return false;
+    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
+    auto providerResult = IdeviceFFI::Provider::usbmuxd_new(
+        std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes-backup-status");
+    if (providerResult.is_err())
+        return BackupEncryptionState::Unknown;
 
-    QDir().mkpath(backupPath);
-    auto result = backupClient.change_password(
-        backupPath.toStdString(),
-        IdeviceFFI::Option<std::string>(),
-        IdeviceFFI::Option<std::string>(password.toStdString()),
-        delegate);
-
-    if (result.is_err()) {
-        auto &err = result.unwrap_err();
-        qDebug("BackupWorker: Failed to enable encrypted backups: %s", err.message.c_str());
-        return false;
-    }
-
-    return true;
+    auto provider = std::move(providerResult.unwrap());
+    return queryBackupEncryption(provider);
 }
 
 void configureFilesystemDelegate(IdeviceFFI::BackupDelegateCallbacks &delegate,
@@ -341,7 +318,7 @@ void BackupWorker::disableEncryption(const QString &udid, uint32_t deviceId, con
         return;
     }
 
-    if (runPasswordChange(udid, deviceId, backupPath, password, QString(), &error))
+    if (runPasswordChange(udid, deviceId, backupPath, password, QString(), false, &error))
         emit encryptionDisabled();
     else
         emit encryptionFailed(error);
@@ -356,7 +333,7 @@ void BackupWorker::changeEncryptionPassword(const QString &udid, uint32_t device
         return;
     }
 
-    if (runPasswordChange(udid, deviceId, backupPath, oldPassword, newPassword, &error))
+    if (runPasswordChange(udid, deviceId, backupPath, oldPassword, newPassword, true, &error))
         emit encryptionPasswordChanged();
     else
         emit encryptionFailed(error);
@@ -364,7 +341,7 @@ void BackupWorker::changeEncryptionPassword(const QString &udid, uint32_t device
 
 bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, const QString &backupPath,
                                      const QString &oldPassword, const QString &newPassword,
-                                     QString *error)
+                                     bool targetEncrypted, QString *error)
 {
     qDebug("BackupWorker: Changing backup encryption state for %s", qPrintable(udid));
 
@@ -394,12 +371,8 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
     IdeviceFFI::BackupDelegateCallbacks delegate;
     configureFilesystemDelegate(delegate, openFiles);
 
-    IdeviceFFI::Option<std::string> oldOption = oldPassword.isEmpty()
-        ? IdeviceFFI::Option<std::string>()
-        : IdeviceFFI::Option<std::string>(oldPassword.toStdString());
-    IdeviceFFI::Option<std::string> newOption = newPassword.isEmpty()
-        ? IdeviceFFI::Option<std::string>()
-        : IdeviceFFI::Option<std::string>(newPassword.toStdString());
+    auto oldOption = optionalPassword(oldPassword);
+    auto newOption = optionalPassword(newPassword);
 
     auto result = backupClient.change_password(rootPath.toStdString(), oldOption, newOption, delegate);
     for (auto &[path, stream] : openFiles)
@@ -408,7 +381,27 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
 
     if (result.is_err()) {
         auto &err = result.unwrap_err();
-        if (error) *error = QStringLiteral("Could not change backup encryption: %1").arg(QString::fromStdString(err.message));
+        const QString errMessage = QString::fromStdString(err.message);
+
+        // Some devices close the MobileBackup2 socket after toggling encryption.
+        // For enable/disable operations the final lockdown WillEncrypt value is
+        // the authoritative state; for password changes it is not enough to
+        // prove the new password took effect, so keep reporting the error.
+        const bool togglingEncryption = oldPassword.isEmpty() || newPassword.isEmpty();
+        if (togglingEncryption && matchesRequestedEncryptionState(queryBackupEncryption(udid, deviceId), targetEncrypted)) {
+            qDebug("BackupWorker: MobileBackup2 returned an error after encryption toggle, but final state matches request: %s",
+                   qPrintable(errMessage));
+            return true;
+        }
+
+        if (error) *error = QStringLiteral("Could not change backup encryption: %1").arg(errMessage);
+        return false;
+    }
+
+    const BackupEncryptionState finalState = queryBackupEncryption(udid, deviceId);
+    if (finalState != BackupEncryptionState::Unknown &&
+        !matchesRequestedEncryptionState(finalState, targetEncrypted)) {
+        if (error) *error = QStringLiteral("The iPhone did not report the requested backup encryption state.");
         return false;
     }
 
@@ -475,7 +468,7 @@ bool BackupWorker::runIdevicebackup2(const QString &udid, const QString &backupP
             const auto match = percentRegex.match(chunk);
             if (match.hasMatch()) {
                 const int percent = qBound(0, match.captured(1).toInt(), 100);
-                emit progress(0, 0, percent / 100.0);
+                emit progress(percent / 100.0);
             }
         }
         if (m_cancelled && process.state() != QProcess::NotRunning)
@@ -532,27 +525,56 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     // compatibility.
     generateInfoPlist(provider, udid, backupPath);
 
-    const bool encryptionAlreadyEnabled = queryBackupEncryption(provider);
+    const BackupEncryptionState encryptionState = queryBackupEncryption(provider);
+
+    bool encryptionEnabledThisRun = false;
+    auto withEncryptionNote = [&encryptionEnabledThisRun](const QString &message) {
+        if (!encryptionEnabledThisRun)
+            return message;
+        return message + QStringLiteral("\nEncrypted backups were enabled on this device. Future backups will stay encrypted until disabled with the backup password.");
+    };
+
+    if (enableEncryption && encryptionState == BackupEncryptionState::Unknown) {
+        emit failed(QStringLiteral("Could not confirm whether encrypted backups are already enabled. Unlock the iPhone and try again."));
+        return;
+    }
+
+    // Enable encryption via a dedicated connection before connecting for
+    // backup. MobileBackup2 commonly closes the socket after toggling
+    // encryption, so using a separate client avoids reconnect hacks.
+    if (enableEncryption && encryptionState == BackupEncryptionState::Disabled) {
+        if (password.isEmpty()) {
+            emit failed(QStringLiteral("Encrypted backup requires a password."));
+            return;
+        }
+        QString encError;
+        if (!runPasswordChange(udid, deviceId, backupPath, QString(), password, true, &encError)) {
+            emit failed(QStringLiteral("Could not enable encrypted backups. Unlock the iPhone, confirm the passcode prompt if shown, and try again."));
+            return;
+        }
+        encryptionEnabledThisRun = true;
+        emit encryptionEnabled();
+    } else if (enableEncryption) {
+        qDebug("BackupWorker: Encrypted backups already enabled");
+    }
 
     // Connect to mobilebackup2 service
     auto backup_result = IdeviceFFI::MobileBackup2::connect(provider);
     if (backup_result.is_err()) {
         auto &err = backup_result.unwrap_err();
         qDebug("BackupWorker: Failed to connect to mobilebackup2: %s", err.message.c_str());
-        emit failed("Failed to connect to mobilebackup2 service: " +
-                     QString::fromStdString(err.message));
+        emit failed(withEncryptionNote("Failed to connect to mobilebackup2 service: " +
+                     QString::fromStdString(err.message)));
         return;
     }
     auto backup_client = std::move(backup_result.unwrap());
     qDebug("BackupWorker: MobileBackup2 connected");
 
-    // Start session (trust/computer authorization)
     auto pf_result = provider.get_pairing_file();
-    if (pf_result.is_ok()) {
+    if (pf_result.is_ok())
         qDebug("BackupWorker: Pairing file obtained");
-    } else {
+    else
         qDebug("BackupWorker: WARNING - no pairing file, trust may fail");
-    }
 
     // Ensure backup directory exists. The backup library stores data under
     // <backup_root>/<udid>/. If a previous attempt left empty metadata plists,
@@ -590,43 +612,16 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     IdeviceFFI::BackupDelegateCallbacks delegate;
     configureFilesystemDelegate(delegate, open_files);
 
-    delegate.on_progress = [this](uint64_t bytes_done, uint64_t bytes_total, double overall) {
+    delegate.on_progress = [this](uint64_t, uint64_t, double overall) {
         // overall is device-reported progress (0-100 range, sometimes > 100)
         if (overall > 0 && overall <= 100) {
             qDebug("BackupWorker: %.1f%%", overall);
-            emit progress(0, 0, overall / 100.0);
+            emit progress(overall / 100.0);
         } else if (overall > 100) {
             qDebug("BackupWorker: clamping %.1f%% to 100%%", overall);
-            emit progress(0, 0, 1.0);
+            emit progress(1.0);
         }
     };
-
-    bool encryptionEnabledThisRun = false;
-    auto withEncryptionNote = [&encryptionEnabledThisRun](const QString &message) {
-        if (!encryptionEnabledThisRun)
-            return message;
-        return message + QStringLiteral("\nEncrypted backups were enabled on this device. Future backups will stay encrypted until disabled with the backup password.");
-    };
-
-    if (enableEncryption && !encryptionAlreadyEnabled) {
-        if (password.isEmpty()) {
-            backup_client.disconnect();
-            emit failed(QStringLiteral("Encrypted backup requires a password."));
-            return;
-        }
-
-        qDebug("BackupWorker: Enabling encrypted backups before backup");
-        if (!ensureBackupEncryption(backup_client, backupPath, password, delegate)) {
-            backup_client.disconnect();
-            emit failed(QStringLiteral("Could not enable encrypted backups. Unlock the iPhone, confirm the passcode prompt if shown, and try again."));
-            return;
-        }
-        qDebug("BackupWorker: Encrypted backups enabled");
-        encryptionEnabledThisRun = true;
-        emit encryptionEnabled();
-    } else if (enableEncryption) {
-        qDebug("BackupWorker: Encrypted backups already enabled");
-    }
 
     // Run backup (blocks until complete). Match idevicebackup2 --full by
     // requesting a full backup from the device.
@@ -644,9 +639,10 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     qDebug("BackupWorker: backup() returned, is_err=%d", result.is_err());
 
     // Clean up any remaining open files
-    for (auto &[path, stream] : open_files) {
+    for (auto &[path, stream] : open_files)
         stream.close();
-    }
+
+    backup_client.disconnect();
 
     if (m_cancelled) {
         qDebug("BackupWorker: Cancelled");
@@ -663,76 +659,65 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
 
     // Check response plist for errors
     auto response = result.unwrap();
-    if (response) {
-        plist_t err_code_node = plist_dict_get_item(response, "ErrorCode");
-        if (err_code_node) {
-            uint64_t err_code = 0;
-            plist_get_uint_val(err_code_node, &err_code);
-
-            char *err_desc = nullptr;
-            plist_t err_desc_node = plist_dict_get_item(response, "ErrorDescription");
-            if (err_desc_node)
-                plist_get_string_val(err_desc_node, &err_desc);
-
-            qDebug("BackupWorker: Response error code=%llu desc=%s",
-                   (unsigned long long)err_code, err_desc ? err_desc : "(none)");
-
-            if (err_code == 0) {
-                if (err_desc)
-                    free(err_desc);
-            } else if (err_code == 104) {
-                const BackupValidationResult validation = validateBackup();
-                if (validation.readable) {
-                    qDebug("BackupWorker: Completed with warnings (error 104 - some files skipped)");
-                    if (err_desc)
-                        free(err_desc);
-                    plist_free(response);
-                    backup_client.disconnect();
-                    emit finishedWithWarnings(QStringLiteral("Some files were skipped by the device during backup."));
-                    return;
-                }
-
-                qDebug("BackupWorker: Backup incomplete after error 104: %s", qPrintable(validation.error));
-                const QString msg = QStringLiteral("Backup incomplete after MobileBackup2 error 104: %1")
-                                        .arg(validation.error);
-                if (err_desc)
-                    free(err_desc);
-                plist_free(response);
-                backup_client.disconnect();
-                emit failed(withEncryptionNote(msg));
-                return;
-            } else if (err_code == 205 && validateBackup().readable) {
-                qDebug("BackupWorker: MobileBackup2 reported error 205, but backup metadata validates");
-                if (err_desc)
-                    free(err_desc);
-                plist_free(response);
-                backup_client.disconnect();
-                emit finishedWithWarnings(QStringLiteral("MobileBackup2 reported a consistency warning, but backup metadata validates."));
-                return;
-            } else {
-                const QString description = err_desc ? QString::fromUtf8(err_desc) : QString();
-                const QString msg = mobileBackupErrorMessage(err_code, description);
-                if (err_desc)
-                    free(err_desc);
-                plist_free(response);
-                backup_client.disconnect();
-                emit failed(withEncryptionNote(msg));
-                return;
-            }
+    if (!response) {
+        const BackupValidationResult validation = validateBackup();
+        if (!validation.readable) {
+            qDebug("BackupWorker: Backup incomplete: %s", qPrintable(validation.error));
+            emit failed(withEncryptionNote(QStringLiteral("Backup incomplete: %1").arg(validation.error)));
+            return;
         }
-
-        plist_free(response);
-    }
-
-    const BackupValidationResult validation = validateBackup();
-    if (!validation.readable) {
-        qDebug("BackupWorker: Backup incomplete: %s", qPrintable(validation.error));
-        backup_client.disconnect();
-        emit failed(withEncryptionNote(QStringLiteral("Backup incomplete: %1").arg(validation.error)));
+        qDebug("BackupWorker: Backup completed successfully");
+        emit finished();
         return;
     }
 
-    backup_client.disconnect();
-    qDebug("BackupWorker: Backup completed successfully");
-    emit finished();
+    uint64_t err_code = 0;
+    plist_t err_code_node = plist_dict_get_item(response, "ErrorCode");
+    if (err_code_node)
+        plist_get_uint_val(err_code_node, &err_code);
+
+    char *err_desc = nullptr;
+    plist_t err_desc_node = plist_dict_get_item(response, "ErrorDescription");
+    if (err_desc_node)
+        plist_get_string_val(err_desc_node, &err_desc);
+
+    qDebug("BackupWorker: Response error code=%llu desc=%s",
+           (unsigned long long)err_code, err_desc ? err_desc : "(none)");
+
+    const QString description = err_desc ? QString::fromUtf8(err_desc) : QString();
+    free(err_desc);
+    plist_free(response);
+
+    if (err_code == 0) {
+        const BackupValidationResult validation = validateBackup();
+        if (!validation.readable) {
+            qDebug("BackupWorker: Backup incomplete: %s", qPrintable(validation.error));
+            emit failed(withEncryptionNote(QStringLiteral("Backup incomplete: %1").arg(validation.error)));
+            return;
+        }
+        qDebug("BackupWorker: Backup completed successfully");
+        emit finished();
+        return;
+    }
+
+    if (err_code == 104) {
+        const BackupValidationResult validation = validateBackup();
+        if (validation.readable) {
+            qDebug("BackupWorker: Completed with warnings (error 104 - some files skipped)");
+            emit finishedWithWarnings(QStringLiteral("Some files were skipped by the device during backup."));
+            return;
+        }
+        qDebug("BackupWorker: Backup incomplete after error 104: %s", qPrintable(validation.error));
+        emit failed(withEncryptionNote(QStringLiteral("Backup incomplete after MobileBackup2 error 104: %1")
+                                        .arg(validation.error)));
+        return;
+    }
+
+    if (err_code == 205 && validateBackup().readable) {
+        qDebug("BackupWorker: MobileBackup2 reported error 205, but backup metadata validates");
+        emit finishedWithWarnings(QStringLiteral("MobileBackup2 reported a consistency warning, but backup metadata validates."));
+        return;
+    }
+
+    emit failed(withEncryptionNote(mobileBackupErrorMessage(err_code, description)));
 }

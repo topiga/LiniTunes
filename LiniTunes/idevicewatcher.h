@@ -73,7 +73,9 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
     Q_PROPERTY(QObject* backup_info READ backupInfo NOTIFY backupChanged)
     Q_PROPERTY(bool backup_running READ backupRunning NOTIFY backupChanged)
-    Q_PROPERTY(bool backup_encrypted READ backupEncrypted NOTIFY backupChanged)
+    Q_PROPERTY(QString backup_encryption_status READ backupEncryptionStatus NOTIFY backupChanged)
+    Q_PROPERTY(bool backup_encryption_busy READ backupEncryptionBusy NOTIFY backupChanged)
+    Q_PROPERTY(QString backup_encryption_error READ backupEncryptionError NOTIFY backupChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -112,13 +114,15 @@ public:
     QString marketing_name() const { return m_currentDevice ? m_currentDevice->marketing_name() : QString(); }
     bool device_connected() const { return m_currentDevice != nullptr; }
     int battery() const { return m_currentDevice ? m_currentDevice->battery() : 0; }
-    QString battery_string() const { return m_currentDevice ? QString::number(m_currentDevice->battery()) : QString("0"); }
+    QString battery_string() const { return m_currentDevice ? QString::number(m_currentDevice->battery()) : QStringLiteral("0"); }
     QObject *storageInfo() const { return m_currentDevice ? m_currentDevice->storageInfo() : nullptr; }
     bool storageSyncing() const { return m_currentDevice ? m_currentDevice->storageSyncing() : false; }
     int storageSyncProgress() const { return m_currentDevice ? m_currentDevice->storageSyncProgress() : 0; }
     QObject *backupInfo() const { return m_currentDevice ? m_currentDevice->backupInfo() : nullptr; }
     bool backupRunning() const { return m_currentDevice ? m_currentDevice->backupRunning() : false; }
-    bool backupEncrypted() const { return m_currentDevice ? m_currentDevice->backupEncrypted() : false; }
+    QString backupEncryptionStatus() const { return m_currentDevice ? m_currentDevice->backupEncryptionStatus() : QStringLiteral("unknown"); }
+    bool backupEncryptionBusy() const { return m_currentDevice ? m_currentDevice->backupEncryptionBusy() : false; }
+    QString backupEncryptionError() const { return m_currentDevice ? m_currentDevice->backupEncryptionError() : QString(); }
 
 signals:
     void udidListChanged();

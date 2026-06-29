@@ -20,7 +20,9 @@ class iDevice : public QObject
     Q_PROPERTY(QObject* storage_info READ storageInfo CONSTANT)
     Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
-    Q_PROPERTY(bool backup_encrypted READ backupEncrypted NOTIFY backupChanged)
+    Q_PROPERTY(QString backup_encryption_status READ backupEncryptionStatus NOTIFY backupChanged)
+    Q_PROPERTY(bool backup_encryption_busy READ backupEncryptionBusy NOTIFY backupChanged)
+    Q_PROPERTY(QString backup_encryption_error READ backupEncryptionError NOTIFY backupChanged)
 
 public:
     explicit iDevice(QObject *parent = nullptr);
@@ -62,7 +64,9 @@ public:
     Q_INVOKABLE void changeBackupPassword(const QString &path, const QString &oldPassword,
                                           const QString &newPassword);
     bool backupRunning() const;
-    bool backupEncrypted() const { return m_backupEncrypted; }
+    QString backupEncryptionStatus() const { return m_backupEncryptionStatus; }
+    bool backupEncryptionBusy() const { return m_backupEncryptionBusy; }
+    QString backupEncryptionError() const { return m_backupEncryptionError; }
 
     static QString format_bytes(uint64_t bytes, bool decimals=true);
 
@@ -76,13 +80,17 @@ private slots:
                            uint64_t photos, uint64_t documents,
                            uint64_t other);
     void onStorageSyncFailed(const QString &error);
-    void onBackupProgress(quint64 bytesDone, quint64 bytesTotal, double overall);
+    void onBackupProgress(double overall);
     void onBackupFinished();
     void onBackupFinishedWithWarnings(const QString &warning);
     void onBackupFailed(const QString &error);
     void onBackupCancelled();
 
 private:
+    void beginBackupEncryptionChange();
+    void finishBackupEncryptionChange(const QString &status, bool resetBackupInfo);
+    void failBackupEncryptionChange(const QString &error);
+
     QString m_udid;
     QString m_productType;
     QString m_productVersion;
@@ -100,7 +108,9 @@ private:
     QString m_storageLeft;
     int m_batteryCapacity = 0;
     bool m_connected = false;
-    bool m_backupEncrypted = false;
+    QString m_backupEncryptionStatus = QStringLiteral("unknown");
+    bool m_backupEncryptionBusy = false;
+    QString m_backupEncryptionError;
 
     StorageInfo *m_storageInfo = nullptr;
 

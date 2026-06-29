@@ -2,15 +2,10 @@
 #define BACKUP_VALIDATOR_H
 
 #include <QString>
-#include <QStringList>
 
 struct BackupValidationResult
 {
     bool readable = false;
-    bool statusParsed = false;
-    bool snapshotFinished = false;
-    QString snapshotState;
-    QStringList missingOrEmptyFiles;
     QString error;
 };
 

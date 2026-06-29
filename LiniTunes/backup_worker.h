@@ -26,7 +26,7 @@ public slots:
     void cancel();
 
 signals:
-    void progress(quint64 bytesDone, quint64 bytesTotal, double overall);
+    void progress(double overall);
     void encryptionEnabled();
     void encryptionDisabled();
     void encryptionPasswordChanged();
@@ -42,7 +42,7 @@ private:
                                 bool enableEncryption, const QString &password);
     bool runPasswordChange(const QString &udid, uint32_t deviceId, const QString &backupPath,
                            const QString &oldPassword, const QString &newPassword,
-                           QString *error);
+                           bool targetEncrypted, QString *error);
 
     std::atomic<bool> m_cancelled{false};
     QProcess *m_process = nullptr;
