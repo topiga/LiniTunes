@@ -379,6 +379,20 @@ static QVariantMap backupSave(const QString &path, const QDateTime &modified, qi
     return save;
 }
 
+static qint64 backupDirectorySize(const QDir &dir)
+{
+    qint64 totalSize = 0;
+    const QFileInfoList entries = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden);
+    for (const QFileInfo &entry : entries) {
+        if (entry.isFile()) {
+            totalSize += entry.size();
+        } else if (entry.isDir()) {
+            totalSize += backupDirectorySize(QDir(entry.absoluteFilePath()));
+        }
+    }
+    return totalSize;
+}
+
 static QString baseUdidForBackupFolder(const QString &folderName)
 {
     static const QRegularExpression archiveNamePattern(
@@ -389,9 +403,10 @@ static QString baseUdidForBackupFolder(const QString &folderName)
 
 static bool isBackupFolder(const QDir &dir)
 {
-    return QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.db")))
-        || QFileInfo::exists(dir.filePath(QStringLiteral("Status.plist")))
-        || QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.plist")));
+    const bool hasManifestDb = QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.db")));
+    const bool hasStatusPlist = QFileInfo::exists(dir.filePath(QStringLiteral("Status.plist")));
+    const bool hasManifestPlist = QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.plist")));
+    return hasManifestDb && hasStatusPlist && hasManifestPlist;
 }
 
 static QVariantList sortedSaves(QVariantList saves)
@@ -446,7 +461,7 @@ QVariantList iDeviceWatcher::listBackups(const QString &path)
         saves.append(backupSave(
             backupDirInfo.absoluteFilePath(),
             newestModified({manifest, status, manifestPlist}),
-            manifest.exists() ? manifest.size() : 0));
+            backupDirectorySize(backupDir)));
         device["saves"] = saves;
         groupedDevices[baseUdid] = device;
     }

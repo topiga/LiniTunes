@@ -22,10 +22,10 @@ inline QString stringVal(plist_t dict, const char *key)
 
 inline QString uintStr(plist_t dict, const char *key)
 {
-    if (!dict)
+    if (!dict || plist_get_node_type(dict) != PLIST_DICT)
         return {};
     plist_t node = plist_dict_get_item(dict, key);
-    if (!node)
+    if (!node || plist_get_node_type(node) != PLIST_UINT)
         return {};
     uint64_t val = 0;
     plist_get_uint_val(node, &val);
@@ -43,8 +43,7 @@ inline bool boolVal(plist_t node)
 
 inline void setString(plist_t dict, const char *key, const QString &value)
 {
-    if (!value.isEmpty())
-        plist_dict_set_item(dict, key, plist_new_string(value.toUtf8().constData()));
+    plist_dict_set_item(dict, key, plist_new_string(value.toUtf8().constData()));
 }
 
 inline void setCurrentDate(plist_t dict, const char *key)

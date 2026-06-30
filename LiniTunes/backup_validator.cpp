@@ -56,6 +56,9 @@ BackupValidationResult BackupValidator::validate(const QString &backupRoot, cons
             result.error = QStringLiteral("Backup snapshot is not finished: %1").arg(snapshotState);
             return result;
         }
+    } else {
+        result.error = QStringLiteral("Status.plist is corrupted or unreadable");
+        return result;
     }
 
     result.readable = true;

@@ -574,7 +574,7 @@ Window {
                                 parent.opacity=1
                                 if (DeviceWatcher.backup_running)
                                     DeviceWatcher.stopBackup()
-                                else if (DeviceWatcher.device_connected)
+                                else if (DeviceWatcher.device_connected && !DeviceWatcher.storage_syncing)
                                     DeviceWatcher.startStorageSync()
                             }
                         }

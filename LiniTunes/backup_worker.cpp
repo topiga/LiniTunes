@@ -82,20 +82,32 @@ QString uniqueArchiveBackupDir(const QString &backupPath, const QString &udid)
 
 bool archiveCanonicalBackup(const QString &backupPath, const QString &udid, QString *error)
 {
-    if (!hasReadableCanonicalBackup(backupPath, udid))
+    const QString canonicalDir = canonicalBackupDir(backupPath, udid);
+    if (!QFileInfo::exists(canonicalDir))
         return true;
 
+    if (!hasReadableCanonicalBackup(backupPath, udid)) {
+        QDir root(backupPath);
+        const QString archive = uniqueArchiveBackupDir(backupPath, udid);
+        if (root.rename(canonicalDir, archive)) {
+            qDebug("BackupWorker: Archived unreadable/invalid backup: %s", qPrintable(archive));
+            return true;
+        }
+        qDebug("BackupWorker: Removing unreadable/invalid backup: %s", qPrintable(canonicalDir));
+        QDir(canonicalDir).removeRecursively();
+        return true;
+    }
+
     QDir root(backupPath);
-    const QString source = canonicalBackupDir(backupPath, udid);
     const QString archive = uniqueArchiveBackupDir(backupPath, udid);
-    if (root.rename(source, archive)) {
+    if (root.rename(canonicalDir, archive)) {
         qDebug("BackupWorker: Archived previous backup: %s", qPrintable(archive));
         return true;
     }
 
     if (error)
         *error = QStringLiteral("Could not archive previous backup before starting a new one.");
-    qDebug("BackupWorker: Failed to archive previous backup: %s", qPrintable(source));
+    qDebug("BackupWorker: Failed to archive previous backup: %s", qPrintable(canonicalDir));
     return false;
 }
 
@@ -401,6 +413,7 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
                                      const QString &oldPassword, const QString &newPassword,
                                      bool targetEncrypted, QString *error)
 {
+    m_cancelled = false;
     qDebug("BackupWorker: Changing backup encryption state for %s", qPrintable(udid));
 
     QString rootPath = backupPath;
@@ -535,8 +548,10 @@ bool BackupWorker::runIdevicebackup2(const QString &udid, const QString &backupP
     output += QString::fromLocal8Bit(process.readAll());
     m_process = nullptr;
 
-    if (m_cancelled)
+    if (m_cancelled) {
+        emit cancelled();
         return true;
+    }
 
     const BackupValidationResult validation = BackupValidator::validate(backupPath, udid);
     if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0 && validation.readable) {

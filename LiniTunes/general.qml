@@ -145,7 +145,7 @@ Item {
 
                             Text {
                                 text: DeviceWatcher.device_connected
-                                      ? qsTr("iOS ") + (DeviceWatcher.product_version || qsTr("Unknown"))
+                                      ? generalPage.platformLabel() + " " + (DeviceWatcher.product_version || qsTr("Unknown"))
                                       : qsTr("No device connected")
                                 color: root.colors.textPrimary
                                 font.pixelSize: 18
@@ -155,8 +155,8 @@ Item {
 
                             Text {
                                 text: DeviceWatcher.device_connected
-                                      ? qsTr("Your iPhone is up to date. LiniTunes will automatically check for updates again on %1.").arg(generalPage.nextUpdateCheckDate())
-                                      : qsTr("Connect an iPhone to check for software updates.")
+                                      ? qsTr("Your %1 is up to date. LiniTunes will automatically check for updates again on %2.").arg(generalPage.deviceTypeLabel()).arg(generalPage.nextUpdateCheckDate())
+                                      : qsTr("Connect a device to check for software updates.")
                                 color: root.colors.textSecondary
                                 font.pixelSize: 12
                                 font.family: AppFontFamily
@@ -332,6 +332,22 @@ Item {
             }
             if (DeviceWatcher.backup_encryption_status === "disabled" && generalPage.backupMode === 1 && !generalPage.pendingBackupAfterPassword)
                 generalPage.backupMode = 0
+            if (!DeviceWatcher.backup_encryption_busy && DeviceWatcher.backup_encryption_error === "") {
+                if (disablePasswordPopup.visible) {
+                    disablePasswordPopup.close()
+                }
+                if (changePasswordPopup.visible) {
+                    changePasswordPopup.close()
+                }
+            }
+            if (DeviceWatcher.backup_encryption_error !== "") {
+                if (disablePasswordPopup.visible) {
+                    generalPage.disablePasswordError = generalPage.friendlyBackupError(DeviceWatcher.backup_encryption_error)
+                }
+                if (changePasswordPopup.visible) {
+                    generalPage.changePasswordError = generalPage.friendlyBackupError(DeviceWatcher.backup_encryption_error)
+                }
+            }
         }
 
         function onCurrentDeviceChanged() {
@@ -938,7 +954,6 @@ Item {
             return
         }
         DeviceWatcher.disableBackupEncryption(generalPage.backupPath, disablePasswordField.text)
-        disablePasswordPopup.close()
     }
 
     function changeBackupPassword() {
@@ -952,7 +967,6 @@ Item {
             return
         }
         DeviceWatcher.changeBackupPassword(generalPage.backupPath, changeOldPasswordField.text, changeNewPasswordField.text)
-        changePasswordPopup.close()
     }
 
     function openManageBackupsPopup() {
@@ -1015,6 +1029,22 @@ Item {
         if (DeviceWatcher.product_type && (DeviceWatcher.product_type.indexOf("iPhone") === 0 || DeviceWatcher.product_type.indexOf("iPod") === 0))
             return "iOS " + major
         return major
+    }
+
+    function platformLabel() {
+        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPad") === 0)
+            return "iPadOS"
+        if (DeviceWatcher.product_type && (DeviceWatcher.product_type.indexOf("iPhone") === 0 || DeviceWatcher.product_type.indexOf("iPod") === 0))
+            return "iOS"
+        return "iOS"
+    }
+
+    function deviceTypeLabel() {
+        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPad") === 0)
+            return "iPad"
+        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPod") === 0)
+            return "iPod"
+        return "iPhone"
     }
 
     function nextUpdateCheckDate() {
