@@ -266,45 +266,25 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
 
 QString iDevice::format_bytes(uint64_t bytes, bool decimals)
 {
-    if (bytes >= 1000000000000ULL) {
-        uint64_t tb = bytes / 1000000000000ULL;
+    auto formatUnit = [bytes, decimals](uint64_t divisor, const char *unit) {
         if (decimals) {
-            uint64_t dec = (bytes / 100000000000ULL) % 10;
-            return QString::number(tb) + "." + QString::number(dec) + " TB";
-        } else {
-            return QString::number(tb) + " TB";
+            const uint64_t whole = bytes / divisor;
+            const uint64_t fraction = (bytes / (divisor / 10)) % 10;
+            return QStringLiteral("%1.%2 %3").arg(whole).arg(fraction).arg(QLatin1String(unit));
         }
-    }
-    if (bytes >= 1000000000ULL) {
-        uint64_t gb = bytes / 1000000000ULL;
-        if (decimals) {
-            uint64_t dec = (bytes / 100000000ULL) % 10;
-            return QString::number(gb) + "." + QString::number(dec) + " GB";
-        } else {
-            return QString::number(gb) + " GB";
-        }
-    }
-    if (bytes >= 1000000ULL) {
-        uint64_t mb = bytes / 1000000ULL;
-        if (decimals) {
-            uint64_t dec = (bytes / 100000ULL) % 10;
-            return QString::number(mb) + "." + QString::number(dec) + " MB";
-        } else {
-            return QString::number(mb) + " MB";
-        }
-    }
-    if (bytes >= 1000ULL) {
-        uint64_t kb = bytes / 1000ULL;
-        if (decimals) {
-            uint64_t dec = (bytes / 100ULL) % 10;
-            return QString::number(kb) + "." + QString::number(dec) + " kB";
-        } else {
-            return QString::number(kb) + " kB";
-        }
-    }
-    if (decimals)
-        return QString::number(bytes) + " B";
-    return QString::number(bytes) + " B";
+        return QString::number(bytes / divisor) + QStringLiteral(" ") + QLatin1String(unit);
+    };
+
+    if (bytes >= 1000000000000ULL)
+        return formatUnit(1000000000000ULL, "TB");
+    if (bytes >= 1000000000ULL)
+        return formatUnit(1000000000ULL, "GB");
+    if (bytes >= 1000000ULL)
+        return formatUnit(1000000ULL, "MB");
+    if (bytes >= 1000ULL)
+        return formatUnit(1000ULL, "kB");
+
+    return QString::number(bytes) + (decimals ? QStringLiteral(" B") : QStringLiteral(" B"));
 }
 
 QString iDevice::device_image() const
