@@ -403,10 +403,9 @@ static QString baseUdidForBackupFolder(const QString &folderName)
 
 static bool isBackupFolder(const QDir &dir)
 {
-    const bool hasManifestDb = QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.db")));
-    const bool hasStatusPlist = QFileInfo::exists(dir.filePath(QStringLiteral("Status.plist")));
-    const bool hasManifestPlist = QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.plist")));
-    return hasManifestDb && hasStatusPlist && hasManifestPlist;
+    return QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.db")))
+        || QFileInfo::exists(dir.filePath(QStringLiteral("Status.plist")))
+        || QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.plist")));
 }
 
 static QVariantList sortedSaves(QVariantList saves)

@@ -93,9 +93,10 @@ bool archiveCanonicalBackup(const QString &backupPath, const QString &udid, QStr
             qDebug("BackupWorker: Archived unreadable/invalid backup: %s", qPrintable(archive));
             return true;
         }
-        qDebug("BackupWorker: Removing unreadable/invalid backup: %s", qPrintable(canonicalDir));
-        QDir(canonicalDir).removeRecursively();
-        return true;
+        if (error)
+            *error = QStringLiteral("Previous backup is unreadable and could not be archived.");
+        qDebug("BackupWorker: Failed to archive unreadable/invalid backup: %s", qPrintable(canonicalDir));
+        return false;
     }
 
     QDir root(backupPath);

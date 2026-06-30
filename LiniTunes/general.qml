@@ -145,7 +145,7 @@ Item {
 
                             Text {
                                 text: DeviceWatcher.device_connected
-                                      ? generalPage.platformLabel() + " " + (DeviceWatcher.product_version || qsTr("Unknown"))
+                                      ? generalPage.softwareVersionLine()
                                       : qsTr("No device connected")
                                 color: root.colors.textPrimary
                                 font.pixelSize: 18
@@ -1020,30 +1020,50 @@ Item {
             generalPage.refreshBackupList()
     }
 
+    function softwareVersionLine() {
+        var version = DeviceWatcher.product_version || qsTr("Unknown")
+        var label = generalPage.platformLabel()
+        return label ? label + " " + version : version
+    }
+
     function softwareVersionBadgeText() {
         if (!DeviceWatcher.product_version)
             return ""
-        var major = DeviceWatcher.product_version.split(".")[0]
-        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPad") === 0)
-            return "iPadOS " + major
-        if (DeviceWatcher.product_type && (DeviceWatcher.product_type.indexOf("iPhone") === 0 || DeviceWatcher.product_type.indexOf("iPod") === 0))
-            return "iOS " + major
-        return major
+        var major = generalPage.productMajorVersion()
+        var label = generalPage.platformLabel()
+        return label ? label + " " + major : major
+    }
+
+    function productMajorVersion() {
+        if (!DeviceWatcher.product_version)
+            return ""
+        return DeviceWatcher.product_version.split(".")[0]
     }
 
     function platformLabel() {
-        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPad") === 0)
-            return "iPadOS"
-        if (DeviceWatcher.product_type && (DeviceWatcher.product_type.indexOf("iPhone") === 0 || DeviceWatcher.product_type.indexOf("iPod") === 0))
+        var type = DeviceWatcher.product_type || ""
+        var major = parseInt(generalPage.productMajorVersion())
+        if (type.indexOf("iPad") === 0)
+            return major >= 17 ? "iPadOS" : "iOS"
+        if (type.indexOf("AppleTV") === 0)
+            return "tvOS"
+        if (type.indexOf("Mac") === 0)
+            return "macOS"
+        if (type.indexOf("iPhone") === 0 || type.indexOf("iPod") === 0)
             return "iOS"
-        return "iOS"
+        return ""
     }
 
     function deviceTypeLabel() {
-        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPad") === 0)
+        var type = DeviceWatcher.product_type || ""
+        if (type.indexOf("iPad") === 0)
             return "iPad"
-        if (DeviceWatcher.product_type && DeviceWatcher.product_type.indexOf("iPod") === 0)
+        if (type.indexOf("iPod") === 0)
             return "iPod"
+        if (type.indexOf("AppleTV") === 0)
+            return "Apple TV"
+        if (type.indexOf("Mac") === 0)
+            return "Mac"
         return "iPhone"
     }
 

@@ -43,7 +43,8 @@ inline bool boolVal(plist_t node)
 
 inline void setString(plist_t dict, const char *key, const QString &value)
 {
-    plist_dict_set_item(dict, key, plist_new_string(value.toUtf8().constData()));
+    if (!value.isEmpty())
+        plist_dict_set_item(dict, key, plist_new_string(value.toUtf8().constData()));
 }
 
 inline void setCurrentDate(plist_t dict, const char *key)
