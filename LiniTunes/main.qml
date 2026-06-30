@@ -102,9 +102,11 @@ Window {
     }
 
     function formatGbLabel(gb) {
-        if (gb >= 1) return gb.toFixed(1) + " GB"
-        if (gb >= 0.01) return (gb * 1024).toFixed(0) + " MB"
-        return gb.toFixed(2) + " GB"
+        var bytes = Math.max(0, gb * 1000000000)
+        if (bytes >= 1000000000) return (bytes / 1000000000).toFixed(1) + " GB"
+        if (bytes >= 1000000) return (bytes / 1000000).toFixed(0) + " MB"
+        if (bytes >= 1000) return (bytes / 1000).toFixed(0) + " kB"
+        return bytes.toFixed(0) + " B"
     }
 
     function backupProgress() {

@@ -6,6 +6,7 @@
 #include <idevice++/installation_proxy.hpp>
 #include <plist/plist.h>
 #include <cstring>
+#include <initializer_list>
 #include "storage_info.h"
 
 StorageSyncWorker::StorageSyncWorker(QObject *parent)
@@ -14,10 +15,26 @@ StorageSyncWorker::StorageSyncWorker(QObject *parent)
 static uint64_t plist_dict_get_uint_val(const plist_t dict, const char *key)
 {
     plist_t node = plist_dict_get_item(dict, key);
-    if (!node) return 0;
+    if (!node || plist_get_node_type(node) != PLIST_UINT)
+        return 0;
     uint64_t val = 0;
     plist_get_uint_val(node, &val);
     return val;
+}
+
+static uint64_t lockdown_uint(IdeviceFFI::Lockdown &lockdown, const char *key, const char *domain)
+{
+    auto value = lockdown.get_value(key, domain);
+    if (value.is_err())
+        return 0;
+
+    plist_t node = value.unwrap();
+    uint64_t result = 0;
+    if (node && plist_get_node_type(node) == PLIST_UINT)
+        plist_get_uint_val(node, &result);
+    if (node)
+        plist_free(node);
+    return result;
 }
 
 uint64_t StorageSyncWorker::scanDirSize(const std::string &path, void *afcRaw)
@@ -42,6 +59,26 @@ uint64_t StorageSyncWorker::scanDirSize(const std::string &path, void *afcRaw)
             total += fi.size;
         }
     }
+    return total;
+}
+
+static uint64_t afcPathSize(const std::string &path, IdeviceFFI::AfcClient &afc)
+{
+    auto info = afc.get_file_info(path);
+    if (info.is_ok()) {
+        auto &fi = info.unwrap();
+        if (fi.st_ifmt && std::strcmp(fi.st_ifmt, "S_IFDIR") == 0)
+            return StorageSyncWorker::scanDirSize(path, &afc);
+        return fi.size;
+    }
+    return 0;
+}
+
+static uint64_t sumAfcPaths(std::initializer_list<const char *> paths, IdeviceFFI::AfcClient &afc)
+{
+    uint64_t total = 0;
+    for (const char *path : paths)
+        total += afcPathSize(path, afc);
     return total;
 }
 
@@ -103,6 +140,7 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
 
     // ---- Installation Proxy: get app sizes with proper attributes ----
     uint64_t appsBytes = 0;
+    uint64_t appDataBytes = 0;
     auto ipResult = IdeviceFFI::InstallationProxy::connect(provider);
     if (ipResult.is_ok()) {
         auto ip = std::move(ipResult.unwrap());
@@ -119,7 +157,7 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
             auto apps = appsResult.unwrap();
             for (auto &appNode : apps) {
                 appsBytes += plist_dict_get_uint_val(appNode, "StaticDiskUsage");
-                appsBytes += plist_dict_get_uint_val(appNode, "DynamicDiskUsage");
+                appDataBytes += plist_dict_get_uint_val(appNode, "DynamicDiskUsage");
                 plist_free(appNode);
             }
         }
@@ -127,53 +165,75 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
         plist_free(opts);
     }
 
-    qDebug("Apps: %llu bytes (%.2f GB)", (unsigned long long)appsBytes,
-           StorageInfo::bytesToGb(appsBytes));
+    qDebug("Apps: %llu bytes (%.2f GB), app data: %llu bytes (%.2f GB)",
+           (unsigned long long)appsBytes, StorageInfo::bytesToGb(appsBytes),
+           (unsigned long long)appDataBytes, StorageInfo::bytesToGb(appDataBytes));
 
     emit progress(40);
 
     // ---- AFC: scan media directories ----
-    uint64_t audioBytes = scanDirSize("/iTunes_Control/Music", &afc);
+    uint64_t audioBytes = sumAfcPaths({
+        "/iTunes_Control/Music",
+        "/Music",
+        "/Podcasts",
+        "/Recordings",
+        "/Audiobooks",
+    }, afc);
+    const uint64_t booksBytes = sumAfcPaths({
+        "/Books",
+    }, afc);
     emit progress(50);
-    qDebug("Audio: %llu bytes (%.2f GB)", (unsigned long long)audioBytes,
-           StorageInfo::bytesToGb(audioBytes));
+    qDebug("Audio: %llu bytes (%.2f GB), books: %llu bytes (%.2f GB)",
+           (unsigned long long)audioBytes, StorageInfo::bytesToGb(audioBytes),
+           (unsigned long long)booksBytes, StorageInfo::bytesToGb(booksBytes));
 
-    uint64_t photosBytes = scanDirSize("/DCIM", &afc);
+    // Finder's Photos number is closer to user-visible photo assets/library data
+    // than to the whole /PhotoData tree. Exclude PhotoData caches, search/analysis
+    // metadata, and private/external service sandboxes from the Photos bucket.
+    uint64_t photosBytes = sumAfcPaths({
+        "/DCIM",
+        "/Photos",
+        "/PhotoStreamsData",
+        "/PhotoData/PhotoCloudSharingData",
+        "/PhotoData/CPLAssets",
+        "/PhotoData/CPL",
+        "/PhotoData/Mutations",
+        "/PhotoData/Thumbnails",
+        "/PhotoData/internal",
+        "/PhotoData/AlbumsMetadata",
+        "/PhotoData/FacesMetadata",
+        "/PhotoData/CameraMetadata",
+        "/PhotoData/Journals",
+        "/PhotoData/MISC",
+        "/PhotoData/Photos.sqlite",
+        "/PhotoData/Photos.sqlite-wal",
+        "/PhotoData/Photos.sqlite-shm",
+    }, afc);
     emit progress(60);
     qDebug("Photos: %llu bytes (%.2f GB)", (unsigned long long)photosBytes,
            StorageInfo::bytesToGb(photosBytes));
 
-    // Additional media
-    uint64_t booksBytes = scanDirSize("/Books", &afc);
-    uint64_t audiobooksBytes = scanDirSize("/Audiobooks", &afc);
-    uint64_t podcastsBytes = scanDirSize("/Podcasts", &afc);
     emit progress(70);
 
-    audioBytes += booksBytes + audiobooksBytes + podcastsBytes;
-
     // ---- Compute Documents & Other as remainder ----
-    uint64_t afcUsed = afcTotal - afcFree;
-    // System partition bytes (~8 GB typically, from TotalSystemCapacity)
-    uint64_t systemBytes = 0;
-    auto sysCap = lockdown.get_value("TotalSystemCapacity", "com.apple.disk_usage");
-    if (sysCap.is_ok()) {
-        plist_t node = sysCap.unwrap();
-        plist_get_uint_val(node, &systemBytes);
-        plist_free(node);
-    }
+    // Use AFC total/free for the completed sync. It matches the visible media
+    // partition and avoids expensive recursive scans of cache/support folders.
+    const uint64_t totalBytes = afcTotal;
+    const uint64_t freeBytes = afcFree;
+    const uint64_t usedBytes = totalBytes > freeBytes ? totalBytes - freeBytes : 0;
+    const uint64_t systemBytes = lockdown_uint(lockdown, "TotalSystemCapacity", "com.apple.disk_usage");
 
-    // Known categories
-    uint64_t knownBytes = appsBytes + audioBytes + photosBytes;
-    uint64_t documentsBytes = 0;
-    uint64_t otherBytes = systemBytes;
+    uint64_t documentsBytes = appDataBytes + booksBytes;
+    const uint64_t otherBytes = systemBytes;
+    const uint64_t knownBytes = appsBytes + appDataBytes + booksBytes + audioBytes + photosBytes + otherBytes;
+    if (usedBytes > knownBytes)
+        documentsBytes += usedBytes - knownBytes;
 
-    // Remaining used space = Documents & Data
-    if (afcUsed > knownBytes + systemBytes) {
-        documentsBytes = afcUsed - knownBytes - systemBytes;
-    }
+    qDebug("Other/system: %llu bytes (%.2f GB)",
+           (unsigned long long)otherBytes, StorageInfo::bytesToGb(otherBytes));
 
     // Build result
     emit progress(100);
-    emit syncData(afcTotal, afcFree, appsBytes, audioBytes,
+    emit syncData(totalBytes, freeBytes, appsBytes, audioBytes,
                   photosBytes, documentsBytes, otherBytes);
 }
