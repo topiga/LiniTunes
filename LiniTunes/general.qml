@@ -350,7 +350,7 @@ Item {
         title: qsTr("Choose Backup Folder")
 
         Text {
-            text: qsTr("Choose where LiniTunes should store and look for local backups. This is remembered for this session and can be changed later in Settings.")
+            text: qsTr("Choose where LiniTunes should store and look for local backups. The path will be remembered and can be changed later in Settings.")
             color: root.colors.textSecondary
             font.pixelSize: 12
             font.family: AppFontFamily
