@@ -12,7 +12,7 @@ void BackupInfo::setStatus(Status s)
 void BackupInfo::setOverallProgress(double pct)
 {
     const double clamped = qBound(0.0, pct, 100.0);
-    if (qAbs(m_overallPercent - clamped) > 0.5) {
+    if (qAbs(m_overallPercent - clamped) >= 0.1) {
         m_overallPercent = clamped;
         emit changed();
     }

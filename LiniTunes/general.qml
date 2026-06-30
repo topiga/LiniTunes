@@ -211,8 +211,8 @@ Item {
                         BackupOption {
                             title: qsTr("Back up your most important data of this device to this computer")
                             details: DeviceWatcher.backup_encryption_status === "enabled"
-                                     ? qsTr("Uses the current local unencrypted backup behavior.")
-                                     : qsTr("Uses a local unencrypted backup behavior.")
+                                     ? qsTr("Uses a local unencrypted backup behavior.")
+                                     : qsTr("Uses the current local unencrypted backup behavior.")
                             checked: generalPage.backupMode === 0
                             onSelected: generalPage.requestStandardBackupMode()
                         }
