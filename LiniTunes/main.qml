@@ -999,7 +999,7 @@ Window {
                                         rightMargin: 8
                                     }
                                     color: "transparent"
-                                    visible: true
+                                    visible: modelData.udid !== ""
 
                                     Rectangle {
                                         id: deviceBatteryRect1
@@ -1031,10 +1031,8 @@ Window {
                                         }
                                     }
 
-                                    Rectangle {
+                                    Item {
                                         id: deviceBatteryFill
-                                        color: "#6bcc43"
-                                        radius: 3
                                         anchors {
                                             left: parent.left
                                             top: parent.top
@@ -1044,7 +1042,14 @@ Window {
                                             bottomMargin: 0
                                         }
                                         width: (modelData.battery)*22/100
-                                        visible: true
+                                        clip: true
+
+                                        Rectangle {
+                                            width: deviceBatteryRect1.width
+                                            height: parent.height
+                                            radius: deviceBatteryRect1.radius
+                                            color: "#6bcc43"
+                                        }
                                     }
 
                                     Text {
@@ -1374,7 +1379,7 @@ Window {
                                 rightMargin: 8
                             }
                             color: "transparent"
-                            visible: true
+                            visible: DeviceWatcher.device_connected
 
                             Rectangle {
                                 id: device_battery_rect1
@@ -1393,11 +1398,9 @@ Window {
                                 }
                             }
 
-                            Rectangle {
+                            Item {
                                 id: device_battery_fill
-                                width: 18
-                                color: "#6bcc43"
-                                radius: 3
+                                width: DeviceWatcher.device_connected ? (DeviceWatcher.battery)*22/100 : 0
                                 anchors {
                                     left: parent.left
                                     top: parent.top
@@ -1406,7 +1409,14 @@ Window {
                                     topMargin: 0
                                     bottomMargin: 0
                                 }
-                                visible: true
+                                clip: true
+
+                                Rectangle {
+                                    width: device_battery_rect1.width
+                                    height: parent.height
+                                    radius: device_battery_rect1.radius
+                                    color: "#6bcc43"
+                                }
                             }
 
                             Rectangle {
@@ -1427,7 +1437,7 @@ Window {
                                 width: 20
                                 height: 11
                                 color: root.colors.batteryText
-                                text: qsTr("82")
+                                text: DeviceWatcher.device_connected ? DeviceWatcher.battery_string : ""
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                                 font.family: AppFontFamily

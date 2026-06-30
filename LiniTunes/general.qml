@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import Qt5Compat.GraphicalEffects
 import "qml/components"
 
 Item {
@@ -15,6 +16,9 @@ Item {
     property string disablePasswordError: ""
     property string changePasswordError: ""
     property var backupDevices: []
+    property string expandedBackupUdid: ""
+    property string pendingDeleteBackupPath: ""
+    property string pendingDeleteBackupDate: ""
     property string pendingFolderAction: ""
 
     component BackupOption: Rectangle {
@@ -29,6 +33,7 @@ Item {
         radius: 0
         color: "transparent"
         border.width: 0
+        opacity: enabled ? 1.0 : 0.45
 
         Rectangle {
             id: radioOuter
@@ -69,6 +74,7 @@ Item {
 
         MouseArea {
             anchors { left: radioOuter.left; right: optionTextColumn.right; top: radioOuter.top; bottom: optionTextColumn.bottom }
+            enabled: optionRoot.enabled
             onClicked: optionRoot.selected()
         }
     }
@@ -95,6 +101,7 @@ Item {
 
                 Card {
     colors: root.colors
+                    visible: DeviceWatcher.device_connected
                     title: qsTr("Software")
 
                     Row {
@@ -214,6 +221,7 @@ Item {
                                      ? qsTr("Uses a local unencrypted backup behavior.")
                                      : qsTr("Uses the current local unencrypted backup behavior.")
                             checked: generalPage.backupMode === 0
+                            enabled: DeviceWatcher.device_connected
                             onSelected: generalPage.requestStandardBackupMode()
                         }
 
@@ -223,6 +231,7 @@ Item {
                                      ? qsTr("Encrypted local backup is enabled for this device.")
                                      : qsTr("Encrypt local backup. A password is required and cannot be recovered if forgotten.")
                             checked: generalPage.backupMode === 1
+                            enabled: DeviceWatcher.device_connected
                             onSelected: generalPage.requestEncryptedBackupMode()
                         }
                     }
@@ -630,31 +639,135 @@ Item {
             width: parent.width
         }
 
-        Repeater {
+        ListView {
+            visible: generalPage.backupPath !== "" && generalPage.backupDevices.length > 0
+            width: parent.width
+            height: Math.min(contentHeight, 320)
+            clip: true
+            spacing: 8
             model: generalPage.backupDevices
-            delegate: Column {
-                width: parent.width
-                spacing: 6
 
-                Text {
-                    text: modelData.name + " — " + modelData.udid
-                    color: root.colors.textPrimary
-                    font.pixelSize: 13
-                    font.family: AppFontFamily
-                    font.weight: Font.DemiBold
-                    wrapMode: Text.WordWrap
-                    width: parent.width
-                }
+            delegate: Rectangle {
+                width: ListView.view.width
+                height: backupCardContent.implicitHeight + 18
+                radius: 8
+                color: "transparent"
+                border.width: 1
+                border.color: root.colors.cardStroke
 
-                Repeater {
-                    model: modelData.saves
-                    delegate: Text {
-                        text: "  • " + modelData.name + (modelData.size > 0 ? " (" + generalPage.formatBytes(modelData.size) + ")" : "")
-                        color: root.colors.textSecondary
-                        font.pixelSize: 12
-                        font.family: AppFontFamily
-                        wrapMode: Text.WordWrap
+                Column {
+                    id: backupCardContent
+                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 9 }
+                    spacing: 8
+
+                    Rectangle {
                         width: parent.width
+                        height: deviceLabel.implicitHeight + 8
+                        radius: 5
+                        color: deviceMouse.containsMouse ? root.colors.buttonHover : "transparent"
+
+                        Text {
+                            id: deviceLabel
+                            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 8; rightMargin: 8 }
+                            text: (generalPage.expandedBackupUdid === modelData.udid ? "▾ " : "▸ ") + (modelData.label || modelData.name)
+                            color: root.colors.textPrimary
+                            font.pixelSize: 13
+                            font.family: AppFontFamily
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideMiddle
+                        }
+
+                        MouseArea {
+                            id: deviceMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: generalPage.expandedBackupUdid = generalPage.expandedBackupUdid === modelData.udid ? "" : modelData.udid
+                        }
+                    }
+
+                    Column {
+                        visible: generalPage.expandedBackupUdid === modelData.udid
+                        width: parent.width
+                        spacing: 6
+
+                        Repeater {
+                            model: modelData.saves
+                            delegate: Rectangle {
+                                width: parent.width
+                                height: 34
+                                radius: 5
+                                color: "transparent"
+
+                                Row {
+                                    anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 8; rightMargin: 6 }
+                                    spacing: 8
+
+                                    Item {
+                                        id: lockIconSlot
+                                        width: 14
+                                        height: 14
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        Image {
+                                            id: lockIcon
+                                            anchors.fill: parent
+                                            source: modelData.encrypted ? "/images/glyphs/lock.svg" : "/images/glyphs/no_lock.svg"
+                                            fillMode: Image.PreserveAspectFit
+                                            smooth: true
+                                            visible: false
+                                        }
+
+                                        ColorOverlay {
+                                            anchors.fill: lockIcon
+                                            source: lockIcon
+                                            color: root.colors.textSecondary
+                                        }
+
+                                        MouseArea {
+                                            id: lockMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                        }
+
+                                        StorageTooltip {
+                                            tipText: modelData.encrypted ? qsTr("Encrypted backup") : qsTr("Unencrypted backup")
+                                            textColor: root.colors.textPrimary
+                                            backgroundStroke: root.colors.cardStroke
+                                            backgroundFill: root.colors.settingsButtonBg
+                                            hovered: lockMouse.containsMouse
+                                        }
+                                    }
+
+                                    Text {
+                                        width: parent.width - lockIconSlot.width - showButton.width - deleteButton.width - parent.spacing * 3
+                                        text: modelData.date + (modelData.size > 0 ? " · " + generalPage.formatBytes(modelData.size) : "")
+                                        color: root.colors.textSecondary
+                                        font.pixelSize: 12
+                                        font.family: AppFontFamily
+                                        elide: Text.ElideMiddle
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+
+                                    AppButton {
+                                        id: showButton
+                                        colors: root.colors
+                                        width: 150
+                                        label: qsTr("Show in File Manager")
+                                        onClicked: DeviceWatcher.openBackup(modelData.path)
+                                    }
+
+                                    AppButton {
+                                        id: deleteButton
+                                        colors: root.colors
+                                        width: 78
+                                        label: qsTr("Delete")
+                                        destructive: true
+                                        onClicked: generalPage.requestDeleteBackup(modelData.path, modelData.date)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -667,6 +780,44 @@ Item {
     colors: root.colors
                 label: qsTr("Close")
                 onClicked: manageBackupsPopup.close()
+            }
+        }
+    }
+
+    ModalPanel {
+        colors: root.colors
+        id: deleteBackupConfirmPopup
+        title: qsTr("Delete Backup?")
+        width: Math.min(460, generalPage.width - 40)
+        onClosed: {
+            generalPage.pendingDeleteBackupPath = ""
+            generalPage.pendingDeleteBackupDate = ""
+        }
+
+        Text {
+            text: generalPage.pendingDeleteBackupDate === ""
+                  ? qsTr("This backup will be permanently deleted from disk.")
+                  : qsTr("The backup from %1 will be permanently deleted from disk.").arg(generalPage.pendingDeleteBackupDate)
+            color: root.colors.textSecondary
+            font.pixelSize: 12
+            font.family: AppFontFamily
+            wrapMode: Text.WordWrap
+            width: parent.width
+        }
+
+        Row {
+            spacing: 10
+            anchors.horizontalCenter: parent.horizontalCenter
+            AppButton {
+                colors: root.colors
+                label: qsTr("Cancel")
+                onClicked: deleteBackupConfirmPopup.close()
+            }
+            AppButton {
+                colors: root.colors
+                label: qsTr("Delete")
+                destructive: true
+                onClicked: generalPage.confirmDeleteBackup()
             }
         }
     }
@@ -804,8 +955,54 @@ Item {
     }
 
     function openManageBackupsPopup() {
-        generalPage.backupDevices = DeviceWatcher.listBackups(generalPage.backupPath)
+        generalPage.refreshBackupList()
         manageBackupsPopup.open()
+    }
+
+    function refreshBackupList() {
+        generalPage.backupDevices = DeviceWatcher.listBackups(generalPage.backupPath)
+        generalPage.expandedBackupUdid = generalPage.preferredBackupUdid()
+    }
+
+    function preferredBackupUdid() {
+        var currentUdid = DeviceWatcher.udid
+        var latestUdid = ""
+        var latestModified = -1
+
+        for (var i = 0; i < generalPage.backupDevices.length; ++i) {
+            var device = generalPage.backupDevices[i]
+            if (device.udid === currentUdid)
+                return device.udid
+
+            if (!device.saves || device.saves.length === 0)
+                continue
+
+            var modified = Number(device.saves[0].modified || 0)
+            if (modified > latestModified) {
+                latestModified = modified
+                latestUdid = device.udid
+            }
+        }
+
+        return latestUdid
+    }
+
+    function requestDeleteBackup(path, date) {
+        generalPage.pendingDeleteBackupPath = path
+        generalPage.pendingDeleteBackupDate = date
+        deleteBackupConfirmPopup.open()
+    }
+
+    function confirmDeleteBackup() {
+        var path = generalPage.pendingDeleteBackupPath
+        deleteBackupConfirmPopup.close()
+        if (path !== "")
+            generalPage.deleteBackup(path)
+    }
+
+    function deleteBackup(path) {
+        if (DeviceWatcher.deleteBackup(generalPage.backupPath, path))
+            generalPage.refreshBackupList()
     }
 
     function softwareVersionBadgeText() {

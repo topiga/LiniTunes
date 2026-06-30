@@ -3,8 +3,12 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QLocale>
+#include <QRegularExpression>
+#include <QUrl>
 #include <plist/plist.h>
+#include <algorithm>
 #include <cstdlib>
 #include <initializer_list>
 #include <idevice++/usbmuxd.hpp>
@@ -325,6 +329,25 @@ static QString plistStringAtPath(const QString &path, const char *key)
     return result;
 }
 
+static bool plistBoolAtPath(const QString &path, const char *key)
+{
+    plist_t plist = nullptr;
+    const QByteArray bytes = path.toUtf8();
+    if (plist_read_from_file(bytes.constData(), &plist, nullptr) != PLIST_ERR_SUCCESS || !plist)
+        return false;
+
+    bool result = false;
+    plist_t node = plist_dict_get_item(plist, key);
+    if (node && plist_get_node_type(node) == PLIST_BOOLEAN) {
+        uint8_t value = 0;
+        plist_get_bool_val(node, &value);
+        result = value != 0;
+    }
+
+    plist_free(plist);
+    return result;
+}
+
 static QDateTime newestModified(std::initializer_list<QFileInfo> files)
 {
     QDateTime newest;
@@ -335,9 +358,19 @@ static QDateTime newestModified(std::initializer_list<QFileInfo> files)
     return newest;
 }
 
+static QString backupDateText(const QDateTime &modified)
+{
+    return modified.isValid()
+        ? QLocale().toString(modified, QStringLiteral("yyyy-MM-dd HH:mm"))
+        : QObject::tr("Unknown date");
+}
+
 static QVariantMap backupSave(const QString &path, const QDateTime &modified, qint64 size)
 {
     QVariantMap save;
+    save["date"] = backupDateText(modified);
+    save["encrypted"] = plistBoolAtPath(QDir(path).filePath(QStringLiteral("Manifest.plist")), "IsEncrypted");
+    save["modified"] = modified.toMSecsSinceEpoch();
     save["name"] = modified.isValid()
         ? QObject::tr("Backup from %1").arg(QLocale().toString(modified, QLocale::ShortFormat))
         : QObject::tr("Backup");
@@ -346,52 +379,106 @@ static QVariantMap backupSave(const QString &path, const QDateTime &modified, qi
     return save;
 }
 
+static QString baseUdidForBackupFolder(const QString &folderName)
+{
+    static const QRegularExpression archiveNamePattern(
+        QStringLiteral("^(.*)-\\d{8}-\\d{6}(?:-\\d+)?$"));
+    const QRegularExpressionMatch match = archiveNamePattern.match(folderName);
+    return match.hasMatch() ? match.captured(1) : folderName;
+}
+
+static bool isBackupFolder(const QDir &dir)
+{
+    return QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.db")))
+        || QFileInfo::exists(dir.filePath(QStringLiteral("Status.plist")))
+        || QFileInfo::exists(dir.filePath(QStringLiteral("Manifest.plist")));
+}
+
+static QVariantList sortedSaves(QVariantList saves)
+{
+    std::sort(saves.begin(), saves.end(), [](const QVariant &a, const QVariant &b) {
+        return a.toMap().value(QStringLiteral("modified")).toLongLong()
+            > b.toMap().value(QStringLiteral("modified")).toLongLong();
+    });
+    return saves;
+}
+
 QVariantList iDeviceWatcher::listBackups(const QString &path)
 {
-    QVariantList devices;
+    QVariantMap groupedDevices;
     QDir root(path);
     if (path.isEmpty() || !root.exists())
-        return devices;
+        return {};
 
-    const QFileInfoList deviceDirs = root.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-    for (const QFileInfo &deviceDirInfo : deviceDirs) {
-        QDir deviceDir(deviceDirInfo.absoluteFilePath());
-        QVariantMap device;
-        const QString infoPath = deviceDir.filePath(QStringLiteral("Info.plist"));
-        QString displayName = plistStringAtPath(infoPath, "Display Name");
-        if (displayName.isEmpty())
-            displayName = plistStringAtPath(infoPath, "Device Name");
-        if (displayName.isEmpty())
-            displayName = deviceDirInfo.fileName();
+    const QFileInfoList backupDirs = root.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &backupDirInfo : backupDirs) {
+        QDir backupDir(backupDirInfo.absoluteFilePath());
+        if (!isBackupFolder(backupDir))
+            continue;
 
-        device["name"] = displayName;
-        device["udid"] = deviceDirInfo.fileName();
+        const QString folderName = backupDirInfo.fileName();
+        const QString baseUdid = baseUdidForBackupFolder(folderName);
+        QVariantMap device = groupedDevices.value(baseUdid).toMap();
 
-        QVariantList saves;
-        QFileInfo manifest(deviceDir.filePath(QStringLiteral("Manifest.db")));
-        QFileInfo status(deviceDir.filePath(QStringLiteral("Status.plist")));
-        QFileInfo manifestPlist(deviceDir.filePath(QStringLiteral("Manifest.plist")));
-        if (manifest.exists() || status.exists() || manifestPlist.exists()) {
-            saves.append(backupSave(
-                deviceDirInfo.absoluteFilePath(),
-                newestModified({manifest, status, manifestPlist}),
-                manifest.exists() ? manifest.size() : 0));
+        if (device.isEmpty()) {
+            const QString infoPath = backupDir.filePath(QStringLiteral("Info.plist"));
+            QString displayName = plistStringAtPath(infoPath, "Display Name");
+            if (displayName.isEmpty())
+                displayName = plistStringAtPath(infoPath, "Device Name");
+            if (displayName.isEmpty())
+                displayName = baseUdid;
+
+            const QString productType = plistStringAtPath(infoPath, "Product Type");
+            const QString marketingName = iDevice::lookup_marketing_name(productType);
+
+            device["name"] = displayName;
+            device["label"] = marketingName.isEmpty()
+                ? displayName
+                : QStringLiteral("%1 (%2)").arg(displayName, marketingName);
+            device["udid"] = baseUdid;
+            device["saves"] = QVariantList();
         }
 
-        const QFileInfoList subDirs = deviceDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time);
-        for (const QFileInfo &subDirInfo : subDirs) {
-            QFileInfo subManifest(QDir(subDirInfo.absoluteFilePath()).filePath(QStringLiteral("Manifest.db")));
-            if (!subManifest.exists())
-                continue;
-            saves.append(backupSave(
-                subDirInfo.absoluteFilePath(),
-                subManifest.lastModified(),
-                subManifest.size()));
-        }
-
+        QFileInfo manifest(backupDir.filePath(QStringLiteral("Manifest.db")));
+        QFileInfo status(backupDir.filePath(QStringLiteral("Status.plist")));
+        QFileInfo manifestPlist(backupDir.filePath(QStringLiteral("Manifest.plist")));
+        QVariantList saves = device.value(QStringLiteral("saves")).toList();
+        saves.append(backupSave(
+            backupDirInfo.absoluteFilePath(),
+            newestModified({manifest, status, manifestPlist}),
+            manifest.exists() ? manifest.size() : 0));
         device["saves"] = saves;
+        groupedDevices[baseUdid] = device;
+    }
+
+    QVariantList devices;
+    const QStringList udids = groupedDevices.keys();
+    for (const QString &udid : udids) {
+        QVariantMap device = groupedDevices.value(udid).toMap();
+        device["saves"] = sortedSaves(device.value(QStringLiteral("saves")).toList());
         devices.append(device);
     }
 
     return devices;
+}
+
+bool iDeviceWatcher::deleteBackup(const QString &backupRoot, const QString &path)
+{
+    const QString rootPath = QDir(backupRoot).canonicalPath();
+    const QString backupPath = QFileInfo(path).canonicalFilePath();
+    if (rootPath.isEmpty() || backupPath.isEmpty())
+        return false;
+    if (backupPath == rootPath || !backupPath.startsWith(rootPath + QDir::separator()))
+        return false;
+
+    return QDir(backupPath).removeRecursively();
+}
+
+bool iDeviceWatcher::openBackup(const QString &path)
+{
+    const QFileInfo info(path);
+    if (!info.exists() || !info.isDir())
+        return false;
+
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(info.absoluteFilePath()));
 }

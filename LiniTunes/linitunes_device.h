@@ -69,6 +69,7 @@ public:
     QString backupEncryptionError() const { return m_backupEncryptionError; }
 
     static QString format_bytes(uint64_t bytes, bool decimals=true);
+    static QString lookup_marketing_name(const QString &identifier);
 
 signals:
     void storageSyncChanged();

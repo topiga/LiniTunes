@@ -95,6 +95,8 @@ public:
     Q_INVOKABLE void changeBackupPassword(const QString &path, const QString &oldPassword,
                                           const QString &newPassword);
     Q_INVOKABLE QVariantList listBackups(const QString &path);
+    Q_INVOKABLE bool deleteBackup(const QString &backupRoot, const QString &path);
+    Q_INVOKABLE bool openBackup(const QString &path);
 
     void updateLists();
     QStringList udid_list() const { return m_udidList; }

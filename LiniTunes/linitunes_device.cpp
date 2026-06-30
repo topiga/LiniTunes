@@ -89,7 +89,7 @@ static const DeviceNameEntry deviceNameTable[] = {
     {nullptr, nullptr}
 };
 
-static QString lookup_marketing_name(const QString &identifier)
+QString iDevice::lookup_marketing_name(const QString &identifier)
 {
     for (const auto *e = deviceNameTable; e->identifier; ++e) {
         if (identifier == QLatin1String(e->identifier))

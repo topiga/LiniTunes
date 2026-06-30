@@ -43,6 +43,11 @@ bool writePlistToFile(plist_t plist, const QString &path)
     return ok;
 }
 
+QString canonicalBackupDir(const QString &backupPath, const QString &udid)
+{
+    return QDir(backupPath).filePath(udid);
+}
+
 QString mobileBackupErrorMessage(uint64_t code, const QString &description)
 {
     if (code == 105) {
@@ -53,6 +58,54 @@ QString mobileBackupErrorMessage(uint64_t code, const QString &description)
         return description;
 
     return QStringLiteral("Backup error code %1").arg(code);
+}
+
+bool hasReadableCanonicalBackup(const QString &backupPath, const QString &udid)
+{
+    if (!QFileInfo::exists(canonicalBackupDir(backupPath, udid)))
+        return false;
+    return BackupValidator::validate(backupPath, udid).readable;
+}
+
+QString uniqueArchiveBackupDir(const QString &backupPath, const QString &udid)
+{
+    const QString baseName = udid + QStringLiteral("-")
+        + QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"));
+    QDir root(backupPath);
+
+    QString candidate = root.filePath(baseName);
+    for (int suffix = 1; QFileInfo::exists(candidate); ++suffix)
+        candidate = root.filePath(QStringLiteral("%1-%2").arg(baseName).arg(suffix));
+
+    return candidate;
+}
+
+bool archiveCanonicalBackup(const QString &backupPath, const QString &udid, QString *error)
+{
+    if (!hasReadableCanonicalBackup(backupPath, udid))
+        return true;
+
+    QDir root(backupPath);
+    const QString source = canonicalBackupDir(backupPath, udid);
+    const QString archive = uniqueArchiveBackupDir(backupPath, udid);
+    if (root.rename(source, archive)) {
+        qDebug("BackupWorker: Archived previous backup: %s", qPrintable(archive));
+        return true;
+    }
+
+    if (error)
+        *error = QStringLiteral("Could not archive previous backup before starting a new one.");
+    qDebug("BackupWorker: Failed to archive previous backup: %s", qPrintable(source));
+    return false;
+}
+
+void removeCanonicalBackup(const QString &backupPath, const QString &udid)
+{
+    const QString path = canonicalBackupDir(backupPath, udid);
+    if (QFileInfo::exists(path)) {
+        qDebug("BackupWorker: Removing cancelled backup directory: %s", qPrintable(path));
+        QDir(path).removeRecursively();
+    }
 }
 
 bool generateInfoPlist(IdeviceFFI::Provider &provider, const QString &udid, const QString &backupPath)
@@ -210,8 +263,13 @@ BackupEncryptionState queryBackupEncryption(const QString &udid, uint32_t device
 }
 
 void configureFilesystemDelegate(IdeviceFFI::BackupDelegateCallbacks &delegate,
-                                 std::map<std::string, std::ofstream> &openFiles)
+                                 std::map<std::string, std::ofstream> &openFiles,
+                                 std::atomic<bool> &cancelled)
 {
+    delegate.is_cancelled = [&cancelled]() {
+        return cancelled.load();
+    };
+
     delegate.get_free_disk_space = [](const std::string &path) -> uint64_t {
         struct statvfs st{};
         if (statvfs(path.c_str(), &st) == 0)
@@ -369,7 +427,7 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
     auto backupClient = std::move(backupResult.unwrap());
     std::map<std::string, std::ofstream> openFiles;
     IdeviceFFI::BackupDelegateCallbacks delegate;
-    configureFilesystemDelegate(delegate, openFiles);
+    configureFilesystemDelegate(delegate, openFiles, m_cancelled);
 
     auto oldOption = optionalPassword(oldPassword);
     auto newOption = optionalPassword(newPassword);
@@ -519,11 +577,12 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     auto provider = std::move(prov_result.unwrap());
     qDebug("BackupWorker: Provider created");
 
-    // Write host-side Info.plist metadata up front. MobileBackup2 itself writes
-    // Status/Manifest data, but Info.plist is host-generated from lockdown
-    // values and is used by Finder/iTunes/libimobiledevice for display and
-    // compatibility.
-    generateInfoPlist(provider, udid, backupPath);
+    QDir().mkpath(backupPath);
+    QString archiveError;
+    if (!archiveCanonicalBackup(backupPath, udid, &archiveError)) {
+        emit failed(archiveError);
+        return;
+    }
 
     const BackupEncryptionState encryptionState = queryBackupEncryption(provider);
 
@@ -558,31 +617,12 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
         qDebug("BackupWorker: Encrypted backups already enabled");
     }
 
-    // Connect to mobilebackup2 service
-    auto backup_result = IdeviceFFI::MobileBackup2::connect(provider);
-    if (backup_result.is_err()) {
-        auto &err = backup_result.unwrap_err();
-        qDebug("BackupWorker: Failed to connect to mobilebackup2: %s", err.message.c_str());
-        emit failed(withEncryptionNote("Failed to connect to mobilebackup2 service: " +
-                     QString::fromStdString(err.message)));
-        return;
-    }
-    auto backup_client = std::move(backup_result.unwrap());
-    qDebug("BackupWorker: MobileBackup2 connected");
-
-    auto pf_result = provider.get_pairing_file();
-    if (pf_result.is_ok())
-        qDebug("BackupWorker: Pairing file obtained");
-    else
-        qDebug("BackupWorker: WARNING - no pairing file, trust may fail");
-
     // Ensure backup directory exists. The backup library stores data under
     // <backup_root>/<udid>/. If a previous attempt left empty metadata plists,
     // iOS may try to read them as an existing backup and fail with
     // MBErrorDomain/205 (zero-length Status.plist). Remove only clearly
     // incomplete metadata so a fresh backup can start cleanly.
-    QDir().mkpath(backupPath);
-    const QString deviceBackupDir = QDir(backupPath).filePath(udid);
+    const QString deviceBackupDir = canonicalBackupDir(backupPath, udid);
     const QStringList metadataFiles = {
         QStringLiteral("Status.plist"),
         QStringLiteral("Manifest.plist"),
@@ -601,6 +641,28 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
         QDir(deviceBackupDir).removeRecursively();
     }
 
+    // Write host-side Info.plist metadata after any previous backup has been
+    // archived or cleaned. MobileBackup2 writes Status/Manifest data itself.
+    generateInfoPlist(provider, udid, backupPath);
+
+    // Connect to mobilebackup2 service
+    auto backup_result = IdeviceFFI::MobileBackup2::connect(provider);
+    if (backup_result.is_err()) {
+        auto &err = backup_result.unwrap_err();
+        qDebug("BackupWorker: Failed to connect to mobilebackup2: %s", err.message.c_str());
+        emit failed(withEncryptionNote("Failed to connect to mobilebackup2 service: " +
+                     QString::fromStdString(err.message)));
+        return;
+    }
+    auto backup_client = std::move(backup_result.unwrap());
+    qDebug("BackupWorker: MobileBackup2 connected");
+
+    auto pf_result = provider.get_pairing_file();
+    if (pf_result.is_ok())
+        qDebug("BackupWorker: Pairing file obtained");
+    else
+        qDebug("BackupWorker: WARNING - no pairing file, trust may fail");
+
     auto validateBackup = [&backupPath, &udid]() {
         return BackupValidator::validate(backupPath, udid);
     };
@@ -610,7 +672,7 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
 
     std::map<std::string, std::ofstream> open_files;
     IdeviceFFI::BackupDelegateCallbacks delegate;
-    configureFilesystemDelegate(delegate, open_files);
+    configureFilesystemDelegate(delegate, open_files, m_cancelled);
 
     delegate.on_progress = [this](uint64_t, uint64_t, double overall) {
         // overall is device-reported progress (0-100 range, sometimes > 100)
@@ -644,13 +706,14 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
 
     backup_client.disconnect();
 
-    if (m_cancelled) {
-        qDebug("BackupWorker: Cancelled");
-        emit cancelled();
-        return;
-    }
-
     if (result.is_err()) {
+        if (m_cancelled) {
+            qDebug("BackupWorker: Cancelled");
+            removeCanonicalBackup(backupPath, udid);
+            emit cancelled();
+            return;
+        }
+
         auto &err = result.unwrap_err();
         qDebug("BackupWorker: Backup failed: code=%d msg=%s", err.code, err.message.c_str());
         emit failed(withEncryptionNote(QString::fromStdString(err.message)));
