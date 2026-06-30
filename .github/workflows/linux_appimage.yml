@@ -37,7 +37,7 @@ jobs:
           host:         linux
           target:       desktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qt5compat qtshadertools qtsvg qtwayland
+          modules:      qtcharts qt5compat qtshadertools qtwaylandcompositor
           setup-python: true
 
       - name: Install system dependencies
