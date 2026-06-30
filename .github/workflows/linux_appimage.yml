@@ -14,7 +14,7 @@ defaults:
 
 env:
   SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   6.5.1
+  QT_VERSION:   6.11.1
   ARTIFACT:     LiniTunes.AppImage
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3.2.1
+        uses: jurplel/install-qt-action@v4
         with:
           version:      ${{ env.QT_VERSION }}
           host:         linux
