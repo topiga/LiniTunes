@@ -730,12 +730,13 @@ Item {
                                             hoverEnabled: true
                                         }
 
-                                        StorageTooltip {
+                                        AppTooltip {
                                             tipText: modelData.encrypted ? qsTr("Encrypted backup") : qsTr("Unencrypted backup")
                                             textColor: root.colors.textPrimary
                                             backgroundStroke: root.colors.cardStroke
                                             backgroundFill: root.colors.settingsButtonBg
                                             hovered: lockMouse.containsMouse
+                                            verticalMargin: 35
                                         }
                                     }
 

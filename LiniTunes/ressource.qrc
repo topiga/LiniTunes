@@ -6,7 +6,7 @@
         <file>qml/components/AppButton.qml</file>
         <file>qml/components/ModalPanel.qml</file>
         <file>qml/components/PasswordField.qml</file>
-        <file>qml/components/StorageTooltip.qml</file>
+        <file>qml/components/AppTooltip.qml</file>
         <file>qml/components/StorageSegment.qml</file>
         <file>ressources/fonts/inter_variable_font.ttf</file>
     </qresource>

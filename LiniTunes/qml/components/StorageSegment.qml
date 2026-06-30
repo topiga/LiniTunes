@@ -61,7 +61,7 @@ Rectangle {
         font.weight: Font.DemiBold
     }
 
-    StorageTooltip {
+    AppTooltip {
         tipText: root.tipText
         textColor: root.tipTextColor
         backgroundStroke: root.tipBackgroundStroke
