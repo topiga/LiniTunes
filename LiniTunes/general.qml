@@ -364,7 +364,7 @@ Item {
         id: backupFolderDialog
         title: qsTr("Choose backup folder")
         onAccepted: {
-            DeviceWatcher.backup_folder = selectedFolder.toLocalFile()
+            DeviceWatcher.backup_folder = generalPage.folderUrlToPath(selectedFolder)
             generalPage.resumePendingFolderAction()
         }
     }
@@ -837,6 +837,13 @@ Item {
                 onClicked: generalPage.confirmDeleteBackup()
             }
         }
+    }
+
+    function folderUrlToPath(url) {
+        var path = String(url)
+        if (path.indexOf("file://") === 0)
+            path = path.substring(7)
+        return decodeURIComponent(path)
     }
 
     function ensureBackupFolder(action) {
