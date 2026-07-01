@@ -591,7 +591,6 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
         return;
     }
     auto provider = std::move(prov_result.unwrap());
-    qDebug("BackupWorker: Provider created");
 
     QDir().mkpath(backupPath);
     QString archiveError;
@@ -671,12 +670,9 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
         return;
     }
     auto backup_client = std::move(backup_result.unwrap());
-    qDebug("BackupWorker: MobileBackup2 connected");
 
     auto pf_result = provider.get_pairing_file();
-    if (pf_result.is_ok())
-        qDebug("BackupWorker: Pairing file obtained");
-    else
+    if (pf_result.is_err())
         qDebug("BackupWorker: WARNING - no pairing file, trust may fail");
 
     auto validateBackup = [&backupPath, &udid]() {
@@ -684,7 +680,6 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     };
 
     std::string backup_root = backupPath.toStdString();
-    qDebug("BackupWorker: Backup directory: %s", backup_root.c_str());
 
     std::map<std::string, std::ofstream> open_files;
     IdeviceFFI::BackupDelegateCallbacks delegate;
@@ -693,10 +688,8 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
     delegate.on_progress = [this](uint64_t, uint64_t, double overall) {
         // overall is device-reported progress (0-100 range, sometimes > 100)
         if (overall > 0 && overall <= 100) {
-            qDebug("BackupWorker: %.1f%%", overall);
             emit progress(overall / 100.0);
         } else if (overall > 100) {
-            qDebug("BackupWorker: clamping %.1f%% to 100%%", overall);
             emit progress(1.0);
         }
     };
