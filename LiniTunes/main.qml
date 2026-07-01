@@ -435,8 +435,8 @@ Window {
                             tipBackgroundStroke: root.colors.cardStroke
                             tipBackgroundFill: root.colors.settingsButtonBg
                             transparentTextColor: root.colors.textSecondary
-                            color1: root.colors.gray
-                            color2: root.colors.darkGray
+                            color1: root.colors.cardBackgroundBottom
+                            color2: root.colors.cardBackgroundTop
                             label: root.formatGbLabel(root.storageRatio.availableGb)
                             tipText: qsTr("Available") + " — " + root.formatGbLabel(root.storageRatio.availableGb)
                         }
