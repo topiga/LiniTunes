@@ -8,16 +8,18 @@ ToolTip {
     required property color backgroundStroke
     required property color backgroundFill
     property bool hovered: false
+    property double verticalMargin: 45
 
     visible: hovered
     text: tipText
     delay: 400
-    y: -45
+    y: - verticalMargin
 
     contentItem: Text {
         text: root.text
         color: root.textColor
-        font.pointSize: 9
+        font.pixelSize: 12
+        font.family: AppFontFamily
     }
 
     background: Rectangle {

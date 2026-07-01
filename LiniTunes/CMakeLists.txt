@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Qt6 COMPONENTS Core Quick REQUIRED)
+find_package(Qt6 COMPONENTS Core Quick Svg REQUIRED)
 find_package(Threads REQUIRED)
 
 # ---- idevice++ integration ------------------------------------------------
@@ -17,7 +17,7 @@ set(IDEVICE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/idevice"
     CACHE PATH "Path to idevice repository root")
 set(IDEVICE_FFI_PATH "${IDEVICE_ROOT}/target/release/libidevice_ffi.a"
     CACHE FILEPATH "Path to libidevice_ffi.a")
-set(IDEVICE_FFI_FEATURES "usbmuxd,diagnostics_relay,pair,afc,installation_proxy"
+set(IDEVICE_FFI_FEATURES "usbmuxd,diagnostics_relay,pair,afc,installation_proxy,mobilebackup2"
     CACHE STRING "Cargo features for idevice-ffi build")
 
 # Auto-build Rust FFI static library if missing
@@ -90,6 +90,10 @@ set(SOURCE_FILES
     idevicewatcher.cpp
     storage_info.h storage_info.cpp
     storage_sync_worker.h storage_sync_worker.cpp
+    backup_info.h backup_info.cpp
+    backup_validator.h backup_validator.cpp
+    backup_worker.h backup_worker.cpp
+    plist_helpers.h
     main.cpp
 )
 
@@ -104,6 +108,7 @@ add_executable(LiniTunes
 target_link_libraries(LiniTunes PRIVATE
     Qt6::Core
     Qt6::Quick
+    Qt6::Svg
     idevice++
     plist_ffi_cpp
 )

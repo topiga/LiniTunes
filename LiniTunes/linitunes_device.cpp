@@ -1,35 +1,21 @@
 #include "linitunes_device.h"
+#include "plist_helpers.h"
 #include <QDebug>
 #include <QFile>
+#include <QCoreApplication>
 #include <plist/plist.h>
 #include <idevice++/provider.hpp>
 #include <idevice++/lockdown.hpp>
 #include <idevice++/usbmuxd.hpp>
+#include <cstdlib>
 
-// Helper: get string from plist dictionary using raw C API
-static QString plist_dict_get_string(const plist_t dict, const char *key)
-{
-    if (!dict || plist_get_node_type(dict) != PLIST_DICT)
-        return {};
-    plist_t node = plist_dict_get_item(dict, key);
-    if (!node)
-        return {};
-    char *val = nullptr;
-    plist_get_string_val(node, &val);
-    return val ? QString::fromUtf8(val) : QString();
-}
+using plist_helpers::stringVal;
+using plist_helpers::uintStr;
+using plist_helpers::boolVal;
 
-// Helper: get uint64 from plist dictionary using raw C API
-static QString plist_dict_get_uint_str(const plist_t dict, const char *key)
+static QString existing_resource_path(const QString &path)
 {
-    if (!dict)
-        return {};
-    plist_t node = plist_dict_get_item(dict, key);
-    if (!node)
-        return {};
-    uint64_t val = 0;
-    plist_get_uint_val(node, &val);
-    return QString::number(val);
+    return QFile::exists(QStringLiteral(":") + path) ? path : QString();
 }
 
 // ---- Product name lookup table --------------------------------------------
@@ -103,7 +89,7 @@ static const DeviceNameEntry deviceNameTable[] = {
     {nullptr, nullptr}
 };
 
-static QString lookup_marketing_name(const QString &identifier)
+QString iDevice::lookup_marketing_name(const QString &identifier)
 {
     for (const auto *e = deviceNameTable; e->identifier; ++e) {
         if (identifier == QLatin1String(e->identifier))
@@ -125,12 +111,40 @@ iDevice::iDevice(QObject *parent)
             this, &iDevice::onStorageSyncData);
     connect(m_storageSyncWorker, &StorageSyncWorker::failed,
             this, &iDevice::onStorageSyncFailed);
+
+    // Backup worker setup
+    m_backupInfo = new BackupInfo();
+    m_backupInfo->moveToThread(QCoreApplication::instance()->thread());
+    m_backupWorker = new BackupWorker();
+    m_backupWorker->moveToThread(&m_backupThread);
+    connect(&m_backupThread, &QThread::finished,
+            m_backupWorker, &QObject::deleteLater);
+    connect(m_backupWorker, &BackupWorker::progress,
+            this, &iDevice::onBackupProgress);
+    connect(m_backupWorker, &BackupWorker::encryptionEnabled,
+            this, [this]() { finishBackupEncryptionChange(QStringLiteral("enabled"), false); });
+    connect(m_backupWorker, &BackupWorker::encryptionDisabled,
+            this, [this]() { finishBackupEncryptionChange(QStringLiteral("disabled"), true); });
+    connect(m_backupWorker, &BackupWorker::encryptionPasswordChanged,
+            this, [this]() { finishBackupEncryptionChange(QStringLiteral("enabled"), true); });
+    connect(m_backupWorker, &BackupWorker::encryptionFailed,
+            this, &iDevice::failBackupEncryptionChange);
+    connect(m_backupWorker, &BackupWorker::finished,
+            this, &iDevice::onBackupFinished);
+    connect(m_backupWorker, &BackupWorker::finishedWithWarnings,
+            this, &iDevice::onBackupFinishedWithWarnings);
+    connect(m_backupWorker, &BackupWorker::failed,
+            this, &iDevice::onBackupFailed);
+    connect(m_backupWorker, &BackupWorker::cancelled,
+            this, &iDevice::onBackupCancelled);
 }
 
 iDevice::~iDevice()
 {
     m_storageSyncThread.quit();
     m_storageSyncThread.wait();
+    m_backupThread.quit();
+    m_backupThread.wait();
 }
 
 bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr)
@@ -173,18 +187,30 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     plist_t all_dict = all_values_result.unwrap();
 
     // Parse using raw C plist API (avoids PList::Dictionary memory corruption)
-    m_productType       = plist_dict_get_string(all_dict, "ProductType");
-    m_deviceClass       = plist_dict_get_string(all_dict, "DeviceClass");
-    m_deviceName        = plist_dict_get_string(all_dict, "DeviceName");
-    m_serial            = plist_dict_get_string(all_dict, "SerialNumber");
-    m_ecid              = plist_dict_get_uint_str(all_dict, "UniqueChipID");
-    m_imei              = plist_dict_get_string(all_dict, "InternationalMobileEquipmentIdentity");
+    m_productType       = stringVal(all_dict, "ProductType");
+    m_productVersion    = stringVal(all_dict, "ProductVersion");
+    m_buildVersion      = stringVal(all_dict, "BuildVersion");
+    m_deviceClass       = stringVal(all_dict, "DeviceClass");
+    m_deviceName        = stringVal(all_dict, "DeviceName");
+    m_serial            = stringVal(all_dict, "SerialNumber");
+    m_ecid              = uintStr(all_dict, "UniqueChipID");
+    m_imei              = stringVal(all_dict, "InternationalMobileEquipmentIdentity");
 
     // Lookup marketing name
     m_marketingName = lookup_marketing_name(m_productType);
 
     // Free the top-level dictionary
     plist_free(all_dict);
+
+    // Backup encryption state
+    auto encryption_result = lockdown.get_value("WillEncrypt", "com.apple.mobile.backup");
+    if (encryption_result.is_ok()) {
+        plist_t node = encryption_result.unwrap();
+        m_backupEncryptionStatus = boolVal(node) ? QStringLiteral("enabled") : QStringLiteral("disabled");
+        plist_free(node);
+    } else {
+        m_backupEncryptionStatus = QStringLiteral("unknown");
+    }
 
     // Battery
     auto battery_result = lockdown.get_value("BatteryCurrentCapacity", "com.apple.mobile.battery");
@@ -193,14 +219,6 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
         uint64_t val = 0;
         plist_get_uint_val(node, &val);
         m_batteryCapacity = static_cast<int>(val);
-        plist_free(node);
-    }
-
-    auto charging_result = lockdown.get_value("BatteryIsCharging", "com.apple.mobile.battery");
-    if (charging_result.is_ok()) {
-        plist_t node = charging_result.unwrap();
-        uint8_t val = 0;
-        plist_get_bool_val(node, &val);
         plist_free(node);
     }
 
@@ -248,45 +266,25 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
 
 QString iDevice::format_bytes(uint64_t bytes, bool decimals)
 {
-    if (bytes >= 1000000000000ULL) {
-        uint64_t tb = bytes / 1000000000000ULL;
+    auto formatUnit = [bytes, decimals](uint64_t divisor, const char *unit) {
         if (decimals) {
-            uint64_t dec = (bytes / 100000000000ULL) % 10;
-            return QString::number(tb) + "." + QString::number(dec) + " TB";
-        } else {
-            return QString::number(tb) + " TB";
+            const uint64_t whole = bytes / divisor;
+            const uint64_t fraction = (bytes / (divisor / 10)) % 10;
+            return QStringLiteral("%1.%2 %3").arg(whole).arg(fraction).arg(QLatin1String(unit));
         }
-    }
-    if (bytes >= 1000000000ULL) {
-        uint64_t gb = bytes / 1000000000ULL;
-        if (decimals) {
-            uint64_t dec = (bytes / 100000000ULL) % 10;
-            return QString::number(gb) + "." + QString::number(dec) + " GB";
-        } else {
-            return QString::number(gb) + " GB";
-        }
-    }
-    if (bytes >= 1000000ULL) {
-        uint64_t mb = bytes / 1000000ULL;
-        if (decimals) {
-            uint64_t dec = (bytes / 100000ULL) % 10;
-            return QString::number(mb) + "." + QString::number(dec) + " MB";
-        } else {
-            return QString::number(mb) + " MB";
-        }
-    }
-    if (bytes >= 1000ULL) {
-        uint64_t kb = bytes / 1000ULL;
-        if (decimals) {
-            uint64_t dec = (bytes / 100ULL) % 10;
-            return QString::number(kb) + "." + QString::number(dec) + " kB";
-        } else {
-            return QString::number(kb) + " kB";
-        }
-    }
-    if (decimals)
-        return QString::number(bytes) + " B";
-    return QString::number(bytes) + " B";
+        return QString::number(bytes / divisor) + QStringLiteral(" ") + QLatin1String(unit);
+    };
+
+    if (bytes >= 1000000000000ULL)
+        return formatUnit(1000000000000ULL, "TB");
+    if (bytes >= 1000000000ULL)
+        return formatUnit(1000000000ULL, "GB");
+    if (bytes >= 1000000ULL)
+        return formatUnit(1000000ULL, "MB");
+    if (bytes >= 1000ULL)
+        return formatUnit(1000ULL, "kB");
+
+    return QString::number(bytes) + (decimals ? QStringLiteral(" B") : QStringLiteral(" B"));
 }
 
 QString iDevice::device_image() const
@@ -300,6 +298,49 @@ QString iDevice::device_image() const
     if (QFile::exists(":/images/devices/Generic.png"))
         return "/images/devices/Generic.png";
     return "/images/iphone.png";
+}
+
+QString iDevice::software_image() const
+{
+    const bool isIOS = m_deviceClass == QStringLiteral("iPhone")
+        || m_deviceClass == QStringLiteral("iPod");
+    const bool isIPadOS = m_deviceClass == QStringLiteral("iPad");
+    const QString majorVersion = m_productVersion.section('.', 0, 0);
+
+    if (majorVersion.isEmpty()) {
+        if (isIOS) {
+            const QString genericIOS = existing_resource_path(QStringLiteral("/images/software/Generic_iOS.png"));
+            if (!genericIOS.isEmpty())
+                return genericIOS;
+        }
+
+        const QString genericAppleOS = existing_resource_path(QStringLiteral("/images/software/Generic_AppleOS.png"));
+        return genericAppleOS.isEmpty() ? device_image() : genericAppleOS;
+    }
+
+    QString osPrefix;
+    if (isIPadOS)
+        osPrefix = QStringLiteral("iPadOS");
+    else if (isIOS)
+        osPrefix = QStringLiteral("iOS");
+
+    if (!osPrefix.isEmpty()) {
+        const QString base = QStringLiteral("/images/software/") + osPrefix + majorVersion;
+        const QString png = existing_resource_path(base + QStringLiteral(".png"));
+        if (!png.isEmpty())
+            return png;
+
+        const QString svg = existing_resource_path(base + QStringLiteral(".svg"));
+        if (!svg.isEmpty())
+            return svg;
+    }
+
+    const QString background = existing_resource_path(QStringLiteral("/images/software/Background_AppleOS.png"));
+    if (!background.isEmpty())
+        return background;
+
+    const QString genericAppleOS = existing_resource_path(QStringLiteral("/images/software/Generic_AppleOS.png"));
+    return genericAppleOS.isEmpty() ? device_image() : genericAppleOS;
 }
 
 void iDevice::startStorageSync()
@@ -337,4 +378,122 @@ void iDevice::onStorageSyncFailed(const QString &error)
     if (m_storageInfo)
         m_storageInfo->setSyncing(false);
     emit storageSyncChanged();
+}
+
+void iDevice::startBackup(const QString &path, bool enableEncryption, const QString &password)
+{
+    if (backupRunning() || !m_connected)
+        return;
+
+    m_backupInfo->reset();
+    m_backupInfo->setStatus(BackupInfo::Status::Running);
+    emit backupChanged();
+
+    if (!m_backupThread.isRunning())
+        m_backupThread.start();
+
+    QMetaObject::invokeMethod(m_backupWorker,
+        [this, path, enableEncryption, password]() {
+            m_backupWorker->runBackup(m_udid, m_deviceId, path, enableEncryption, password);
+        },
+        Qt::QueuedConnection);
+}
+
+void iDevice::stopBackup()
+{
+    if (m_backupWorker)
+        m_backupWorker->cancel();
+}
+
+void iDevice::beginBackupEncryptionChange()
+{
+    m_backupEncryptionBusy = true;
+    m_backupEncryptionError.clear();
+    emit backupChanged();
+}
+
+void iDevice::finishBackupEncryptionChange(const QString &status, bool resetBackupInfo)
+{
+    m_backupEncryptionStatus = status;
+    m_backupEncryptionBusy = false;
+    m_backupEncryptionError.clear();
+    if (resetBackupInfo)
+        m_backupInfo->reset();
+    emit backupChanged();
+}
+
+void iDevice::failBackupEncryptionChange(const QString &error)
+{
+    m_backupEncryptionBusy = false;
+    m_backupEncryptionError = error;
+    m_backupInfo->setError(error);
+    emit backupChanged();
+}
+
+void iDevice::disableBackupEncryption(const QString &path, const QString &password)
+{
+    if (!m_connected || !m_backupWorker || password.isEmpty() || m_backupEncryptionBusy || backupRunning())
+        return;
+
+    beginBackupEncryptionChange();
+
+    if (!m_backupThread.isRunning())
+        m_backupThread.start();
+
+    QMetaObject::invokeMethod(m_backupWorker,
+        [this, path, password]() {
+            m_backupWorker->disableEncryption(m_udid, m_deviceId, path, password);
+        },
+        Qt::QueuedConnection);
+}
+
+void iDevice::changeBackupPassword(const QString &path, const QString &oldPassword, const QString &newPassword)
+{
+    if (!m_connected || !m_backupWorker || oldPassword.isEmpty() || newPassword.isEmpty() || m_backupEncryptionBusy || backupRunning())
+        return;
+
+    beginBackupEncryptionChange();
+
+    if (!m_backupThread.isRunning())
+        m_backupThread.start();
+
+    QMetaObject::invokeMethod(m_backupWorker,
+        [this, path, oldPassword, newPassword]() {
+            m_backupWorker->changeEncryptionPassword(m_udid, m_deviceId, path, oldPassword, newPassword);
+        },
+        Qt::QueuedConnection);
+}
+
+bool iDevice::backupRunning() const
+{
+    return m_backupInfo && m_backupInfo->status() == "running";
+}
+
+void iDevice::onBackupProgress(double overall)
+{
+    m_backupInfo->setOverallProgress(overall * 100.0);
+}
+
+void iDevice::onBackupFinished()
+{
+    m_backupInfo->setStatus(BackupInfo::Status::Completed);
+    emit backupChanged();
+}
+
+void iDevice::onBackupFinishedWithWarnings(const QString &warning)
+{
+    m_backupInfo->setWarning(warning);
+    emit backupChanged();
+}
+
+void iDevice::onBackupFailed(const QString &error)
+{
+    m_backupInfo->setError(error);
+    emit backupChanged();
+}
+
+void iDevice::onBackupCancelled()
+{
+    m_backupInfo->setStatus(BackupInfo::Status::Cancelled);
+    emit backupChanged();
 }

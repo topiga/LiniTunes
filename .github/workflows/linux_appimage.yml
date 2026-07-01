@@ -14,7 +14,7 @@ defaults:
 
 env:
   SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   6.5.1
+  QT_VERSION:   6.11.1
   ARTIFACT:     LiniTunes.AppImage
 
 jobs:
@@ -31,13 +31,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3.2.1
+        uses: jurplel/install-qt-action@v4
         with:
           version:      ${{ env.QT_VERSION }}
           host:         linux
           target:       desktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qt5compat qtshadertools
+          modules:      qtcharts qt5compat qtshadertools qtwaylandcompositor
           setup-python: true
 
       - name: Install system dependencies
@@ -48,7 +48,7 @@ jobs:
       - name: Build idevice FFI
         run: |
           cd ${{ env.SOURCE_DIR }}/third_party/idevice
-          cargo build --release -p idevice-ffi --features "usbmuxd,diagnostics_relay,pair"
+          cargo build --release -p idevice-ffi --features "usbmuxd,diagnostics_relay,pair,afc,installation_proxy,mobilebackup2"
 
       - name: Build LiniTunes
         run: |
@@ -62,14 +62,28 @@ jobs:
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/lib/
-          export QMAKE=${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin/qmake
+          export QT_ROOT=${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$QT_ROOT/lib/
+          export QMAKE=$QT_ROOT/bin/qmake
           export QML_SOURCES_PATHS=${{ env.SOURCE_DIR }}/LiniTunes/
+          export EXTRA_QT_MODULES="waylandcompositor"
+          export EXTRA_PLATFORM_PLUGINS="libqwayland.so"
+
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
             -e LiniTunes \
             -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png \
             -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop \
-            --plugin qt --output appimage
+            --plugin qt
+
+          # Qt Quick Dialogs' non-native FolderDialog imports this module at runtime,
+          # but linuxdeploy's QML scanner can miss that transitive dependency.
+          if [ ! -d AppDir/usr/qml/Qt/labs/folderlistmodel ]; then
+            mkdir -p AppDir/usr/qml/Qt/labs
+            cp -a "$QT_ROOT/qml/Qt/labs/folderlistmodel" AppDir/usr/qml/Qt/labs/
+          fi
+          test -d AppDir/usr/qml/Qt/labs/folderlistmodel
+
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }}
 
       - name: Upload artifact

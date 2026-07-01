@@ -56,12 +56,12 @@ Rectangle {
             return ""
         }
         color: root.transparent ? root.transparentTextColor : root.textColor
-        font.pointSize: 9
-        font.family: interFont.name
+        font.pixelSize: 12
+        font.family: AppFontFamily
         font.weight: Font.DemiBold
     }
 
-    StorageTooltip {
+    AppTooltip {
         tipText: root.tipText
         textColor: root.tipTextColor
         backgroundStroke: root.tipBackgroundStroke
