@@ -6,6 +6,7 @@
 #include <QDesktopServices>
 #include <QLocale>
 #include <QRegularExpression>
+#include <QSettings>
 #include <QUrl>
 #include <plist/plist.h>
 #include <algorithm>
@@ -116,6 +117,10 @@ void DeviceInitWorker::doInit(const QString &udid, uint32_t deviceId)
 iDeviceWatcher::iDeviceWatcher(QObject *parent)
     : QObject{parent}
 {
+    m_backupFolder = QSettings(QStringLiteral("LiniTunes"), QStringLiteral("LiniTunes"))
+                         .value(QStringLiteral("backup_folder"))
+                         .toString();
+
     m_listener = new UsbmuxdListener();
     m_listener->moveToThread(&m_listenerThread);
     connect(&m_listenerThread, &QThread::started, m_listener, &UsbmuxdListener::run);
@@ -151,6 +156,20 @@ void iDeviceWatcher::start()
 {
     m_listenerThread.start();
     m_workerThread.start();
+}
+
+void iDeviceWatcher::setBackupFolder(const QString &folder)
+{
+    if (m_backupFolder == folder)
+        return;
+
+    m_backupFolder = folder;
+    QSettings settings(QStringLiteral("LiniTunes"), QStringLiteral("LiniTunes"));
+    if (folder.isEmpty())
+        settings.remove(QStringLiteral("backup_folder"));
+    else
+        settings.setValue(QStringLiteral("backup_folder"), folder);
+    emit backupFolderChanged();
 }
 
 void iDeviceWatcher::connectDeviceSignals(iDevice *dev)

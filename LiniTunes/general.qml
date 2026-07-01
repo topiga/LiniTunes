@@ -7,7 +7,7 @@ import "qml/components"
 Item {
     id: generalPage
 
-    property string backupPath: ""
+    property string backupPath: DeviceWatcher.backup_folder
     property bool cancellationRequested: false
     property int backupMode: DeviceWatcher.backup_encryption_status === "enabled" ? 1 : 0 // 0 = standard local backup, 1 = encrypted local backup
     property string backupPasswordForRun: ""
@@ -364,7 +364,7 @@ Item {
         id: backupFolderDialog
         title: qsTr("Choose backup folder")
         onAccepted: {
-            generalPage.backupPath = selectedFolder.toString().replace("file://", "")
+            DeviceWatcher.backup_folder = selectedFolder.toString().replace("file://", "")
             generalPage.resumePendingFolderAction()
         }
     }

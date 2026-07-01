@@ -76,6 +76,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString backup_encryption_status READ backupEncryptionStatus NOTIFY backupChanged)
     Q_PROPERTY(bool backup_encryption_busy READ backupEncryptionBusy NOTIFY backupChanged)
     Q_PROPERTY(QString backup_encryption_error READ backupEncryptionError NOTIFY backupChanged)
+    Q_PROPERTY(QString backup_folder READ backup_folder WRITE setBackupFolder NOTIFY backupFolderChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -100,6 +101,8 @@ public:
 
     void updateLists();
     QStringList udid_list() const { return m_udidList; }
+    QString backup_folder() const { return m_backupFolder; }
+    void setBackupFolder(const QString &folder);
 
     QString serial() const { return m_currentDevice ? m_currentDevice->serial() : QString(); }
     QString udid() const { return m_currentDevice ? m_currentDevice->udid() : QString(); }
@@ -131,6 +134,7 @@ signals:
     void currentDeviceChanged();
     void storageSyncChanged();
     void backupChanged();
+    void backupFolderChanged();
 
 private slots:
     void onDeviceConnected(const QString &udid, uint32_t deviceId);
@@ -144,6 +148,7 @@ private:
 
     iDevice *m_currentDevice = nullptr;
     QStringList m_udidList;
+    QString m_backupFolder;
 
     QThread m_listenerThread;
     UsbmuxdListener *m_listener = nullptr;
