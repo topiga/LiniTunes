@@ -364,7 +364,7 @@ Item {
         id: backupFolderDialog
         title: qsTr("Choose backup folder")
         onAccepted: {
-            DeviceWatcher.backup_folder = selectedFolder.toString().replace("file://", "")
+            DeviceWatcher.backup_folder = selectedFolder.toLocalFile()
             generalPage.resumePendingFolderAction()
         }
     }
