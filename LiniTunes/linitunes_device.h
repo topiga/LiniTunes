@@ -8,6 +8,7 @@
 #include "storage_sync_worker.h"
 #include "backup_info.h"
 #include "backup_worker.h"
+#include "software_update_manager.h"
 
 // Forward-declare
 namespace IdeviceFFI {
@@ -68,6 +69,9 @@ public:
     bool backupEncryptionBusy() const { return m_backupEncryptionBusy; }
     QString backupEncryptionError() const { return m_backupEncryptionError; }
 
+    void ensureSoftwareUpdateManager();
+    SoftwareUpdateManager *softwareUpdateManager() const { return m_softwareUpdate; }
+
     static QString format_bytes(uint64_t bytes, bool decimals=true);
     static QString lookup_marketing_name(const QString &identifier);
 
@@ -122,6 +126,8 @@ private:
     BackupInfo *m_backupInfo = nullptr;
     QThread m_backupThread;
     BackupWorker *m_backupWorker = nullptr;
+
+    SoftwareUpdateManager *m_softwareUpdate = nullptr;
 };
 
 #endif // LINTUNES_IDEVICE_H

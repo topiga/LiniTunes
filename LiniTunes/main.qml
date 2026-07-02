@@ -119,8 +119,34 @@ Window {
         return DeviceWatcher.backup_info && DeviceWatcher.backup_info.progress >= 0.1
     }
 
-    function syncButtonText() {
+    function operationProgress() {
         if (DeviceWatcher.backup_running)
+            return root.backupProgress()
+        if (DeviceWatcher.software_downloading)
+            return Math.min(100, Math.max(0, DeviceWatcher.software_download_progress))
+        return 0
+    }
+
+    function operationProgressStarted() {
+        if (DeviceWatcher.backup_running)
+            return root.backupProgressStarted()
+        return DeviceWatcher.software_downloading && DeviceWatcher.software_download_progress > 0
+    }
+
+    function operationProgressText() {
+        if (DeviceWatcher.backup_running)
+            return root.backupProgressStarted()
+                  ? root.backupProgress().toFixed(1) + "%"
+                  : qsTr("Preparing backup…")
+        if (DeviceWatcher.software_downloading)
+            return DeviceWatcher.software_download_progress > 0
+                  ? Math.floor(DeviceWatcher.software_download_progress) + "%"
+                  : qsTr("Preparing download…")
+        return ""
+    }
+
+    function syncButtonText() {
+        if (DeviceWatcher.backup_running || DeviceWatcher.software_downloading)
             return qsTr("Cancel")
         if (DeviceWatcher.storage_syncing)
             return qsTr("Syncing…")
@@ -444,7 +470,7 @@ Window {
                         Rectangle {
                             id: backup_progress_overlay
                             anchors.fill: parent
-                            visible: DeviceWatcher.backup_running
+                            visible: DeviceWatcher.backup_running || DeviceWatcher.software_downloading
                             z: 20
                             radius: 5
                             clip: true
@@ -456,16 +482,16 @@ Window {
 
                             Rectangle {
                                 id: backup_progress_fill
-                                visible: root.backupProgressStarted()
+                                visible: root.operationProgressStarted()
                                 anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                                width: parent.width * root.backupProgress() / 100
+                                width: parent.width * root.operationProgress() / 100
                                 color: root.colors.accent
                                 Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
                             }
 
                             Rectangle {
                                 id: backup_progress_loader
-                                visible: !root.backupProgressStarted()
+                                visible: (DeviceWatcher.backup_running || DeviceWatcher.software_downloading) && !root.operationProgressStarted()
                                 width: Math.max(48, parent.width * 0.18)
                                 height: parent.height
                                 radius: 5
@@ -490,9 +516,7 @@ Window {
 
                             Text {
                                 anchors.centerIn: parent
-                                text: root.backupProgressStarted()
-                                      ? root.backupProgress().toFixed(1) + "%"
-                                      : qsTr("Preparing backup…")
+                                text: root.operationProgressText()
                                 color: root.colors.textPrimary
                                 font.weight: Font.DemiBold
                                 font.family: AppFontFamily
@@ -528,7 +552,7 @@ Window {
                         orientation: Gradient.Vertical
                     }
 
-                    opacity: (DeviceWatcher.device_connected || DeviceWatcher.backup_running) ? 1.0 : 0.5
+                    opacity: (DeviceWatcher.device_connected || DeviceWatcher.backup_running || DeviceWatcher.software_downloading) ? 1.0 : 0.5
                     Rectangle {
                         id: strorage_sync_button
                         y: 0
@@ -547,12 +571,12 @@ Window {
                         gradient: Gradient {
                             GradientStop {
                                 position: 1
-                                color: DeviceWatcher.backup_running ? root.colors.red : root.colors.cardBackgroundTop
+                                color: (DeviceWatcher.backup_running || DeviceWatcher.software_downloading) ? root.colors.red : root.colors.cardBackgroundTop
                             }
 
                             GradientStop {
                                 position: 0
-                                color: DeviceWatcher.backup_running ? root.colors.red : root.colors.cardBackgroundBottom
+                                color: (DeviceWatcher.backup_running || DeviceWatcher.software_downloading) ? root.colors.red : root.colors.cardBackgroundBottom
                             }
                             orientation: Gradient.Vertical
                         }
@@ -570,12 +594,14 @@ Window {
                         }
                         MouseArea {
                             anchors.fill: parent
-                            enabled: DeviceWatcher.device_connected || DeviceWatcher.backup_running
+                            enabled: DeviceWatcher.device_connected || DeviceWatcher.backup_running || DeviceWatcher.software_downloading
                             onPressed: parent.opacity=0.7
                             onReleased: {
                                 parent.opacity=1
                                 if (DeviceWatcher.backup_running)
                                     DeviceWatcher.stopBackup()
+                                else if (DeviceWatcher.software_downloading)
+                                    DeviceWatcher.cancelSoftwareDownload()
                                 else if (DeviceWatcher.device_connected && !DeviceWatcher.storage_syncing)
                                     DeviceWatcher.startStorageSync()
                             }
