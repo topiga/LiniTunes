@@ -1040,6 +1040,8 @@ Item {
     function softwareStatusText() {
         if (DeviceWatcher.software_downloading)
             return DeviceWatcher.software_status
+        if (DeviceWatcher.software_error !== "")
+            return DeviceWatcher.software_error
         if (DeviceWatcher.software_downloaded_path !== "") {
             var downloadedUpdate = DeviceWatcher.software_update_candidates.length > 0 ? DeviceWatcher.software_update_candidates[0] : ({})
             return qsTr("A newer %1 version (%2) is ready to be installed on your device. Click on Update to continue.")
@@ -1052,8 +1054,6 @@ Item {
                    .arg(generalPage.platformLabel() || qsTr("software"))
                    .arg(update.version || qsTr("Unknown"))
         }
-        if (DeviceWatcher.software_error !== "")
-            return DeviceWatcher.software_error
         if (DeviceWatcher.software_busy)
             return qsTr("Checking Apple for available software…")
         if (DeviceWatcher.software_status !== "" && DeviceWatcher.software_status !== "idle")
