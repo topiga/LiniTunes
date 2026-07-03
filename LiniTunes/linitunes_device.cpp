@@ -141,10 +141,21 @@ iDevice::iDevice(QObject *parent)
 
 iDevice::~iDevice()
 {
+    if (m_softwareUpdate) {
+        m_softwareUpdate->reset();
+        delete m_softwareUpdate;
+        m_softwareUpdate = nullptr;
+    }
     m_storageSyncThread.quit();
     m_storageSyncThread.wait();
     m_backupThread.quit();
     m_backupThread.wait();
+}
+
+void iDevice::ensureSoftwareUpdateManager()
+{
+    if (!m_softwareUpdate)
+        m_softwareUpdate = new SoftwareUpdateManager();
 }
 
 bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr)

@@ -18,6 +18,11 @@ extern "C" {
 #include <idevice.h>
 }
 
+static SoftwareUpdateManager *softwareManager(iDevice *device)
+{
+    return device ? device->softwareUpdateManager() : nullptr;
+}
+
 static void retryDelay(std::atomic<bool> &running, int slices = 20) {
     for (int i = 0; i < slices && running; ++i)
         QThread::msleep(100);
@@ -174,10 +179,13 @@ void iDeviceWatcher::setBackupFolder(const QString &folder)
 
 void iDeviceWatcher::connectDeviceSignals(iDevice *dev)
 {
+    dev->ensureSoftwareUpdateManager();
     connect(dev, &iDevice::storageSyncChanged,
             this, &iDeviceWatcher::storageSyncChanged);
     connect(dev, &iDevice::backupChanged,
             this, &iDeviceWatcher::backupChanged);
+    connect(dev->softwareUpdateManager(), &SoftwareUpdateManager::changed,
+            this, &iDeviceWatcher::softwareChanged);
 }
 
 void iDeviceWatcher::onDeviceConnected(const QString &udid, uint32_t deviceId)
@@ -203,6 +211,10 @@ void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
            qPrintable(dev->marketing_name()));
 
     connectDeviceSignals(dev);
+    dev->softwareUpdateManager()->check(dev->product_type(),
+                                        dev->product_version(),
+                                        dev->build_version(),
+                                        true);
     Devices.append(dev);
     updateLists();
 }
@@ -240,6 +252,7 @@ void iDeviceWatcher::updateLists()
         emit currentDeviceChanged();
         emit storageSyncChanged();
         emit backupChanged();
+        emit softwareChanged();
     } else if (Devices.size() == 1) {
         switchCurrentDevice(Devices.at(0)->udid());
     } else if (m_currentDevice == nullptr) {
@@ -256,6 +269,7 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
         emit currentDeviceChanged();
         emit storageSyncChanged();
         emit backupChanged();
+        emit softwareChanged();
         return;
     }
 
@@ -265,6 +279,8 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
             emit currentDeviceChanged();
             emit storageSyncChanged();
             emit backupChanged();
+            emit softwareChanged();
+            checkSoftwareUpdates(true);
             return;
         }
     }
@@ -514,4 +530,81 @@ bool iDeviceWatcher::openBackup(const QString &path)
         return false;
 
     return QDesktopServices::openUrl(QUrl::fromLocalFile(info.absoluteFilePath()));
+}
+void iDeviceWatcher::checkSoftwareUpdates(bool silent)
+{
+    if (auto *manager = softwareManager(m_currentDevice)) {
+        if (silent && (manager->busy() || manager->downloading() || manager->status() != QStringLiteral("idle") || !manager->updateCandidates().isEmpty()))
+            return;
+        manager->check(m_currentDevice->product_type(),
+                       m_currentDevice->product_version(),
+                       m_currentDevice->build_version(),
+                       silent);
+    }
+}
+
+void iDeviceWatcher::downloadSoftwareUpdate(int index)
+{
+    if (auto *manager = softwareManager(m_currentDevice))
+        manager->downloadUpdate(index);
+}
+
+void iDeviceWatcher::downloadSoftwareRestore(int index)
+{
+    if (auto *manager = softwareManager(m_currentDevice))
+        manager->downloadRestore(index);
+}
+
+void iDeviceWatcher::cancelSoftwareDownload()
+{
+    if (auto *manager = softwareManager(m_currentDevice))
+        manager->cancelDownload();
+}
+
+bool iDeviceWatcher::softwareBusy() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->busy() : false;
+}
+
+bool iDeviceWatcher::softwareDownloading() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->downloading() : false;
+}
+
+double iDeviceWatcher::softwareDownloadProgress() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->downloadProgress() : 0;
+}
+
+QString iDeviceWatcher::softwareStatus() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->status() : QStringLiteral("idle");
+}
+
+QString iDeviceWatcher::softwareError() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->error() : QString();
+}
+
+QVariantList iDeviceWatcher::softwareUpdateCandidates() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->updateCandidates() : QVariantList();
+}
+
+QVariantList iDeviceWatcher::softwareRestoreCandidates() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->restoreCandidates() : QVariantList();
+}
+
+QString iDeviceWatcher::softwareDownloadedPath() const
+{
+    auto *manager = softwareManager(m_currentDevice);
+    return manager ? manager->downloadedPath() : QString();
 }

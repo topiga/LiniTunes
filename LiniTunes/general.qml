@@ -155,9 +155,9 @@ Item {
 
                             Text {
                                 text: DeviceWatcher.device_connected
-                                      ? qsTr("Your %1 is up to date. LiniTunes will automatically check for updates again on %2.").arg(generalPage.deviceTypeLabel()).arg(generalPage.nextUpdateCheckDate())
+                                      ? generalPage.softwareStatusText()
                                       : qsTr("Connect a device to check for software updates.")
-                                color: root.colors.textSecondary
+                                color: DeviceWatcher.software_error !== "" ? root.colors.red : root.colors.textSecondary
                                 font.pixelSize: 12
                                 font.family: AppFontFamily
                                 wrapMode: Text.WordWrap
@@ -172,6 +172,7 @@ Item {
                                 font.pixelSize: 12
                                 font.family: AppFontFamily
                             }
+
                         }
 
                         Column {
@@ -182,8 +183,11 @@ Item {
                             AppButton {
     colors: root.colors
                                 width: parent.width
-                                label: qsTr("Check for Updates")
-                                enabled: false
+                                label: generalPage.softwareButtonLabel()
+                                enabled: DeviceWatcher.device_connected && (!DeviceWatcher.software_busy || DeviceWatcher.software_downloading)
+                                primary: DeviceWatcher.software_update_candidates.length > 0 && !DeviceWatcher.software_downloading
+                                destructive: DeviceWatcher.software_downloading
+                                onClicked: generalPage.softwareButtonClicked()
                             }
                             AppButton {
     colors: root.colors
@@ -1031,6 +1035,54 @@ Item {
         var version = DeviceWatcher.product_version || qsTr("Unknown")
         var label = generalPage.platformLabel()
         return label ? label + " " + version : version
+    }
+
+    function softwareStatusText() {
+        if (DeviceWatcher.software_downloading)
+            return DeviceWatcher.software_status
+        if (DeviceWatcher.software_error !== "")
+            return DeviceWatcher.software_error
+        if (DeviceWatcher.software_downloaded_path !== "") {
+            var downloadedUpdate = DeviceWatcher.software_update_candidates.length > 0 ? DeviceWatcher.software_update_candidates[0] : ({})
+            return qsTr("A newer %1 version (%2) is ready to be installed on your device. Click on Update to continue.")
+                   .arg(generalPage.platformLabel() || qsTr("software"))
+                   .arg(downloadedUpdate.version || qsTr("Unknown"))
+        }
+        if (DeviceWatcher.software_update_candidates.length > 0) {
+            var update = DeviceWatcher.software_update_candidates[0]
+            return qsTr("A newer %1 version (%2) is available for your device. Click on Download Update to get started.")
+                   .arg(generalPage.platformLabel() || qsTr("software"))
+                   .arg(update.version || qsTr("Unknown"))
+        }
+        if (DeviceWatcher.software_busy)
+            return qsTr("Checking Apple for available software…")
+        if (DeviceWatcher.software_status !== "" && DeviceWatcher.software_status !== "idle")
+            return qsTr("Your device is up to date. LiniTunes will automatically check for available updates.")
+        return qsTr("LiniTunes will automatically check for available updates.")
+    }
+
+    function softwareButtonLabel() {
+        if (DeviceWatcher.software_downloading)
+            return qsTr("Cancel")
+        if (DeviceWatcher.software_busy)
+            return qsTr("Checking…")
+        if (DeviceWatcher.software_downloaded_path !== "")
+            return qsTr("Update")
+        if (DeviceWatcher.software_update_candidates.length > 0)
+            return qsTr("Download Update")
+        return qsTr("Check for Updates")
+    }
+
+    function softwareButtonClicked() {
+        if (DeviceWatcher.software_downloading) {
+            DeviceWatcher.cancelSoftwareDownload()
+        } else if (DeviceWatcher.software_downloaded_path !== "") {
+            DeviceWatcher.downloadSoftwareUpdate(0)
+        } else if (DeviceWatcher.software_update_candidates.length > 0) {
+            DeviceWatcher.downloadSoftwareUpdate(0)
+        } else {
+            DeviceWatcher.checkSoftwareUpdates()
+        }
     }
 
     function softwareVersionBadgeText() {

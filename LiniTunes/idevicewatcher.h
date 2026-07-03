@@ -77,6 +77,14 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(bool backup_encryption_busy READ backupEncryptionBusy NOTIFY backupChanged)
     Q_PROPERTY(QString backup_encryption_error READ backupEncryptionError NOTIFY backupChanged)
     Q_PROPERTY(QString backup_folder READ backup_folder WRITE setBackupFolder NOTIFY backupFolderChanged)
+    Q_PROPERTY(bool software_busy READ softwareBusy NOTIFY softwareChanged)
+    Q_PROPERTY(bool software_downloading READ softwareDownloading NOTIFY softwareChanged)
+    Q_PROPERTY(double software_download_progress READ softwareDownloadProgress NOTIFY softwareChanged)
+    Q_PROPERTY(QString software_status READ softwareStatus NOTIFY softwareChanged)
+    Q_PROPERTY(QString software_error READ softwareError NOTIFY softwareChanged)
+    Q_PROPERTY(QVariantList software_update_candidates READ softwareUpdateCandidates NOTIFY softwareChanged)
+    Q_PROPERTY(QVariantList software_restore_candidates READ softwareRestoreCandidates NOTIFY softwareChanged)
+    Q_PROPERTY(QString software_downloaded_path READ softwareDownloadedPath NOTIFY softwareChanged)
 
 public:
     explicit iDeviceWatcher(QObject *parent = nullptr);
@@ -98,6 +106,10 @@ public:
     Q_INVOKABLE QVariantList listBackups(const QString &path);
     Q_INVOKABLE bool deleteBackup(const QString &backupRoot, const QString &path);
     Q_INVOKABLE bool openBackup(const QString &path);
+    Q_INVOKABLE void checkSoftwareUpdates(bool silent = false);
+    Q_INVOKABLE void downloadSoftwareUpdate(int index = 0);
+    Q_INVOKABLE void downloadSoftwareRestore(int index = 0);
+    Q_INVOKABLE void cancelSoftwareDownload();
 
     void updateLists();
     QStringList udid_list() const { return m_udidList; }
@@ -128,6 +140,14 @@ public:
     QString backupEncryptionStatus() const { return m_currentDevice ? m_currentDevice->backupEncryptionStatus() : QStringLiteral("unknown"); }
     bool backupEncryptionBusy() const { return m_currentDevice ? m_currentDevice->backupEncryptionBusy() : false; }
     QString backupEncryptionError() const { return m_currentDevice ? m_currentDevice->backupEncryptionError() : QString(); }
+    bool softwareBusy() const;
+    bool softwareDownloading() const;
+    double softwareDownloadProgress() const;
+    QString softwareStatus() const;
+    QString softwareError() const;
+    QVariantList softwareUpdateCandidates() const;
+    QVariantList softwareRestoreCandidates() const;
+    QString softwareDownloadedPath() const;
 
 signals:
     void udidListChanged();
@@ -135,6 +155,7 @@ signals:
     void storageSyncChanged();
     void backupChanged();
     void backupFolderChanged();
+    void softwareChanged();
 
 private slots:
     void onDeviceConnected(const QString &udid, uint32_t deviceId);

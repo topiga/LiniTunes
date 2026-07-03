@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Qt6 COMPONENTS Core Quick Svg REQUIRED)
+find_package(Qt6 COMPONENTS Core Quick Svg Network REQUIRED)
 find_package(Threads REQUIRED)
 
 # ---- idevice++ integration ------------------------------------------------
@@ -83,17 +83,24 @@ target_link_libraries(plist_ffi_cpp PUBLIC
 set(HEADER_FILES
     linitunes_device.h
     idevicewatcher.h
+    storage_info.h
+    storage_sync_worker.h
+    backup_info.h
+    backup_validator.h
+    backup_worker.h
+    software_update_manager.h
+    plist_helpers.h
 )
 
 set(SOURCE_FILES
     linitunes_device.cpp
     idevicewatcher.cpp
-    storage_info.h storage_info.cpp
-    storage_sync_worker.h storage_sync_worker.cpp
-    backup_info.h backup_info.cpp
-    backup_validator.h backup_validator.cpp
-    backup_worker.h backup_worker.cpp
-    plist_helpers.h
+    storage_info.cpp
+    storage_sync_worker.cpp
+    backup_info.cpp
+    backup_validator.cpp
+    backup_worker.cpp
+    software_update_manager.cpp
     main.cpp
 )
 
@@ -109,6 +116,7 @@ target_link_libraries(LiniTunes PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::Svg
+    Qt6::Network
     idevice++
     plist_ffi_cpp
 )
