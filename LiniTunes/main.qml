@@ -109,6 +109,18 @@ Window {
         return bytes.toFixed(0) + " B"
     }
 
+    function batteryLowThreshold(deviceClass) {
+        return deviceClass === "iPad" ? 10 : 20
+    }
+
+    function batteryIndicatorColor(battery, deviceClass) {
+        return battery <= root.batteryLowThreshold(deviceClass) ? root.colors.red : root.colors.green
+    }
+
+    function batteryIndicatorActive(battery, deviceClass) {
+        return battery >= 100 || battery <= root.batteryLowThreshold(deviceClass)
+    }
+
     function backupProgress() {
         if (!DeviceWatcher.backup_info)
             return 0
@@ -1050,8 +1062,10 @@ Window {
                                         id: deviceBatteryRect2
                                         width: 1
                                         height: 5
-                                        opacity: modelData.battery_string === "100" ? 1 : 0.5;
-                                        color: modelData.battery_string === "100" ? "#6bcc43" : root.colors.textPrimary;
+                                        opacity: root.batteryIndicatorActive(modelData.battery, modelData.device_class) ? 1 : 0.5
+                                        color: root.batteryIndicatorActive(modelData.battery, modelData.device_class)
+                                               ? root.batteryIndicatorColor(modelData.battery, modelData.device_class)
+                                               : root.colors.textPrimary
                                         anchors {
                                             right: parent.right
                                             rightMargin: 0
@@ -1076,7 +1090,7 @@ Window {
                                             width: deviceBatteryRect1.width
                                             height: parent.height
                                             radius: deviceBatteryRect1.radius
-                                            color: "#6bcc43"
+                                            color: root.batteryIndicatorColor(modelData.battery, modelData.device_class)
                                         }
                                     }
 
@@ -1443,7 +1457,7 @@ Window {
                                     width: device_battery_rect1.width
                                     height: parent.height
                                     radius: device_battery_rect1.radius
-                                    color: "#6bcc43"
+                                    color: root.batteryIndicatorColor(DeviceWatcher.battery, DeviceWatcher.device_class)
                                 }
                             }
 
@@ -1451,8 +1465,10 @@ Window {
                                 id: device_battery_rect2
                                 width: 1
                                 height: 5
-                                opacity: 0.5
-                                color: root.colors.textPrimary
+                                opacity: root.batteryIndicatorActive(DeviceWatcher.battery, DeviceWatcher.device_class) ? 1 : 0.5
+                                color: root.batteryIndicatorActive(DeviceWatcher.battery, DeviceWatcher.device_class)
+                                       ? root.batteryIndicatorColor(DeviceWatcher.battery, DeviceWatcher.device_class)
+                                       : root.colors.textPrimary
                                 anchors {
                                     right: parent.right
                                     rightMargin: 0
@@ -1472,44 +1488,6 @@ Window {
                                 font.weight: Font.Bold
                                 font.pixelSize: 11
                                 anchors.fill: device_battery_rect1
-                            }
-                            Connections {
-                                target: DeviceWatcher
-                                function onCurrentDeviceChanged() {
-                                    if (DeviceWatcher.device_connected) {
-                                        device_battery_text.text = DeviceWatcher.battery_string
-                                        device_battery_fill.width = (DeviceWatcher.battery)*22/100
-                                        if (DeviceWatcher.battery_string === "100") {
-                                            device_battery_rect2.color = "#6bcc43"
-                                            device_battery_rect2.opacity = 1
-                                        } else {
-                                            device_battery_rect2.color = root.colors.textPrimary
-                                            device_battery_rect2.opacity = 0.5
-                                        }
-                                        content_battery.visible = true
-                                    } else {
-                                        content_battery.visible = false
-                                    }
-                                }
-                            }
-                            Connections {
-                                target: ThemeManager
-                                function onThemeChanged() {
-                                    if (DeviceWatcher.device_connected) {
-                                        device_battery_text.text = DeviceWatcher.battery_string
-                                        device_battery_fill.width = (DeviceWatcher.battery)*22/100
-                                        if (DeviceWatcher.battery_string === "100") {
-                                            device_battery_rect2.color = "#6bcc43"
-                                            device_battery_rect2.opacity = 1
-                                        } else {
-                                            device_battery_rect2.color = root.colors.textPrimary
-                                            device_battery_rect2.opacity = 0.5
-                                        }
-                                        content_battery.visible = true
-                                    } else {
-                                        content_battery.visible = false
-                                    }
-                                }
                             }
                         }
                         Rectangle {
