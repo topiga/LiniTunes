@@ -198,10 +198,6 @@ void SoftwareUpdateManager::check(const QString &productType, const QString &cur
     m_silentCheck = silent;
     m_currentVersion = currentVersion;
     m_currentBuild = currentBuild;
-    m_updateCandidates.clear();
-    m_restoreCandidates.clear();
-    m_metadataQueue.clear();
-    m_downloadedPath.clear();
     if (silent)
         emit changed();
     else
@@ -210,8 +206,13 @@ void SoftwareUpdateManager::check(const QString &productType, const QString &cur
     auto *reply = m_net.get(requestFor(QString::fromLatin1(kCatalogUrl)));
     connect(reply, &QNetworkReply::finished, this, [this, reply, productType, generation]() {
         reply->deleteLater();
-        if (generation != m_generation)
+        if (generation != m_generation) {
+            m_busy = false;
+            m_silentCheck = false;
+            m_metadataQueue.clear();
+            emit changed();
             return;
+        }
         if (reply->error() != QNetworkReply::NoError) {
             m_busy = false;
             if (m_silentCheck) {
@@ -294,21 +295,28 @@ void SoftwareUpdateManager::finishCheck(QVector<IpswEntry> entries)
 {
     std::sort(entries.begin(), entries.end(), [](const IpswEntry &a, const IpswEntry &b) {
         const int versionCompare = compareVersions(a.version, b.version);
-        return versionCompare == 0 ? a.build > b.build : versionCompare > 0;
+        if (versionCompare != 0)
+            return versionCompare > 0;
+        const int buildCompare = compareVersions(a.build, b.build);
+        return buildCompare == 0 ? a.build > b.build : buildCompare > 0;
     });
 
+    QVector<IpswEntry> restoreCandidates;
+    QVector<IpswEntry> updateCandidates;
     QSet<QString> seen;
     for (const IpswEntry &entry : entries) {
         if (entry.url.isEmpty() || seen.contains(entry.key()) || !isSafeAppleUrl(entry.url))
             continue;
         seen.insert(entry.key());
-        m_restoreCandidates.append(entry);
+        restoreCandidates.append(entry);
         if (compareVersions(entry.version, m_currentVersion) > 0 ||
-            (entry.version == m_currentVersion && !m_currentBuild.isEmpty() && entry.build > m_currentBuild)) {
-            m_updateCandidates.append(entry);
+            (entry.version == m_currentVersion && !m_currentBuild.isEmpty() && compareVersions(entry.build, m_currentBuild) > 0)) {
+            updateCandidates.append(entry);
         }
     }
 
+    m_restoreCandidates = restoreCandidates;
+    m_updateCandidates = updateCandidates;
     m_metadataQueue = m_restoreCandidates;
     fetchNextMetadata();
 }
@@ -337,8 +345,13 @@ void SoftwareUpdateManager::fetchNextMetadata()
     auto *reply = m_net.head(requestFor(entry.url));
     connect(reply, &QNetworkReply::finished, this, [this, reply, entry, generation]() mutable {
         reply->deleteLater();
-        if (generation != m_generation)
+        if (generation != m_generation) {
+            m_busy = false;
+            m_silentCheck = false;
+            m_metadataQueue.clear();
+            emit changed();
             return;
+        }
         IpswEntry updated = entry;
         if (reply->error() == QNetworkReply::NoError)
             applyMetadata(reply, &updated);
@@ -389,8 +402,13 @@ void SoftwareUpdateManager::startRangeMetadata(const IpswEntry &entry)
     auto *reply = m_net.get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply, entry, generation]() mutable {
         reply->deleteLater();
-        if (generation != m_generation)
+        if (generation != m_generation) {
+            m_busy = false;
+            m_silentCheck = false;
+            m_metadataQueue.clear();
+            emit changed();
             return;
+        }
         IpswEntry updated = entry;
         if (reply->error() == QNetworkReply::NoError) {
             applyMetadata(reply, &updated);
@@ -419,6 +437,8 @@ void SoftwareUpdateManager::startDownload(const IpswEntry &entry, bool retry)
 
     const QString existing = verifiedPathFor(entry);
     if (!existing.isEmpty()) {
+        m_downloading = false;
+        m_downloadProgress = 100;
         m_downloadedPath = existing;
         setStatus(QStringLiteral("IPSW already downloaded and verified."));
         return;
@@ -440,6 +460,7 @@ void SoftwareUpdateManager::startDownload(const IpswEntry &entry, bool retry)
     if (entry.size > 0) {
         const QStorageInfo storage(QFileInfo(part).absolutePath());
         if (storage.isValid() && storage.bytesAvailable() < entry.size) {
+            m_downloading = false;
             setStatus(QStringLiteral("Download failed"),
                       QStringLiteral("Not enough free disk space to download this IPSW. Free up at least %1 or choose a drive with more space.")
                           .arg(iDevice::format_bytes(static_cast<uint64_t>(entry.size))));
@@ -449,6 +470,7 @@ void SoftwareUpdateManager::startDownload(const IpswEntry &entry, bool retry)
 
     m_downloadFile.setFileName(part);
     if (!m_downloadFile.open(QIODevice::WriteOnly)) {
+        m_downloading = false;
         setStatus(QStringLiteral("Download failed"), QStringLiteral("Could not create the temporary IPSW file."));
         return;
     }
@@ -559,10 +581,14 @@ void SoftwareUpdateManager::retryDownload(const QString &message)
     }
 
     ++m_downloadRetries;
-    m_downloading = false;
     m_downloadProgress = 0;
+    const int generation = m_generation;
     const IpswEntry entry = m_downloadEntry;
-    QTimer::singleShot(2000, this, [this, entry]() { startDownload(entry, true); });
+    QTimer::singleShot(2000, this, [this, entry, generation]() {
+        if (generation != m_generation || m_cancelled || !m_downloading || m_downloadEntry.key() != entry.key())
+            return;
+        startDownload(entry, true);
+    });
     setStatus(QStringLiteral("Connection interrupted. Retrying…"));
 }
 
