@@ -317,7 +317,7 @@ void SoftwareUpdateManager::finishCheck(QVector<IpswEntry> entries)
 
     m_restoreCandidates = restoreCandidates;
     m_updateCandidates = updateCandidates;
-    m_metadataQueue = m_restoreCandidates;
+    m_metadataQueue = m_updateCandidates;
     fetchNextMetadata();
 }
 
