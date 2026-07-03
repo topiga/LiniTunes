@@ -57,6 +57,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString serial READ serial NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString imei READ imei NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString product_type READ product_type NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString device_class READ device_class NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString product_version READ product_version NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString build_version READ build_version NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString device_name READ device_name NOTIFY currentDeviceChanged)
@@ -121,6 +122,7 @@ public:
     QString ecid() const { return m_currentDevice ? m_currentDevice->ecid() : QString(); }
     QString imei() const { return m_currentDevice ? m_currentDevice->imei() : QString(); }
     QString product_type() const { return m_currentDevice ? m_currentDevice->product_type() : QString(); }
+    QString device_class() const { return m_currentDevice ? m_currentDevice->device_class() : QString(); }
     QString product_version() const { return m_currentDevice ? m_currentDevice->product_version() : QString(); }
     QString build_version() const { return m_currentDevice ? m_currentDevice->build_version() : QString(); }
     QString device_name() const { return m_currentDevice ? m_currentDevice->device_name() : QString(); }

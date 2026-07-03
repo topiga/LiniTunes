@@ -1100,28 +1100,28 @@ Item {
     }
 
     function platformLabel() {
-        var type = DeviceWatcher.product_type || ""
+        var deviceClass = DeviceWatcher.device_class || ""
         var major = parseInt(generalPage.productMajorVersion())
-        if (type.indexOf("iPad") === 0)
+        if (deviceClass === "iPad")
             return major >= 17 ? "iPadOS" : "iOS"
-        if (type.indexOf("AppleTV") === 0)
+        if (deviceClass === "AppleTV")
             return "tvOS"
-        if (type.indexOf("Mac") === 0)
+        if (deviceClass === "Mac")
             return "macOS"
-        if (type.indexOf("iPhone") === 0 || type.indexOf("iPod") === 0)
+        if (deviceClass === "iPhone" || deviceClass === "iPod")
             return "iOS"
         return ""
     }
 
     function deviceTypeLabel() {
-        var type = DeviceWatcher.product_type || ""
-        if (type.indexOf("iPad") === 0)
+        var deviceClass = DeviceWatcher.device_class || ""
+        if (deviceClass === "iPad")
             return "iPad"
-        if (type.indexOf("iPod") === 0)
+        if (deviceClass === "iPod")
             return "iPod"
-        if (type.indexOf("AppleTV") === 0)
+        if (deviceClass === "AppleTV")
             return "Apple TV"
-        if (type.indexOf("Mac") === 0)
+        if (deviceClass === "Mac")
             return "Mac"
         return "iPhone"
     }

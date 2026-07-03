@@ -296,6 +296,7 @@ QVariantList iDeviceWatcher::getModel()
         element["device_name"] = "No device";
         element["udid"] = "";
         element["product_type"] = "";
+        element["device_class"] = "";
         element["marketing_name"] = "";
         element["battery_string"] = "0";
         element["battery"] = 0;
@@ -307,6 +308,7 @@ QVariantList iDeviceWatcher::getModel()
             element["device_name"] = d->device_name();
             element["udid"] = d->udid();
             element["product_type"] = d->product_type();
+            element["device_class"] = d->device_class();
             element["marketing_name"] = d->marketing_name();
             element["battery_string"] = QString::number(d->battery());
             element["battery"] = d->battery();
