@@ -1,6 +1,7 @@
 #include "usbmuxd_helpers.h"
 
 #include <QProcessEnvironment>
+#include <QtGlobal>
 #include <cstring>
 #include <utility>
 
@@ -84,10 +85,14 @@ QVector<MuxSource> candidateMuxSources()
 
     const QString netmuxdOverride = QProcessEnvironment::systemEnvironment()
         .value(QStringLiteral("LINITUNES_NETMUXD_ADDRESS"));
-    if (!netmuxdOverride.isEmpty())
+    if (!netmuxdOverride.isEmpty()) {
         appendUnique(&sources, netmuxdOverride, true);
-
-    appendUnique(&sources, QString::fromLatin1(kNetmuxdAddress), true);
+    }
+#ifndef Q_OS_MACOS
+    else {
+        appendUnique(&sources, QString::fromLatin1(kNetmuxdAddress), true);
+    }
+#endif
     return sources;
 }
 
