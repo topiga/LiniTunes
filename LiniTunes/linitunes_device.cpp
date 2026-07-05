@@ -1,12 +1,12 @@
 #include "linitunes_device.h"
 #include "plist_helpers.h"
+#include "usbmuxd_helpers.h"
 #include <QDebug>
 #include <QFile>
 #include <QCoreApplication>
 #include <plist/plist.h>
 #include <idevice++/provider.hpp>
 #include <idevice++/lockdown.hpp>
-#include <idevice++/usbmuxd.hpp>
 #include <cstdlib>
 
 using plist_helpers::stringVal;
@@ -16,6 +16,17 @@ using plist_helpers::boolVal;
 static QString existing_resource_path(const QString &path)
 {
     return QFile::exists(QStringLiteral(":") + path) ? path : QString();
+}
+
+static bool enableWifiConnections(IdeviceFFI::Lockdown &lockdown)
+{
+    plist_t enabled = plist_new_bool(1);
+    IdeviceFFI::FfiError error(::lockdownd_set_value(lockdown.raw(),
+                                                     "EnableWifiConnections",
+                                                     enabled,
+                                                     "com.apple.mobile.wireless_lockdown"));
+    plist_free(enabled);
+    return !error;
 }
 
 // ---- Product name lookup table --------------------------------------------
@@ -158,10 +169,18 @@ void iDevice::ensureSoftwareUpdateManager()
         m_softwareUpdate = new SoftwareUpdateManager();
 }
 
-bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr)
+QString iDevice::muxKey() const
+{
+    return usbmuxd_helpers::muxKey(m_muxAddress, m_deviceId);
+}
+
+bool iDevice::init(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                   bool networkConnection, IdeviceFFI::UsbmuxdAddr &&addr)
 {
     m_udid = udid;
     m_deviceId = deviceId;
+    m_muxAddress = muxAddress;
+    m_networkConnection = networkConnection;
 
     auto prov_result = IdeviceFFI::Provider::usbmuxd_new(
         std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes");
@@ -188,6 +207,9 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
         }
     }
 
+    if (!m_networkConnection && !enableWifiConnections(lockdown))
+        qDebug("WARNING: Failed to enable Wi-Fi sync for %s", qPrintable(udid));
+
     // Get all top-level values
     auto all_values_result = lockdown.get_value(nullptr, nullptr);
     if (all_values_result.is_err()) {
@@ -207,10 +229,7 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     m_ecid              = uintStr(all_dict, "UniqueChipID");
     m_imei              = stringVal(all_dict, "InternationalMobileEquipmentIdentity");
 
-    // Lookup marketing name
     m_marketingName = lookup_marketing_name(m_productType);
-
-    // Free the top-level dictionary
     plist_free(all_dict);
 
     // Backup encryption state
@@ -264,7 +283,6 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAd
     m_storageLeftBytes = availBytes;
     m_storageLeft = format_bytes(m_storageLeftBytes);
 
-    // Create tier-1 storage info
     if (!m_storageInfo)
         m_storageInfo = new StorageInfo(this);
     m_storageInfo->setImmediate(totalBytes, availBytes);
@@ -368,7 +386,7 @@ void iDevice::startStorageSync()
         m_storageSyncThread.start();
 
     QMetaObject::invokeMethod(m_storageSyncWorker,
-        [this]() { m_storageSyncWorker->runSync(m_udid, m_deviceId); },
+        [this]() { m_storageSyncWorker->runSync(m_udid, m_deviceId, m_muxAddress); },
         Qt::QueuedConnection);
 }
 
@@ -405,7 +423,7 @@ void iDevice::startBackup(const QString &path, bool enableEncryption, const QStr
 
     QMetaObject::invokeMethod(m_backupWorker,
         [this, path, enableEncryption, password]() {
-            m_backupWorker->runBackup(m_udid, m_deviceId, path, enableEncryption, password);
+            m_backupWorker->runBackup(m_udid, m_deviceId, m_muxAddress, path, enableEncryption, password);
         },
         Qt::QueuedConnection);
 }
@@ -453,7 +471,7 @@ void iDevice::disableBackupEncryption(const QString &path, const QString &passwo
 
     QMetaObject::invokeMethod(m_backupWorker,
         [this, path, password]() {
-            m_backupWorker->disableEncryption(m_udid, m_deviceId, path, password);
+            m_backupWorker->disableEncryption(m_udid, m_deviceId, m_muxAddress, path, password);
         },
         Qt::QueuedConnection);
 }
@@ -470,7 +488,7 @@ void iDevice::changeBackupPassword(const QString &path, const QString &oldPasswo
 
     QMetaObject::invokeMethod(m_backupWorker,
         [this, path, oldPassword, newPassword]() {
-            m_backupWorker->changeEncryptionPassword(m_udid, m_deviceId, path, oldPassword, newPassword);
+            m_backupWorker->changeEncryptionPassword(m_udid, m_deviceId, m_muxAddress, path, oldPassword, newPassword);
         },
         Qt::QueuedConnection);
 }

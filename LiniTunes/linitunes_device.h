@@ -29,7 +29,8 @@ public:
     explicit iDevice(QObject *parent = nullptr);
     ~iDevice() override;
 
-    bool init(const QString &udid, uint32_t deviceId, IdeviceFFI::UsbmuxdAddr &&addr);
+    bool init(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+              bool networkConnection, IdeviceFFI::UsbmuxdAddr &&addr);
 
     // Device info
     QString serial() const { return m_serial; }
@@ -49,6 +50,8 @@ public:
     int battery() const { return m_batteryCapacity; }
     bool device_connected() const { return m_connected; }
     uint32_t deviceId() const { return m_deviceId; }
+    QString muxKey() const;
+    bool networkConnection() const { return m_networkConnection; }
 
     // Storage
     StorageInfo *storageInfo() const { return m_storageInfo; }
@@ -107,6 +110,8 @@ private:
     QString m_imei;
     QString m_marketingName;
     uint32_t m_deviceId = 0;
+    QString m_muxAddress;
+    bool m_networkConnection = false;
     uint64_t m_storageCapacityBytes = 0;
     uint64_t m_storageLeftBytes = 0;
     QString m_storageCapacity;

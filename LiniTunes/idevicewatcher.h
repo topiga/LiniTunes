@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QThread>
-#include <QMap>
+#include <QHash>
 #include <QStringList>
 #include <QVariantList>
 #include <atomic>
@@ -24,8 +24,8 @@ public slots:
     void stop();
 
 signals:
-    void deviceConnected(QString udid, uint32_t deviceId);
-    void deviceDisconnected(uint32_t deviceId);
+    void deviceConnected(QString udid, uint32_t deviceId, QString muxAddress, bool networkConnection);
+    void deviceDisconnected(QString muxAddress, uint32_t deviceId);
 
 private:
     std::atomic<bool> m_running = false;
@@ -39,7 +39,7 @@ public:
     explicit DeviceInitWorker(QObject *parent = nullptr) : QObject(parent) {}
 
 public slots:
-    void doInit(const QString &udid, uint32_t deviceId);
+    void doInit(const QString &udid, uint32_t deviceId, const QString &muxAddress, bool networkConnection);
 
 signals:
     void initDone(iDevice *device);
@@ -160,14 +160,24 @@ signals:
     void softwareChanged();
 
 private slots:
-    void onDeviceConnected(const QString &udid, uint32_t deviceId);
-    void onDeviceDisconnected(uint32_t deviceId);
+    void onDeviceConnected(const QString &udid, uint32_t deviceId, const QString &muxAddress, bool networkConnection);
+    void onDeviceDisconnected(const QString &muxAddress, uint32_t deviceId);
     void onDeviceInitDone(iDevice *dev);
     void onDeviceInitFailed(const QString &udid);
 
 private:
-    void removeDeviceByUdid(const QString &udid);
+    struct MuxEndpoint {
+        QString udid;
+        uint32_t deviceId = 0;
+        QString muxAddress;
+        bool networkConnection = false;
+    };
+
+    void removeDeviceByMuxKey(const QString &key);
+    void initEndpoint(const MuxEndpoint &endpoint);
     void connectDeviceSignals(iDevice *dev);
+    MuxEndpoint fallbackEndpointForUdid(const QString &udid) const;
+    iDevice *deviceForUdid(const QString &udid) const;
 
     iDevice *m_currentDevice = nullptr;
     QStringList m_udidList;
@@ -179,8 +189,8 @@ private:
     QThread m_workerThread;
     DeviceInitWorker *m_worker = nullptr;
 
-    // Track deviceId → UDID mapping for disconnect events
-    QMap<uint32_t, QString> m_deviceIdToUdid;
+    // Track mux endpoint key → endpoint for disconnect/fallback handling.
+    QHash<QString, MuxEndpoint> m_muxEndpoints;
 };
 
 #endif // IDEVICEWATCHER_H

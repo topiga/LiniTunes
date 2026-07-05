@@ -1,4 +1,5 @@
 #include "idevicewatcher.h"
+#include "usbmuxd_helpers.h"
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
@@ -6,21 +7,42 @@
 #include <QDesktopServices>
 #include <QLocale>
 #include <QRegularExpression>
+#include <QSet>
 #include <QSettings>
 #include <QUrl>
 #include <plist/plist.h>
 #include <algorithm>
 #include <cstdlib>
 #include <initializer_list>
+#include <utility>
 #include <idevice++/usbmuxd.hpp>
-
-extern "C" {
-#include <idevice.h>
-}
 
 static SoftwareUpdateManager *softwareManager(iDevice *device)
 {
     return device ? device->softwareUpdateManager() : nullptr;
+}
+
+static QString muxDisplayName(const QString &muxAddress)
+{
+    return muxAddress.isEmpty() ? QStringLiteral("default") : muxAddress;
+}
+
+static QString muxAddressFromKey(const QString &key, uint32_t *deviceId)
+{
+    const int separator = key.lastIndexOf(QLatin1Char('#'));
+    if (separator <= 0)
+        return {};
+
+    bool ok = false;
+    const uint32_t parsedDeviceId = key.mid(separator + 1).toUInt(&ok);
+    if (!ok)
+        return {};
+
+    if (deviceId)
+        *deviceId = parsedDeviceId;
+
+    const QString source = key.left(separator);
+    return source == QStringLiteral("default") ? QString() : source;
 }
 
 static void retryDelay(std::atomic<bool> &running, int slices = 20) {
@@ -46,69 +68,73 @@ void UsbmuxdListener::stop()
 void UsbmuxdListener::run()
 {
     m_running = true;
+    QSet<QString> known;
 
     while (m_running) {
-        UsbmuxdConnectionHandle *conn = nullptr;
-        IdeviceFfiError *err = idevice_usbmuxd_new_default_connection(0, &conn);
-        if (err) {
-            idevice_error_free(err);
-            retryDelay(m_running);
-            continue;
-        }
+        QSet<QString> seen;
 
-        UsbmuxdListenerHandle *listener = nullptr;
-        err = idevice_usbmuxd_listen(conn, &listener);
-        if (err) {
-            idevice_error_free(err);
-            idevice_usbmuxd_connection_free(conn);
-            retryDelay(m_running);
-            continue;
-        }
+        for (const QString &muxAddress : usbmuxd_helpers::candidateMuxAddresses()) {
+            auto connResult = usbmuxd_helpers::connect(muxAddress, 0);
+            if (connResult.is_err())
+                continue;
 
-        while (m_running) {
-            bool connect_event = false;
-            UsbmuxdDeviceHandle *dev_handle = nullptr;
-            uint32_t disconnect_id = 0;
+            auto conn = std::move(connResult.unwrap());
+            auto devicesResult = conn.get_devices();
+            if (devicesResult.is_err())
+                continue;
 
-            err = idevice_usbmuxd_listener_next(
-                listener, &connect_event, &dev_handle, &disconnect_id);
+            for (const auto &device : devicesResult.unwrap()) {
+                auto udid = device.get_udid();
+                auto id = device.get_id();
+                if (udid.is_none() || id.is_none())
+                    continue;
 
-            if (err) {
-                idevice_error_free(err);
-                break;
-            }
+                const uint32_t deviceId = id.unwrap();
+                const QString key = usbmuxd_helpers::muxKey(muxAddress, deviceId);
+                seen.insert(key);
+                if (known.contains(key))
+                    continue;
 
-            if (!m_running) break;
+                bool networkConnection = false;
+                auto type = device.get_connection_type();
+                if (type.is_some())
+                    networkConnection = type.unwrap() == IdeviceFFI::UsbmuxdConnectionType::Value::Network;
 
-            if (connect_event && dev_handle) {
-                char *c_udid = idevice_usbmuxd_device_get_udid(dev_handle);
-                uint32_t dev_id = idevice_usbmuxd_device_get_device_id(dev_handle);
-                if (c_udid) {
-                    qDebug("Listener: device connected %s (id=%u)", c_udid, dev_id);
-                    emit deviceConnected(QString::fromUtf8(c_udid), dev_id);
-                    idevice_string_free(c_udid);
-                }
-                idevice_usbmuxd_device_free(dev_handle);
-            } else if (disconnect_id != 0) {
-                qDebug("Listener: device disconnected (id=%u)", disconnect_id);
-                emit deviceDisconnected(disconnect_id);
+                const QString deviceUdid = QString::fromStdString(udid.unwrap());
+                qDebug("Listener: device connected %s (id=%u, mux=%s, transport=%s)",
+                       qPrintable(deviceUdid), deviceId,
+                       qPrintable(muxDisplayName(muxAddress)),
+                       networkConnection ? "Network" : "USB");
+                emit deviceConnected(deviceUdid, deviceId, muxAddress, networkConnection);
             }
         }
 
-        idevice_usbmuxd_listener_handle_free(listener);
-        idevice_usbmuxd_connection_free(conn);
+        for (const QString &key : std::as_const(known)) {
+            if (seen.contains(key))
+                continue;
+
+            uint32_t deviceId = 0;
+            const QString muxAddress = muxAddressFromKey(key, &deviceId);
+            if (deviceId == 0)
+                continue;
+            qDebug("Listener: device disconnected (id=%u, mux=%s)",
+                   deviceId, qPrintable(muxDisplayName(muxAddress)));
+            emit deviceDisconnected(muxAddress, deviceId);
+        }
+
+        known = seen;
         retryDelay(m_running, 10);
     }
 }
 
 // ---- DeviceInitWorker -----------------------------------------------------
 
-void DeviceInitWorker::doInit(const QString &udid, uint32_t deviceId)
+void DeviceInitWorker::doInit(const QString &udid, uint32_t deviceId, const QString &muxAddress, bool networkConnection)
 {
     auto *dev = new iDevice();
-    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
+    auto addr = usbmuxd_helpers::makeAddr(muxAddress);
 
-    if (dev->init(udid, deviceId, std::move(addr))) {
+    if (dev->init(udid, deviceId, muxAddress, networkConnection, std::move(addr))) {
         emit initDone(dev);
     } else {
         qDebug("Worker: device init failed: %s", qPrintable(udid));
@@ -188,19 +214,41 @@ void iDeviceWatcher::connectDeviceSignals(iDevice *dev)
             this, &iDeviceWatcher::softwareChanged);
 }
 
-void iDeviceWatcher::onDeviceConnected(const QString &udid, uint32_t deviceId)
+void iDeviceWatcher::initEndpoint(const MuxEndpoint &endpoint)
 {
-    m_deviceIdToUdid[deviceId] = udid;
     QMetaObject::invokeMethod(m_worker,
-        [this, udid, deviceId]() { m_worker->doInit(udid, deviceId); },
+        [this, endpoint]() {
+            m_worker->doInit(endpoint.udid, endpoint.deviceId,
+                             endpoint.muxAddress, endpoint.networkConnection);
+        },
         Qt::QueuedConnection);
 }
 
-void iDeviceWatcher::onDeviceDisconnected(uint32_t deviceId)
+void iDeviceWatcher::onDeviceConnected(const QString &udid, uint32_t deviceId,
+                                       const QString &muxAddress, bool networkConnection)
 {
-    const QString udid = m_deviceIdToUdid.take(deviceId);
-    if (!udid.isEmpty())
-        removeDeviceByUdid(udid);
+    const QString key = usbmuxd_helpers::muxKey(muxAddress, deviceId);
+    MuxEndpoint endpoint{udid, deviceId, muxAddress, networkConnection};
+    m_muxEndpoints.insert(key, endpoint);
+
+    auto *existing = deviceForUdid(udid);
+    if (!existing) {
+        initEndpoint(endpoint);
+        return;
+    }
+
+    if (existing->muxKey() == key)
+        return;
+
+    // Prefer USB when available, but keep the network endpoint recorded so
+    // unplugging USB can fall back to Wi-Fi without a new pairing prompt.
+    if (!networkConnection && existing->networkConnection())
+        initEndpoint(endpoint);
+}
+
+void iDeviceWatcher::onDeviceDisconnected(const QString &muxAddress, uint32_t deviceId)
+{
+    removeDeviceByMuxKey(usbmuxd_helpers::muxKey(muxAddress, deviceId));
 }
 
 void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
@@ -215,6 +263,19 @@ void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
                                         dev->product_version(),
                                         dev->build_version(),
                                         true);
+
+    for (int i = 0; i < Devices.size(); ++i) {
+        if (Devices[i]->udid() != dev->udid())
+            continue;
+        const bool wasCurrent = m_currentDevice == Devices[i];
+        delete Devices[i];
+        Devices[i] = dev;
+        if (wasCurrent)
+            m_currentDevice = dev;
+        updateLists();
+        return;
+    }
+
     Devices.append(dev);
     updateLists();
 }
@@ -224,18 +285,49 @@ void iDeviceWatcher::onDeviceInitFailed(const QString &udid)
     qDebug("Device init failed: %s", qPrintable(udid));
 }
 
-void iDeviceWatcher::removeDeviceByUdid(const QString &udid)
+iDeviceWatcher::MuxEndpoint iDeviceWatcher::fallbackEndpointForUdid(const QString &udid) const
 {
+    MuxEndpoint fallback;
+    for (const MuxEndpoint &endpoint : std::as_const(m_muxEndpoints)) {
+        if (endpoint.udid != udid)
+            continue;
+        if (fallback.udid.isEmpty() || (!endpoint.networkConnection && fallback.networkConnection))
+            fallback = endpoint;
+    }
+    return fallback;
+}
+
+iDevice *iDeviceWatcher::deviceForUdid(const QString &udid) const
+{
+    for (auto *device : Devices) {
+        if (device->udid() == udid)
+            return device;
+    }
+    return nullptr;
+}
+
+void iDeviceWatcher::removeDeviceByMuxKey(const QString &key)
+{
+    const MuxEndpoint removed = m_muxEndpoints.take(key);
+    if (removed.udid.isEmpty())
+        return;
+
     for (int i = 0; i < Devices.size(); ++i) {
-        if (Devices[i]->udid() == udid) {
-            if (m_currentDevice == Devices[i])
-                m_currentDevice = nullptr;
-            delete Devices[i];
-            Devices.removeAt(i);
-            Devices.squeeze();
-            updateLists();
-            return;
-        }
+        if (Devices[i]->udid() != removed.udid || Devices[i]->muxKey() != key)
+            continue;
+
+        if (m_currentDevice == Devices[i])
+            m_currentDevice = nullptr;
+        delete Devices[i];
+        Devices.removeAt(i);
+        Devices.squeeze();
+
+        const MuxEndpoint fallback = fallbackEndpointForUdid(removed.udid);
+        if (!fallback.udid.isEmpty())
+            initEndpoint(fallback);
+
+        updateLists();
+        return;
     }
 }
 

@@ -16,7 +16,7 @@ public:
     static uint64_t scanDirSize(const std::string &path, void *afcRaw);
 
 public slots:
-    void runSync(const QString &udid, uint32_t deviceId);
+    void runSync(const QString &udid, uint32_t deviceId, const QString &muxAddress = QString());
 
 signals:
     void progress(int percent);
@@ -25,7 +25,6 @@ signals:
                   uint64_t photos, uint64_t documents,
                   uint64_t other);
     void failed(QString error);
-
 };
 
 #endif // STORAGE_SYNC_WORKER_H
