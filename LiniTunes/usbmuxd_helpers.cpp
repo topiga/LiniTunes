@@ -18,10 +18,22 @@ namespace {
 constexpr auto kNetmuxdAddress = "127.0.0.1:27015";
 constexpr auto kDefaultMuxKeySource = "default";
 
-void appendUnique(QStringList *addresses, const QString &address)
+void appendUnique(QVector<usbmuxd_helpers::MuxSource> *sources, usbmuxd_helpers::MuxSource source)
 {
-    if (!addresses->contains(address))
-        addresses->append(address);
+    for (auto &existing : *sources) {
+        if (existing.key != source.key)
+            continue;
+        existing.netmuxd = existing.netmuxd || source.netmuxd;
+        return;
+    }
+    sources->append(std::move(source));
+}
+
+void appendUnique(QVector<usbmuxd_helpers::MuxSource> *sources, const QString &address, bool netmuxd = false)
+{
+    auto source = usbmuxd_helpers::sourceForAddress(address);
+    source.netmuxd = netmuxd;
+    appendUnique(sources, std::move(source));
 }
 
 bool parseTcpAddress(const QString &muxAddress, sockaddr_in *addr)
@@ -46,23 +58,60 @@ bool parseTcpAddress(const QString &muxAddress, sockaddr_in *addr)
 
 namespace usbmuxd_helpers {
 
-QStringList candidateMuxAddresses()
+MuxSource sourceForAddress(const QString &muxAddress)
 {
-    QStringList addresses;
+    if (muxAddress.isEmpty()) {
+        return {
+            QString(),
+            QString::fromLatin1(kDefaultMuxKeySource),
+            QStringLiteral("default"),
+            false,
+        };
+    }
+
+    return { muxAddress, muxAddress, muxAddress, false };
+}
+
+QVector<MuxSource> candidateMuxSources()
+{
+    QVector<MuxSource> sources;
     const QString envAddress = QProcessEnvironment::systemEnvironment()
         .value(QStringLiteral("USBMUXD_SOCKET_ADDRESS"));
     if (!envAddress.isEmpty())
-        appendUnique(&addresses, envAddress);
+        appendUnique(&sources, envAddress);
 
-    appendUnique(&addresses, QString());
-    appendUnique(&addresses, QString::fromLatin1(kNetmuxdAddress));
+    appendUnique(&sources, QString());
+
+    const QString netmuxdOverride = QProcessEnvironment::systemEnvironment()
+        .value(QStringLiteral("LINITUNES_NETMUXD_ADDRESS"));
+    if (!netmuxdOverride.isEmpty())
+        appendUnique(&sources, netmuxdOverride, true);
+
+    appendUnique(&sources, QString::fromLatin1(kNetmuxdAddress), true);
+    return sources;
+}
+
+QStringList candidateMuxAddresses()
+{
+    QStringList addresses;
+    for (const auto &source : candidateMuxSources())
+        addresses.append(source.address);
     return addresses;
 }
 
 QString muxKey(const QString &muxAddress, uint32_t deviceId)
 {
-    const QString source = muxAddress.isEmpty() ? QString::fromLatin1(kDefaultMuxKeySource) : muxAddress;
-    return QStringLiteral("%1#%2").arg(source).arg(deviceId);
+    return QStringLiteral("%1#%2").arg(sourceForAddress(muxAddress).key).arg(deviceId);
+}
+
+QString muxAddressFromKeySource(const QString &keySource)
+{
+    return keySource == QString::fromLatin1(kDefaultMuxKeySource) ? QString() : keySource;
+}
+
+QString muxDisplayName(const QString &muxAddress)
+{
+    return sourceForAddress(muxAddress).displayName;
 }
 
 IdeviceFFI::UsbmuxdAddr makeAddr(const QString &muxAddress)

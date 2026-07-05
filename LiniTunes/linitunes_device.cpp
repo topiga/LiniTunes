@@ -174,8 +174,14 @@ QString iDevice::muxKey() const
     return usbmuxd_helpers::muxKey(m_muxAddress, m_deviceId);
 }
 
+QString iDevice::connectionTransport() const
+{
+    return m_networkConnection ? QStringLiteral("Wi-Fi") : QStringLiteral("USB");
+}
+
 bool iDevice::init(const QString &udid, uint32_t deviceId, const QString &muxAddress,
-                   bool networkConnection, IdeviceFFI::UsbmuxdAddr &&addr)
+                   bool networkConnection, bool enableWifiSync,
+                   IdeviceFFI::UsbmuxdAddr &&addr)
 {
     m_udid = udid;
     m_deviceId = deviceId;
@@ -207,8 +213,12 @@ bool iDevice::init(const QString &udid, uint32_t deviceId, const QString &muxAdd
         }
     }
 
-    if (!m_networkConnection && !enableWifiConnections(lockdown))
-        qDebug("WARNING: Failed to enable Wi-Fi sync for %s", qPrintable(udid));
+    m_wifiSyncAvailable = m_networkConnection;
+    if (!m_networkConnection && enableWifiSync) {
+        m_wifiSyncAvailable = enableWifiConnections(lockdown);
+        if (!m_wifiSyncAvailable)
+            qDebug("WARNING: Failed to enable Wi-Fi sync for %s", qPrintable(udid));
+    }
 
     // Get all top-level values
     auto all_values_result = lockdown.get_value(nullptr, nullptr);

@@ -39,7 +39,8 @@ public:
     explicit DeviceInitWorker(QObject *parent = nullptr) : QObject(parent) {}
 
 public slots:
-    void doInit(const QString &udid, uint32_t deviceId, const QString &muxAddress, bool networkConnection);
+    void doInit(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                bool networkConnection, bool enableWifiSync);
 
 signals:
     void initDone(iDevice *device);
@@ -67,6 +68,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString software_image READ software_image NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString marketing_name READ marketing_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString connection_transport READ connectionTransport NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
     Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
     Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY storageSyncChanged)
@@ -78,6 +80,7 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(bool backup_encryption_busy READ backupEncryptionBusy NOTIFY backupChanged)
     Q_PROPERTY(QString backup_encryption_error READ backupEncryptionError NOTIFY backupChanged)
     Q_PROPERTY(QString backup_folder READ backup_folder WRITE setBackupFolder NOTIFY backupFolderChanged)
+    Q_PROPERTY(bool wifi_sync_enabled READ wifiSyncEnabled WRITE setWifiSyncEnabled NOTIFY wifiSyncEnabledChanged)
     Q_PROPERTY(bool software_busy READ softwareBusy NOTIFY softwareChanged)
     Q_PROPERTY(bool software_downloading READ softwareDownloading NOTIFY softwareChanged)
     Q_PROPERTY(double software_download_progress READ softwareDownloadProgress NOTIFY softwareChanged)
@@ -116,6 +119,8 @@ public:
     QStringList udid_list() const { return m_udidList; }
     QString backup_folder() const { return m_backupFolder; }
     void setBackupFolder(const QString &folder);
+    bool wifiSyncEnabled() const { return m_wifiSyncEnabled; }
+    void setWifiSyncEnabled(bool enabled);
 
     QString serial() const { return m_currentDevice ? m_currentDevice->serial() : QString(); }
     QString udid() const { return m_currentDevice ? m_currentDevice->udid() : QString(); }
@@ -132,6 +137,7 @@ public:
     QString software_image() const { return m_currentDevice ? m_currentDevice->software_image() : QString(); }
     QString marketing_name() const { return m_currentDevice ? m_currentDevice->marketing_name() : QString(); }
     bool device_connected() const { return m_currentDevice != nullptr; }
+    QString connectionTransport() const { return m_currentDevice ? m_currentDevice->connectionTransport() : QString(); }
     int battery() const { return m_currentDevice ? m_currentDevice->battery() : 0; }
     QString battery_string() const { return m_currentDevice ? QString::number(m_currentDevice->battery()) : QStringLiteral("0"); }
     QObject *storageInfo() const { return m_currentDevice ? m_currentDevice->storageInfo() : nullptr; }
@@ -157,6 +163,7 @@ signals:
     void storageSyncChanged();
     void backupChanged();
     void backupFolderChanged();
+    void wifiSyncEnabledChanged();
     void softwareChanged();
 
 private slots:
@@ -176,12 +183,18 @@ private:
     void removeDeviceByMuxKey(const QString &key);
     void initEndpoint(const MuxEndpoint &endpoint);
     void connectDeviceSignals(iDevice *dev);
-    MuxEndpoint fallbackEndpointForUdid(const QString &udid) const;
+    void rememberWifiSyncDevice(const QString &udid);
+    MuxEndpoint preferredEndpointForUdid(const QString &udid) const;
+    bool shouldSwitchToEndpoint(const iDevice *existing, const MuxEndpoint &candidate) const;
+    bool shouldUseInitializedDevice(const iDevice *existing, const iDevice *candidate) const;
     iDevice *deviceForUdid(const QString &udid) const;
 
     iDevice *m_currentDevice = nullptr;
     QStringList m_udidList;
     QString m_backupFolder;
+    QStringList m_wifiSyncKnownUdids;
+    QString m_lastWifiSyncUdid;
+    bool m_wifiSyncEnabled = true;
 
     QThread m_listenerThread;
     UsbmuxdListener *m_listener = nullptr;

@@ -30,7 +30,8 @@ public:
     ~iDevice() override;
 
     bool init(const QString &udid, uint32_t deviceId, const QString &muxAddress,
-              bool networkConnection, IdeviceFFI::UsbmuxdAddr &&addr);
+              bool networkConnection, bool enableWifiSync,
+              IdeviceFFI::UsbmuxdAddr &&addr);
 
     // Device info
     QString serial() const { return m_serial; }
@@ -51,7 +52,9 @@ public:
     bool device_connected() const { return m_connected; }
     uint32_t deviceId() const { return m_deviceId; }
     QString muxKey() const;
+    QString connectionTransport() const;
     bool networkConnection() const { return m_networkConnection; }
+    bool wifiSyncAvailable() const { return m_wifiSyncAvailable; }
 
     // Storage
     StorageInfo *storageInfo() const { return m_storageInfo; }
@@ -112,6 +115,7 @@ private:
     uint32_t m_deviceId = 0;
     QString m_muxAddress;
     bool m_networkConnection = false;
+    bool m_wifiSyncAvailable = false;
     uint64_t m_storageCapacityBytes = 0;
     uint64_t m_storageLeftBytes = 0;
     QString m_storageCapacity;
