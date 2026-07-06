@@ -1062,8 +1062,8 @@ Window {
                                         id: deviceBatteryRect2
                                         width: 1
                                         height: 5
-                                        opacity: root.batteryIndicatorActive(modelData.battery, modelData.device_class) ? 1 : 0.5
-                                        color: root.batteryIndicatorActive(modelData.battery, modelData.device_class)
+                                        opacity: modelData.battery >= 100 ? 1 : 0.5
+                                        color: modelData.battery >= 100
                                                ? root.batteryIndicatorColor(modelData.battery, modelData.device_class)
                                                : root.colors.textPrimary
                                         anchors {
@@ -1465,8 +1465,8 @@ Window {
                                 id: device_battery_rect2
                                 width: 1
                                 height: 5
-                                opacity: root.batteryIndicatorActive(DeviceWatcher.battery, DeviceWatcher.device_class) ? 1 : 0.5
-                                color: root.batteryIndicatorActive(DeviceWatcher.battery, DeviceWatcher.device_class)
+                                opacity: DeviceWatcher.battery >= 100 ? 1 : 0.5
+                                color: DeviceWatcher.battery >= 100
                                        ? root.batteryIndicatorColor(DeviceWatcher.battery, DeviceWatcher.device_class)
                                        : root.colors.textPrimary
                                 anchors {
