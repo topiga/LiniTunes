@@ -212,6 +212,7 @@ iDeviceWatcher::~iDeviceWatcher()
 
 void iDeviceWatcher::start()
 {
+    m_netmuxd.ensureRunning();
     m_listenerThread.start();
     m_workerThread.start();
 }

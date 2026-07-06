@@ -59,6 +59,11 @@ bool parseTcpAddress(const QString &muxAddress, sockaddr_in *addr)
 
 namespace usbmuxd_helpers {
 
+QString defaultNetmuxdAddress()
+{
+    return QString::fromLatin1(kNetmuxdAddress);
+}
+
 MuxSource sourceForAddress(const QString &muxAddress)
 {
     if (muxAddress.isEmpty()) {
@@ -90,7 +95,7 @@ QVector<MuxSource> candidateMuxSources()
     }
 #ifndef Q_OS_MACOS
     else {
-        appendUnique(&sources, QString::fromLatin1(kNetmuxdAddress), true);
+        appendUnique(&sources, defaultNetmuxdAddress(), true);
     }
 #endif
     return sources;

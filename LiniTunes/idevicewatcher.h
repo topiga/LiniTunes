@@ -8,6 +8,7 @@
 #include <QVariantList>
 #include <atomic>
 #include "linitunes_device.h"
+#include "netmuxd_manager.h"
 
 class StorageInfo;
 
@@ -195,6 +196,8 @@ private:
     QStringList m_wifiSyncKnownUdids;
     QString m_lastWifiSyncUdid;
     bool m_wifiSyncEnabled = true;
+
+    NetmuxdManager m_netmuxd;
 
     QThread m_listenerThread;
     UsbmuxdListener *m_listener = nullptr;

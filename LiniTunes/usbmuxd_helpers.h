@@ -15,6 +15,7 @@ struct MuxSource {
     bool netmuxd = false;
 };
 
+QString defaultNetmuxdAddress();
 MuxSource sourceForAddress(const QString &muxAddress);
 QVector<MuxSource> candidateMuxSources();
 QStringList candidateMuxAddresses();
