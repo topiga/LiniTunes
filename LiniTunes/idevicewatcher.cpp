@@ -179,6 +179,9 @@ iDeviceWatcher::iDeviceWatcher(QObject *parent)
     m_wifiSyncKnownUdids = settings.value(QStringLiteral("wifi_sync_known_udids")).toStringList();
     m_lastWifiSyncUdid = settings.value(QStringLiteral("wifi_sync_last_udid")).toString();
 
+    connect(&m_netmuxd, &NetmuxdManager::statusChanged,
+            this, &iDeviceWatcher::wifiSyncStatusChanged);
+
     m_listener = new UsbmuxdListener();
     m_listener->moveToThread(&m_listenerThread);
     connect(&m_listenerThread, &QThread::started, m_listener, &UsbmuxdListener::run);

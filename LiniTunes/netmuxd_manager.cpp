@@ -30,13 +30,24 @@ void NetmuxdManager::ensureRunning()
     return;
 #else
     const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    if (env.contains(QString::fromLatin1(kDisableBundledNetmuxd))
-        || !env.value(QString::fromLatin1(kNetmuxdOverride)).isEmpty()) {
+    if (env.contains(QString::fromLatin1(kDisableBundledNetmuxd))) {
+        qDebug("netmuxd: skipping bundled helper, disabled by environment");
+        setStatus(QStringLiteral("disabled"));
         return;
     }
 
-    if (muxResponds(usbmuxd_helpers::defaultNetmuxdAddress()))
+    if (!env.value(QString::fromLatin1(kNetmuxdOverride)).isEmpty()) {
+        qDebug("netmuxd: skipping bundled helper, external address override is set");
+        setStatus(QStringLiteral("external"));
         return;
+    }
+
+    if (muxResponds(usbmuxd_helpers::defaultNetmuxdAddress())) {
+        qDebug("netmuxd: already available at %s, skipping bundled helper",
+               qPrintable(usbmuxd_helpers::defaultNetmuxdAddress()));
+        setStatus(QStringLiteral("available"));
+        return;
+    }
 
     if (m_process) {
         if (m_process->state() != QProcess::NotRunning)
@@ -46,8 +57,11 @@ void NetmuxdManager::ensureRunning()
     }
 
     const QString program = bundledNetmuxdPath();
-    if (program.isEmpty())
+    if (program.isEmpty()) {
+        qDebug("netmuxd: bundled helper not found, skipping");
+        setStatus(QStringLiteral("missing"), QStringLiteral("Bundled netmuxd helper was not found."));
         return;
+    }
 
     const bool systemUsbmuxdAvailable = muxResponds(QString());
     QStringList arguments = {
@@ -64,6 +78,8 @@ void NetmuxdManager::ensureRunning()
         arguments << QStringLiteral("--plist-storage") << storage;
     }
 
+    setStatus(QStringLiteral("starting"));
+    m_stopping = false;
     m_process = new QProcess(this);
     connect(m_process, &QProcess::readyReadStandardOutput, this, [this]() {
         logOutput(QProcess::StandardOutput);
@@ -71,15 +87,18 @@ void NetmuxdManager::ensureRunning()
     connect(m_process, &QProcess::readyReadStandardError, this, [this]() {
         logOutput(QProcess::StandardError);
     });
-    connect(m_process, &QProcess::errorOccurred, this, [](QProcess::ProcessError error) {
+    connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         qDebug("netmuxd: process error %d", static_cast<int>(error));
+        setStatus(QStringLiteral("error"), QStringLiteral("Bundled netmuxd process error."));
     });
     connect(m_process,
             qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
             this,
-            [](int code, QProcess::ExitStatus status) {
+            [this](int code, QProcess::ExitStatus status) {
                 qDebug("netmuxd: exited with code %d status %d",
                        code, static_cast<int>(status));
+                if (!m_stopping)
+                    setStatus(QStringLiteral("stopped"), QStringLiteral("Bundled netmuxd stopped unexpectedly."));
             });
 
     QProcessEnvironment processEnv = env;
@@ -92,11 +111,15 @@ void NetmuxdManager::ensureRunning()
 
     if (!m_process->waitForStarted(3000)) {
         qDebug("netmuxd: failed to start bundled helper at %s", qPrintable(program));
+        setStatus(QStringLiteral("error"), QStringLiteral("Bundled netmuxd failed to start."));
         m_process->deleteLater();
         m_process = nullptr;
         return;
     }
 
+    setStatus(systemUsbmuxdAvailable
+              ? QStringLiteral("running_shim")
+              : QStringLiteral("running_standalone"));
     qDebug("netmuxd: started bundled helper in %s mode at %s",
            systemUsbmuxdAvailable ? "shim" : "standalone",
            qPrintable(usbmuxd_helpers::defaultNetmuxdAddress()));
@@ -111,6 +134,7 @@ void NetmuxdManager::stop()
     if (!m_process)
         return;
 
+    m_stopping = true;
     QProcess *process = m_process;
     m_process = nullptr;
     if (process->state() != QProcess::NotRunning) {
@@ -121,6 +145,7 @@ void NetmuxdManager::stop()
         }
     }
     delete process;
+    setStatus(QStringLiteral("stopped"));
 #endif
 }
 
@@ -156,6 +181,16 @@ bool NetmuxdManager::muxResponds(const QString &address) const
 {
     auto result = usbmuxd_helpers::connect(address, 0);
     return result.is_ok();
+}
+
+void NetmuxdManager::setStatus(const QString &status, const QString &error)
+{
+    if (m_status == status && m_error == error)
+        return;
+
+    m_status = status;
+    m_error = error;
+    emit statusChanged();
 }
 
 void NetmuxdManager::logOutput(QProcess::ProcessChannel channel)

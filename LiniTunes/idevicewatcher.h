@@ -82,6 +82,8 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString backup_encryption_error READ backupEncryptionError NOTIFY backupChanged)
     Q_PROPERTY(QString backup_folder READ backup_folder WRITE setBackupFolder NOTIFY backupFolderChanged)
     Q_PROPERTY(bool wifi_sync_enabled READ wifiSyncEnabled WRITE setWifiSyncEnabled NOTIFY wifiSyncEnabledChanged)
+    Q_PROPERTY(QString wifi_sync_status READ wifiSyncStatus NOTIFY wifiSyncStatusChanged)
+    Q_PROPERTY(QString wifi_sync_error READ wifiSyncError NOTIFY wifiSyncStatusChanged)
     Q_PROPERTY(bool software_busy READ softwareBusy NOTIFY softwareChanged)
     Q_PROPERTY(bool software_downloading READ softwareDownloading NOTIFY softwareChanged)
     Q_PROPERTY(double software_download_progress READ softwareDownloadProgress NOTIFY softwareChanged)
@@ -122,6 +124,8 @@ public:
     void setBackupFolder(const QString &folder);
     bool wifiSyncEnabled() const { return m_wifiSyncEnabled; }
     void setWifiSyncEnabled(bool enabled);
+    QString wifiSyncStatus() const { return m_netmuxd.status(); }
+    QString wifiSyncError() const { return m_netmuxd.error(); }
 
     QString serial() const { return m_currentDevice ? m_currentDevice->serial() : QString(); }
     QString udid() const { return m_currentDevice ? m_currentDevice->udid() : QString(); }
@@ -165,6 +169,7 @@ signals:
     void backupChanged();
     void backupFolderChanged();
     void wifiSyncEnabledChanged();
+    void wifiSyncStatusChanged();
     void softwareChanged();
 
 private slots:
