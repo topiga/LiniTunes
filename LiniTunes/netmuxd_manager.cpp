@@ -12,6 +12,31 @@ namespace {
 constexpr auto kDisableBundledNetmuxd = "LINITUNES_DISABLE_BUNDLED_NETMUXD";
 constexpr auto kNetmuxdOverride = "LINITUNES_NETMUXD_ADDRESS";
 constexpr auto kNetmuxdPathOverride = "LINITUNES_NETMUXD_HELPER";
+
+bool bundledNetmuxdDisabled(const QProcessEnvironment &env)
+{
+    const QString disableValue = env.value(QString::fromLatin1(kDisableBundledNetmuxd)).trimmed();
+    return !disableValue.isEmpty()
+        && disableValue != QStringLiteral("0")
+        && disableValue.compare(QStringLiteral("false"), Qt::CaseInsensitive) != 0;
+}
+
+QStringList netmuxdLaunchArguments(bool systemUsbmuxdAvailable, const QString &storagePath)
+{
+    const QString netmuxdAddress = usbmuxd_helpers::defaultNetmuxdAddress();
+    QStringList arguments = {
+        QStringLiteral("--host"), netmuxdAddress.section(QLatin1Char(':'), 0, 0),
+        QStringLiteral("--port"), netmuxdAddress.section(QLatin1Char(':'), 1, 1),
+        QStringLiteral("--disable-unix"),
+    };
+
+    if (systemUsbmuxdAvailable)
+        arguments << QStringLiteral("--upstream-usbmuxd");
+    else
+        arguments << QStringLiteral("--plist-storage") << storagePath;
+
+    return arguments;
+}
 }
 
 NetmuxdManager::NetmuxdManager(QObject *parent)
@@ -30,10 +55,7 @@ void NetmuxdManager::ensureRunning()
     return;
 #else
     const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    const QString disableValue = env.value(QString::fromLatin1(kDisableBundledNetmuxd)).trimmed();
-    if (!disableValue.isEmpty()
-        && disableValue != QStringLiteral("0")
-        && disableValue.compare(QStringLiteral("false"), Qt::CaseInsensitive) != 0) {
+    if (bundledNetmuxdDisabled(env)) {
         qDebug("netmuxd: skipping bundled helper, disabled by environment");
         setStatus(QStringLiteral("disabled"));
         return;
@@ -67,20 +89,10 @@ void NetmuxdManager::ensureRunning()
     }
 
     const bool systemUsbmuxdAvailable = muxResponds(QString());
-    const QString netmuxdAddress = usbmuxd_helpers::defaultNetmuxdAddress();
-    QStringList arguments = {
-        QStringLiteral("--host"), netmuxdAddress.section(QLatin1Char(':'), 0, 0),
-        QStringLiteral("--port"), netmuxdAddress.section(QLatin1Char(':'), 1, 1),
-        QStringLiteral("--disable-unix"),
-    };
-
-    if (systemUsbmuxdAvailable) {
-        arguments << QStringLiteral("--upstream-usbmuxd");
-    } else {
-        const QString storage = lockdownDir();
+    const QString storage = systemUsbmuxdAvailable ? QString() : lockdownDir();
+    if (!storage.isEmpty())
         QDir().mkpath(storage);
-        arguments << QStringLiteral("--plist-storage") << storage;
-    }
+    const QStringList arguments = netmuxdLaunchArguments(systemUsbmuxdAvailable, storage);
 
     setStatus(QStringLiteral("starting"));
     m_stopping = false;

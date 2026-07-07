@@ -198,6 +198,8 @@ private:
     iDevice *m_currentDevice = nullptr;
     QStringList m_udidList;
     QString m_backupFolder;
+    // Reserved for the upcoming Wi-Fi sync UI so remembered devices can be
+    // surfaced without changing the persisted settings keys later.
     QStringList m_wifiSyncKnownUdids;
     QString m_lastWifiSyncUdid;
     bool m_wifiSyncEnabled = true;

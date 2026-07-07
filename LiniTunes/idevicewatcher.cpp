@@ -364,6 +364,8 @@ iDeviceWatcher::MuxEndpoint iDeviceWatcher::preferredEndpointForUdid(const QStri
 
 bool iDeviceWatcher::shouldSwitchToEndpoint(const iDevice *existing, const MuxEndpoint &candidate) const
 {
+    // Before initialization, seeing the same mux endpoint again should not
+    // restart init. Only switch when a USB endpoint replaces a network one.
     if (!existing)
         return true;
     const QString candidateKey = usbmuxd_helpers::muxKey(candidate.muxAddress, candidate.deviceId);
@@ -374,6 +376,8 @@ bool iDeviceWatcher::shouldSwitchToEndpoint(const iDevice *existing, const MuxEn
 
 bool iDeviceWatcher::shouldUseInitializedDevice(const iDevice *existing, const iDevice *candidate) const
 {
+    // After initialization, the same mux endpoint is the successful result we
+    // were waiting for. Otherwise, keep the same USB-over-network preference.
     if (!existing)
         return true;
     if (existing->muxKey() == candidate->muxKey())
