@@ -109,6 +109,12 @@ Window {
         return bytes.toFixed(0) + " B"
     }
 
+    function connectionGlyphSource(transport, connected) {
+        if (transport === "Wi-Fi")
+            return connected ? "/images/glyphs/wifi-connected.svg" : "/images/glyphs/wifi-disconnected.svg"
+        return connected ? "/images/glyphs/ubs-connected.svg" : "/images/glyphs/ubs-disconnected.svg"
+    }
+
     function batteryLowThreshold(deviceClass) {
         return deviceClass === "iPad" ? 10 : 20
     }
@@ -990,15 +996,39 @@ Window {
                                     smooth: true
                                 }
 
+                                Image {
+                                    id: deviceConnectionGlyph
+                                    width: modelData.udid !== "" ? 12 : 0
+                                    height: 12
+                                    visible: modelData.udid !== ""
+                                    source: root.connectionGlyphSource(modelData.connection_transport, true)
+                                    sourceSize.width: width
+                                    sourceSize.height: height
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                    opacity: 0
+                                    anchors {
+                                        left: deviceImage.right
+                                        top: deviceImage.top
+                                        leftMargin: 0
+                                        topMargin: 5
+                                    }
+                                }
+                                ColorOverlay {
+                                    anchors.fill: deviceConnectionGlyph
+                                    source: deviceConnectionGlyph
+                                    color: parent.deviceNameTextColor
+                                    visible: deviceConnectionGlyph.visible
+                                }
                                 Text {
                                     id: deviceNameText
                                     color: parent.deviceNameTextColor
                                     text: modelData.device_name
                                     anchors {
-                                        left: deviceImage.right
+                                        left: deviceConnectionGlyph.visible ? deviceConnectionGlyph.right : deviceImage.right
                                         top: deviceImage.top
                                         topMargin: 2
-                                        leftMargin: 0
+                                        leftMargin: deviceConnectionGlyph.visible ? 4 : 0
                                         right: deviceBattery.left
                                         rightMargin: 4
                                     }
@@ -1196,15 +1226,40 @@ Window {
                             smooth: true
                         }
 
+                        Image {
+                            id: content_connection_glyph
+                            width: DeviceWatcher.device_connected ? 12 : 0
+                            height: 12
+                            visible: DeviceWatcher.device_connected
+                            source: root.connectionGlyphSource(DeviceWatcher.connection_transport, true)
+                            sourceSize.width: width
+                            sourceSize.height: height
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            opacity: 0
+                            anchors {
+                                left: current_device_image.right
+                                top: current_device_image.top
+                                leftMargin: 2
+                                topMargin: 4
+                            }
+                        }
+                        ColorOverlay {
+                            anchors.fill: content_connection_glyph
+                            source: content_connection_glyph
+                            color: root.colors.textPrimary
+                            visible: content_connection_glyph.visible
+                        }
+
                         Text {
                             id: device_name_text
                             color: root.colors.textPrimary
                             text: qsTr("No device connected")
                             anchors {
-                                left: current_device_image.right
+                                left: DeviceWatcher.device_connected ? content_connection_glyph.right : current_device_image.right
                                 top: current_device_image.top
                                 topMargin: 0
-                                leftMargin: 2
+                                leftMargin: DeviceWatcher.device_connected ? 4 : 2
                             }
                             font {
                                 weight: Font.DemiBold
