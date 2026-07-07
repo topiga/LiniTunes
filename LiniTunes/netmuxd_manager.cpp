@@ -30,7 +30,10 @@ void NetmuxdManager::ensureRunning()
     return;
 #else
     const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    if (env.contains(QString::fromLatin1(kDisableBundledNetmuxd))) {
+    const QString disableValue = env.value(QString::fromLatin1(kDisableBundledNetmuxd)).trimmed();
+    if (!disableValue.isEmpty()
+        && disableValue != QStringLiteral("0")
+        && disableValue.compare(QStringLiteral("false"), Qt::CaseInsensitive) != 0) {
         qDebug("netmuxd: skipping bundled helper, disabled by environment");
         setStatus(QStringLiteral("disabled"));
         return;
