@@ -8,6 +8,7 @@
 #include <cstring>
 #include <initializer_list>
 #include "storage_info.h"
+#include "usbmuxd_helpers.h"
 
 StorageSyncWorker::StorageSyncWorker(QObject *parent)
     : QObject(parent) {}
@@ -43,10 +44,12 @@ uint64_t StorageSyncWorker::scanDirSize(const std::string &path, void *afcRaw)
     uint64_t total = 0;
 
     auto entries = afc->list_directory(path);
-    if (entries.is_err()) return 0;
+    if (entries.is_err())
+        return 0;
 
     for (const auto &name : entries.unwrap()) {
-        if (name == "." || name == "..") continue;
+        if (name == "." || name == "..")
+            continue;
 
         std::string fullPath = path + "/" + name;
         auto info = afc->get_file_info(fullPath);
@@ -82,12 +85,11 @@ static uint64_t sumAfcPaths(std::initializer_list<const char *> paths, IdeviceFF
     return total;
 }
 
-void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
+void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId, const QString &muxAddress)
 {
     emit progress(0);
 
-    // Create provider and lockdown
-    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
+    auto addr = usbmuxd_helpers::makeAddr(muxAddress);
     auto prov_result = IdeviceFFI::Provider::usbmuxd_new(
         std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes-sync");
 
@@ -232,7 +234,6 @@ void StorageSyncWorker::runSync(const QString &udid, uint32_t deviceId)
     qDebug("Other/system: %llu bytes (%.2f GB)",
            (unsigned long long)otherBytes, StorageInfo::bytesToGb(otherBytes));
 
-    // Build result
     emit progress(100);
     emit syncData(totalBytes, freeBytes, appsBytes, audioBytes,
                   photosBytes, documentsBytes, otherBytes);

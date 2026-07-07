@@ -17,12 +17,14 @@ public:
     explicit BackupWorker(QObject *parent = nullptr);
 
 public slots:
-    void runBackup(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                   bool enableEncryption = false, const QString &password = QString());
-    void disableEncryption(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                           const QString &password);
-    void changeEncryptionPassword(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                                  const QString &oldPassword, const QString &newPassword);
+    void runBackup(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                   const QString &backupPath, bool enableEncryption = false,
+                   const QString &password = QString());
+    void disableEncryption(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                           const QString &backupPath, const QString &password);
+    void changeEncryptionPassword(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                                  const QString &backupPath, const QString &oldPassword,
+                                  const QString &newPassword);
     void cancel();
 
 signals:
@@ -38,10 +40,12 @@ signals:
 
 private:
     bool runIdevicebackup2(const QString &udid, const QString &backupPath);
-    void runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                                bool enableEncryption, const QString &password);
-    bool runPasswordChange(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                           const QString &oldPassword, const QString &newPassword,
+    void runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                                const QString &backupPath, bool enableEncryption,
+                                const QString &password);
+    bool runPasswordChange(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                           const QString &backupPath, const QString &oldPassword,
+                           const QString &newPassword,
                            bool targetEncrypted, QString *error);
 
     std::atomic<bool> m_cancelled{false};

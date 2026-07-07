@@ -89,6 +89,8 @@ set(HEADER_FILES
     backup_validator.h
     backup_worker.h
     software_update_manager.h
+    usbmuxd_helpers.h
+    netmuxd_manager.h
     plist_helpers.h
 )
 
@@ -101,6 +103,8 @@ set(SOURCE_FILES
     backup_validator.cpp
     backup_worker.cpp
     software_update_manager.cpp
+    usbmuxd_helpers.cpp
+    netmuxd_manager.cpp
     main.cpp
 )
 

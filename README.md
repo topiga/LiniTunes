@@ -15,6 +15,18 @@ Looks like this for now :
 
 This project is under the GPLv3 licence.
 
+## Linux Wi-Fi sync
+
+Linux AppImage builds bundle `netmuxd` so Wi-Fi device discovery can work even when it is not installed system-wide.
+
+At startup, LiniTunes uses an existing netmuxd at `127.0.0.1:27015` when available. Otherwise, it starts the bundled helper in shim mode when system `usbmuxd` is available, or standalone mode when it is not. Standalone mode stores pairing records in `~/.local/share/LiniTunes/lockdown`.
+
+If standalone mode cannot access USB devices, your system may need udev/USB permissions for Apple devices. Advanced overrides:
+
+- `LINITUNES_NETMUXD_ADDRESS=host:port` uses an external netmuxd and skips the bundled helper.
+- `LINITUNES_DISABLE_BUNDLED_NETMUXD=1` disables the bundled helper.
+- `LINITUNES_NETMUXD_HELPER=/path/to/netmuxd` uses a custom helper binary.
+
 ## Thanks to 
  - [@nikias](https://github.com/nikias) for [libimobiledevice](https://github.com/libimobiledevice/libimobiledevice)
  - [@jkcoxson](https://github.com/jkcoxson) for [idevice](https://github.com/jkcoxson/idevice)

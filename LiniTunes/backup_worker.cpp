@@ -1,6 +1,7 @@
 #include "backup_worker.h"
 #include "backup_validator.h"
 #include "plist_helpers.h"
+#include "usbmuxd_helpers.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -14,7 +15,6 @@
 #include <idevice++/lockdown.hpp>
 #include <idevice++/mobilebackup2.hpp>
 #include <idevice++/provider.hpp>
-#include <idevice++/usbmuxd.hpp>
 #include <fstream>
 #include <map>
 #include <stdexcept>
@@ -238,6 +238,13 @@ IdeviceFFI::Option<std::string> optionalPassword(const QString &password)
         : IdeviceFFI::Option<std::string>(password.toStdString());
 }
 
+auto createProvider(const QString &udid, uint32_t deviceId, const QString &muxAddress, const char *label)
+{
+    auto addr = usbmuxd_helpers::makeAddr(muxAddress);
+    return IdeviceFFI::Provider::usbmuxd_new(
+        std::move(addr), 0, udid.toStdString(), deviceId, label);
+}
+
 BackupEncryptionState queryBackupEncryption(IdeviceFFI::Provider &provider)
 {
     auto lockdownResult = IdeviceFFI::Lockdown::connect(provider);
@@ -263,11 +270,9 @@ BackupEncryptionState queryBackupEncryption(IdeviceFFI::Provider &provider)
     return encrypted ? BackupEncryptionState::Enabled : BackupEncryptionState::Disabled;
 }
 
-BackupEncryptionState queryBackupEncryption(const QString &udid, uint32_t deviceId)
+BackupEncryptionState queryBackupEncryption(const QString &udid, uint32_t deviceId, const QString &muxAddress)
 {
-    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
-    auto providerResult = IdeviceFFI::Provider::usbmuxd_new(
-        std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes-backup-status");
+    auto providerResult = createProvider(udid, deviceId, muxAddress, "LiniTunes-backup-status");
     if (providerResult.is_err())
         return BackupEncryptionState::Unknown;
 
@@ -380,8 +385,8 @@ void BackupWorker::cancel()
         m_process->terminate();
 }
 
-void BackupWorker::disableEncryption(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                                     const QString &password)
+void BackupWorker::disableEncryption(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                                     const QString &backupPath, const QString &password)
 {
     QString error;
     if (password.isEmpty()) {
@@ -389,14 +394,15 @@ void BackupWorker::disableEncryption(const QString &udid, uint32_t deviceId, con
         return;
     }
 
-    if (runPasswordChange(udid, deviceId, backupPath, password, QString(), false, &error))
+    if (runPasswordChange(udid, deviceId, muxAddress, backupPath, password, QString(), false, &error))
         emit encryptionDisabled();
     else
         emit encryptionFailed(error);
 }
 
-void BackupWorker::changeEncryptionPassword(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                                            const QString &oldPassword, const QString &newPassword)
+void BackupWorker::changeEncryptionPassword(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                                            const QString &backupPath, const QString &oldPassword,
+                                            const QString &newPassword)
 {
     QString error;
     if (oldPassword.isEmpty() || newPassword.isEmpty()) {
@@ -404,15 +410,15 @@ void BackupWorker::changeEncryptionPassword(const QString &udid, uint32_t device
         return;
     }
 
-    if (runPasswordChange(udid, deviceId, backupPath, oldPassword, newPassword, true, &error))
+    if (runPasswordChange(udid, deviceId, muxAddress, backupPath, oldPassword, newPassword, true, &error))
         emit encryptionPasswordChanged();
     else
         emit encryptionFailed(error);
 }
 
-bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                                     const QString &oldPassword, const QString &newPassword,
-                                     bool targetEncrypted, QString *error)
+bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                                     const QString &backupPath, const QString &oldPassword,
+                                     const QString &newPassword, bool targetEncrypted, QString *error)
 {
     m_cancelled = false;
     qDebug("BackupWorker: Changing backup encryption state for %s", qPrintable(udid));
@@ -422,9 +428,7 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
         rootPath = QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation)).filePath(QStringLiteral("backup-encryption"));
     QDir().mkpath(rootPath);
 
-    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
-    auto provResult = IdeviceFFI::Provider::usbmuxd_new(
-        std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes-backup-password");
+    auto provResult = createProvider(udid, deviceId, muxAddress, "LiniTunes-backup-password");
     if (provResult.is_err()) {
         if (error) *error = QStringLiteral("Failed to create provider.");
         return false;
@@ -460,7 +464,7 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
         // the authoritative state; for password changes it is not enough to
         // prove the new password took effect, so keep reporting the error.
         const bool togglingEncryption = oldPassword.isEmpty() || newPassword.isEmpty();
-        if (togglingEncryption && matchesRequestedEncryptionState(queryBackupEncryption(udid, deviceId), targetEncrypted)) {
+        if (togglingEncryption && matchesRequestedEncryptionState(queryBackupEncryption(udid, deviceId, muxAddress), targetEncrypted)) {
             qDebug("BackupWorker: MobileBackup2 returned an error after encryption toggle, but final state matches request: %s",
                    qPrintable(errMessage));
             return true;
@@ -470,7 +474,7 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
         return false;
     }
 
-    const BackupEncryptionState finalState = queryBackupEncryption(udid, deviceId);
+    const BackupEncryptionState finalState = queryBackupEncryption(udid, deviceId, muxAddress);
     if (finalState != BackupEncryptionState::Unknown &&
         !matchesRequestedEncryptionState(finalState, targetEncrypted)) {
         if (error) *error = QStringLiteral("The iPhone did not report the requested backup encryption state.");
@@ -480,8 +484,9 @@ bool BackupWorker::runPasswordChange(const QString &udid, uint32_t deviceId, con
     return true;
 }
 
-void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                             bool enableEncryption, const QString &password)
+void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                             const QString &backupPath, bool enableEncryption,
+                             const QString &password)
 {
     m_cancelled = false;
 
@@ -505,7 +510,7 @@ void BackupWorker::runBackup(const QString &udid, uint32_t deviceId, const QStri
     }
 
     qDebug("BackupWorker: using direct third_party/idevice MobileBackup2 backend");
-    runDirectMobileBackup2(udid, deviceId, backupPath, enableEncryption, password);
+    runDirectMobileBackup2(udid, deviceId, muxAddress, backupPath, enableEncryption, password);
 }
 
 bool BackupWorker::runIdevicebackup2(const QString &udid, const QString &backupPath)
@@ -573,17 +578,15 @@ bool BackupWorker::runIdevicebackup2(const QString &udid, const QString &backupP
     return true;
 }
 
-void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &backupPath,
-                                          bool enableEncryption, const QString &password)
+void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId, const QString &muxAddress,
+                                          const QString &backupPath, bool enableEncryption,
+                                          const QString &password)
 {
     m_cancelled = false;
     qDebug("BackupWorker::runBackup(%s, id=%u, path=%s)",
            qPrintable(udid), deviceId, qPrintable(backupPath));
 
-    // Create provider
-    auto addr = IdeviceFFI::UsbmuxdAddr::default_new();
-    auto prov_result = IdeviceFFI::Provider::usbmuxd_new(
-        std::move(addr), 0, udid.toStdString(), deviceId, "LiniTunes-backup");
+    auto prov_result = createProvider(udid, deviceId, muxAddress, "LiniTunes-backup");
 
     if (prov_result.is_err()) {
         qDebug("BackupWorker: Failed to create provider");
@@ -622,7 +625,7 @@ void BackupWorker::runDirectMobileBackup2(const QString &udid, uint32_t deviceId
             return;
         }
         QString encError;
-        if (!runPasswordChange(udid, deviceId, backupPath, QString(), password, true, &encError)) {
+        if (!runPasswordChange(udid, deviceId, muxAddress, backupPath, QString(), password, true, &encError)) {
             emit failed(QStringLiteral("Could not enable encrypted backups. Unlock the iPhone, confirm the passcode prompt if shown, and try again."));
             return;
         }

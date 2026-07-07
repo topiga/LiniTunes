@@ -990,15 +990,27 @@ Window {
                                     smooth: true
                                 }
 
+                                ConnectionGlyph {
+                                    id: deviceConnectionGlyph
+                                    visible: modelData.udid !== ""
+                                    transport: modelData.connection_transport
+                                    tintColor: parent.deviceNameTextColor
+                                    anchors {
+                                        left: deviceImage.right
+                                        top: deviceImage.top
+                                        leftMargin: 0
+                                        topMargin: 5
+                                    }
+                                }
                                 Text {
                                     id: deviceNameText
                                     color: parent.deviceNameTextColor
                                     text: modelData.device_name
                                     anchors {
-                                        left: deviceImage.right
+                                        left: deviceConnectionGlyph.visible ? deviceConnectionGlyph.right : deviceImage.right
                                         top: deviceImage.top
                                         topMargin: 2
-                                        leftMargin: 0
+                                        leftMargin: deviceConnectionGlyph.visible ? 4 : 0
                                         right: deviceBattery.left
                                         rightMargin: 4
                                     }
@@ -1196,15 +1208,28 @@ Window {
                             smooth: true
                         }
 
+                        ConnectionGlyph {
+                            id: content_connection_glyph
+                            visible: DeviceWatcher.device_connected
+                            transport: DeviceWatcher.connection_transport
+                            tintColor: root.colors.textPrimary
+                            anchors {
+                                left: current_device_image.right
+                                top: current_device_image.top
+                                leftMargin: 2
+                                topMargin: 4
+                            }
+                        }
+
                         Text {
                             id: device_name_text
                             color: root.colors.textPrimary
                             text: qsTr("No device connected")
                             anchors {
-                                left: current_device_image.right
+                                left: DeviceWatcher.device_connected ? content_connection_glyph.right : current_device_image.right
                                 top: current_device_image.top
                                 topMargin: 0
-                                leftMargin: 2
+                                leftMargin: DeviceWatcher.device_connected ? 4 : 2
                             }
                             font {
                                 weight: Font.DemiBold

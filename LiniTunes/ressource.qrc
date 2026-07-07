@@ -8,6 +8,7 @@
         <file>qml/components/PasswordField.qml</file>
         <file>qml/components/AppTooltip.qml</file>
         <file>qml/components/StorageSegment.qml</file>
+        <file>qml/components/ConnectionGlyph.qml</file>
         <file>ressources/fonts/inter_variable_font.ttf</file>
     </qresource>
 </RCC>

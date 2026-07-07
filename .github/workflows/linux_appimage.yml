@@ -15,6 +15,7 @@ defaults:
 env:
   SOURCE_DIR:   ${{ github.workspace }}
   QT_VERSION:   6.11.1
+  NETMUXD_COMMIT: c1351ea6f235093cf3038d4f34f1b64a6a7de887
   ARTIFACT:     LiniTunes.AppImage
 
 jobs:
@@ -43,7 +44,8 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y fuse libfuse2 libxcb-cursor0 libusb-1.0-0-dev libssl-dev
+          sudo add-apt-repository -y universe && echo "universe repository added"
+          sudo apt-get install -y libfuse2 libxcb-cursor0 libusb-1.0-0-dev libssl-dev libudev-dev
 
       - name: Build idevice FFI
         run: |
@@ -56,12 +58,20 @@ jobs:
             -DCMAKE_PREFIX_PATH=${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64
           cmake --build ${{ env.SOURCE_DIR }}/build -j$(nproc)
 
+      - name: Build netmuxd
+        run: |
+          git clone https://github.com/jkcoxson/netmuxd.git ${{ runner.temp }}/netmuxd
+          cd ${{ runner.temp }}/netmuxd
+          git checkout ${{ env.NETMUXD_COMMIT }}
+          cargo build --release
+
       - name: Package AppImage
         working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
+          export APPIMAGE_EXTRACT_AND_RUN=1
           export QT_ROOT=${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/gcc_64
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$QT_ROOT/lib/
           export QMAKE=$QT_ROOT/bin/qmake
@@ -71,6 +81,7 @@ jobs:
 
           ./linuxdeploy-x86_64.AppImage --appdir AppDir \
             -e LiniTunes \
+            -e ${{ runner.temp }}/netmuxd/target/release/netmuxd \
             -i ${{ env.SOURCE_DIR }}/LiniTunes/images/linitunes.png \
             -d ${{ env.SOURCE_DIR }}/linux/linitunes.desktop \
             --plugin qt
@@ -82,6 +93,9 @@ jobs:
             cp -a "$QT_ROOT/qml/Qt/labs/folderlistmodel" AppDir/usr/qml/Qt/labs/
           fi
           test -d AppDir/usr/qml/Qt/labs/folderlistmodel
+
+          mkdir -p AppDir/usr/share/licenses/netmuxd
+          cp ${{ runner.temp }}/netmuxd/LICENSE AppDir/usr/share/licenses/netmuxd/LICENSE
 
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mv LiniTunes*.AppImage ${{ env.ARTIFACT }}

@@ -155,6 +155,8 @@
         <file>images/glyphs/lightning.png</file>
         <file>images/glyphs/lock.svg</file>
         <file>images/glyphs/no_lock.svg</file>
+        <file>images/glyphs/wifi-connected.svg</file>
+        <file>images/glyphs/ubs-connected.svg</file>
         <file>images/glyphs/folder.png</file>
         <file>images/glyphs/develop_arrow.png</file>
         <file>images/glyphs/book.png</file>
