@@ -64,9 +64,10 @@ void NetmuxdManager::ensureRunning()
     }
 
     const bool systemUsbmuxdAvailable = muxResponds(QString());
+    const QString netmuxdAddress = usbmuxd_helpers::defaultNetmuxdAddress();
     QStringList arguments = {
-        QStringLiteral("--host"), QStringLiteral("127.0.0.1"),
-        QStringLiteral("--port"), QStringLiteral("27015"),
+        QStringLiteral("--host"), netmuxdAddress.section(QLatin1Char(':'), 0, 0),
+        QStringLiteral("--port"), netmuxdAddress.section(QLatin1Char(':'), 1, 1),
         QStringLiteral("--disable-unix"),
     };
 
