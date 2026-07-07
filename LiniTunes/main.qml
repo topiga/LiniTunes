@@ -109,10 +109,8 @@ Window {
         return bytes.toFixed(0) + " B"
     }
 
-    function connectionGlyphSource(transport, connected) {
-        if (transport === "Wi-Fi")
-            return connected ? "/images/glyphs/wifi-connected.svg" : "/images/glyphs/wifi-disconnected.svg"
-        return connected ? "/images/glyphs/ubs-connected.svg" : "/images/glyphs/ubs-disconnected.svg"
+    function connectionGlyphSource(transport) {
+        return transport === "Wi-Fi" ? "/images/glyphs/wifi-connected.svg" : "/images/glyphs/ubs-connected.svg"
     }
 
     function batteryLowThreshold(deviceClass) {
@@ -1001,7 +999,7 @@ Window {
                                     width: modelData.udid !== "" ? 12 : 0
                                     height: 12
                                     visible: modelData.udid !== ""
-                                    source: root.connectionGlyphSource(modelData.connection_transport, true)
+                                    source: root.connectionGlyphSource(modelData.connection_transport)
                                     sourceSize.width: width
                                     sourceSize.height: height
                                     fillMode: Image.PreserveAspectFit
@@ -1231,7 +1229,7 @@ Window {
                             width: DeviceWatcher.device_connected ? 12 : 0
                             height: 12
                             visible: DeviceWatcher.device_connected
-                            source: root.connectionGlyphSource(DeviceWatcher.connection_transport, true)
+                            source: root.connectionGlyphSource(DeviceWatcher.connection_transport)
                             sourceSize.width: width
                             sourceSize.height: height
                             fillMode: Image.PreserveAspectFit

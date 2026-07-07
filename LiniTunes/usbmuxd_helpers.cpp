@@ -101,14 +101,6 @@ QVector<MuxSource> candidateMuxSources()
     return sources;
 }
 
-QStringList candidateMuxAddresses()
-{
-    QStringList addresses;
-    for (const auto &source : candidateMuxSources())
-        addresses.append(source.address);
-    return addresses;
-}
-
 QString muxKey(const QString &muxAddress, uint32_t deviceId)
 {
     return QStringLiteral("%1#%2").arg(sourceForAddress(muxAddress).key).arg(deviceId);

@@ -41,6 +41,11 @@ static QString muxAddressFromKey(const QString &key, uint32_t *deviceId)
 
 constexpr int kDisconnectDebounceCycles = 3;
 
+static bool prefersUsbOverNetwork(bool existingNetworkConnection, bool candidateNetworkConnection)
+{
+    return existingNetworkConnection && !candidateNetworkConnection;
+}
+
 static void retryDelay(std::atomic<bool> &running, int slices = 20) {
     for (int i = 0; i < slices && running; ++i)
         QThread::msleep(100);
@@ -364,7 +369,7 @@ bool iDeviceWatcher::shouldSwitchToEndpoint(const iDevice *existing, const MuxEn
     const QString candidateKey = usbmuxd_helpers::muxKey(candidate.muxAddress, candidate.deviceId);
     if (existing->muxKey() == candidateKey)
         return false;
-    return !candidate.networkConnection && existing->networkConnection();
+    return prefersUsbOverNetwork(existing->networkConnection(), candidate.networkConnection);
 }
 
 bool iDeviceWatcher::shouldUseInitializedDevice(const iDevice *existing, const iDevice *candidate) const
@@ -373,7 +378,7 @@ bool iDeviceWatcher::shouldUseInitializedDevice(const iDevice *existing, const i
         return true;
     if (existing->muxKey() == candidate->muxKey())
         return true;
-    return !candidate->networkConnection() && existing->networkConnection();
+    return prefersUsbOverNetwork(existing->networkConnection(), candidate->networkConnection());
 }
 
 iDevice *iDeviceWatcher::deviceForUdid(const QString &udid) const
