@@ -11,7 +11,7 @@ If you want to contribute, you can open an issue, a request, a suggestion, or su
 This project is in its early developments. Everything could change at any time given.
 
 Looks like this for now :
-![Capture d’écran du 2024-06-24 00-19-07](https://github.com/topiga/LiniTunes/assets/38886040/e5963350-7ff9-4cdc-887f-c8fe6789ff98)
+<img width="982" height="690" alt="Capture d’écran du 2026-07-07 16-06-45" src="https://github.com/user-attachments/assets/53443185-29ca-4914-867f-9976d5e1d8a2" />
 
 This project is under the GPLv3 licence.
 
@@ -26,6 +26,10 @@ If standalone mode cannot access USB devices, your system may need udev/USB perm
 - `LINITUNES_NETMUXD_ADDRESS=host:port` uses an external netmuxd and skips the bundled helper.
 - `LINITUNES_DISABLE_BUNDLED_NETMUXD=1` disables the bundled helper.
 - `LINITUNES_NETMUXD_HELPER=/path/to/netmuxd` uses a custom helper binary.
+
+## Known issues
+
+- Storage sync in network/Wi-Fi mode is painfully slow
 
 ## Thanks to 
  - [@nikias](https://github.com/nikias) for [libimobiledevice](https://github.com/libimobiledevice/libimobiledevice)
