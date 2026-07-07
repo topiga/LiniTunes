@@ -54,6 +54,8 @@ public:
     QString muxKey() const;
     QString connectionTransport() const;
     bool networkConnection() const { return m_networkConnection; }
+    static QString usbConnectionTransport();
+    static QString wifiConnectionTransport();
     bool wifiSyncAvailable() const { return m_wifiSyncAvailable; }
 
     // Storage

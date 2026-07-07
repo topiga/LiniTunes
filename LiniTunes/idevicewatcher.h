@@ -70,6 +70,8 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString marketing_name READ marketing_name NOTIFY currentDeviceChanged)
     Q_PROPERTY(bool device_connected READ device_connected NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString connection_transport READ connectionTransport NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString usb_connection_transport READ usbConnectionTransport CONSTANT)
+    Q_PROPERTY(QString wifi_connection_transport READ wifiConnectionTransport CONSTANT)
     Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
     Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
     Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY storageSyncChanged)
@@ -143,6 +145,8 @@ public:
     QString marketing_name() const { return m_currentDevice ? m_currentDevice->marketing_name() : QString(); }
     bool device_connected() const { return m_currentDevice != nullptr; }
     QString connectionTransport() const { return m_currentDevice ? m_currentDevice->connectionTransport() : QString(); }
+    QString usbConnectionTransport() const { return iDevice::usbConnectionTransport(); }
+    QString wifiConnectionTransport() const { return iDevice::wifiConnectionTransport(); }
     int battery() const { return m_currentDevice ? m_currentDevice->battery() : 0; }
     QString battery_string() const { return m_currentDevice ? QString::number(m_currentDevice->battery()) : QStringLiteral("0"); }
     QObject *storageInfo() const { return m_currentDevice ? m_currentDevice->storageInfo() : nullptr; }

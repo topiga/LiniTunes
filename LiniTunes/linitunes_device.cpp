@@ -176,7 +176,17 @@ QString iDevice::muxKey() const
 
 QString iDevice::connectionTransport() const
 {
-    return m_networkConnection ? QStringLiteral("Wi-Fi") : QStringLiteral("USB");
+    return m_networkConnection ? wifiConnectionTransport() : usbConnectionTransport();
+}
+
+QString iDevice::usbConnectionTransport()
+{
+    return QStringLiteral("USB");
+}
+
+QString iDevice::wifiConnectionTransport()
+{
+    return QStringLiteral("Wi-Fi");
 }
 
 bool iDevice::init(const QString &udid, uint32_t deviceId, const QString &muxAddress,

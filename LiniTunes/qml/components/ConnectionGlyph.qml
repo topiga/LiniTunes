@@ -14,7 +14,7 @@ Item {
     Image {
         id: glyphImage
         anchors.fill: parent
-        source: root.transport === "Wi-Fi" ? "/images/glyphs/wifi-connected.svg" : "/images/glyphs/ubs-connected.svg"
+        source: root.transport === DeviceWatcher.wifi_connection_transport ? "/images/glyphs/wifi-connected.svg" : "/images/glyphs/ubs-connected.svg"
         sourceSize.width: root.glyphSize
         sourceSize.height: root.glyphSize
         fillMode: Image.PreserveAspectFit
