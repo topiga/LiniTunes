@@ -14,6 +14,8 @@
 // Theme
 #include <thememanager.h>
 
+using namespace Qt::StringLiterals;
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -49,7 +51,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("ThemeManager", themeManager);
     engine.rootContext()->setContextProperty("AppFontFamily", appFontFamily);
 
-    const QUrl url(u"qrc:/main.qml"_qs);
+    const QUrl url(u"qrc:/main.qml"_s);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
