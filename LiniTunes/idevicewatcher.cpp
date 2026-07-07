@@ -64,7 +64,7 @@ void UsbmuxdListener::stop()
 void UsbmuxdListener::run()
 {
     m_running = true;
-    QSet<QString> known;
+    QHash<QString, bool> known;
     QHash<QString, int> missingCounts;
     QSet<QString> loggedUnavailableNetmuxd;
 
@@ -105,11 +105,12 @@ void UsbmuxdListener::run()
                     continue;
                 }
 
-                known.insert(key);
                 bool networkConnection = false;
                 auto type = device.get_connection_type();
                 if (type.is_some())
                     networkConnection = type.unwrap() == IdeviceFFI::UsbmuxdConnectionType::Value::Network;
+
+                known.insert(key, networkConnection);
 
                 const QString deviceUdid = QString::fromStdString(udid.unwrap());
                 qDebug("Listener: device connected %s (id=%u, mux=%s, transport=%s)",
@@ -121,16 +122,20 @@ void UsbmuxdListener::run()
         }
 
         QStringList disconnectedKeys;
-        for (const QString &key : std::as_const(known)) {
+        for (auto it = known.cbegin(); it != known.cend(); ++it) {
+            const QString key = it.key();
             if (seen.contains(key)) {
                 missingCounts.remove(key);
                 continue;
             }
 
-            const int missingCount = missingCounts.value(key) + 1;
-            if (missingCount < kDisconnectDebounceCycles) {
-                missingCounts.insert(key, missingCount);
-                continue;
+            const bool networkConnection = it.value();
+            if (networkConnection) {
+                const int missingCount = missingCounts.value(key) + 1;
+                if (missingCount < kDisconnectDebounceCycles) {
+                    missingCounts.insert(key, missingCount);
+                    continue;
+                }
             }
 
             uint32_t deviceId = 0;
