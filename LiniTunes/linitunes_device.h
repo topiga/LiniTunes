@@ -86,6 +86,7 @@ public:
 signals:
     void storageSyncChanged();
     void backupChanged();
+    void batteryRefreshRequested(QString udid, QString muxKey);
 
 private slots:
     void onStorageSyncData(uint64_t total, uint64_t free,

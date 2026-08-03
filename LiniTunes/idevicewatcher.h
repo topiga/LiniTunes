@@ -2,11 +2,14 @@
 #define IDEVICEWATCHER_H
 
 #include <QObject>
-#include <QThread>
+#include <QElapsedTimer>
 #include <QHash>
 #include <QStringList>
+#include <QThread>
+#include <QTimer>
 #include <QVariantList>
 #include <atomic>
+#include "battery_refresh_worker.h"
 #include "linitunes_device.h"
 #include "netmuxd_manager.h"
 
@@ -72,8 +75,8 @@ class iDeviceWatcher : public QObject
     Q_PROPERTY(QString connection_transport READ connectionTransport NOTIFY currentDeviceChanged)
     Q_PROPERTY(QString usb_connection_transport READ usbConnectionTransport CONSTANT)
     Q_PROPERTY(QString wifi_connection_transport READ wifiConnectionTransport CONSTANT)
-    Q_PROPERTY(QString battery_string READ battery_string NOTIFY currentDeviceChanged)
-    Q_PROPERTY(int battery READ battery NOTIFY currentDeviceChanged)
+    Q_PROPERTY(QString battery_string READ battery_string NOTIFY batteryChanged)
+    Q_PROPERTY(int battery READ battery NOTIFY batteryChanged)
     Q_PROPERTY(QObject* storage_info READ storageInfo NOTIFY storageSyncChanged)
     Q_PROPERTY(bool storage_syncing READ storageSyncing NOTIFY storageSyncChanged)
     Q_PROPERTY(int storage_sync_progress READ storageSyncProgress NOTIFY storageSyncChanged)
@@ -147,8 +150,8 @@ public:
     QString connectionTransport() const { return m_currentDevice ? m_currentDevice->connectionTransport() : QString(); }
     QString usbConnectionTransport() const { return iDevice::usbConnectionTransport(); }
     QString wifiConnectionTransport() const { return iDevice::wifiConnectionTransport(); }
-    int battery() const { return m_currentDevice ? m_currentDevice->battery() : 0; }
-    QString battery_string() const { return m_currentDevice ? QString::number(m_currentDevice->battery()) : QStringLiteral("0"); }
+    int battery() const { return batteryFor(m_currentDevice); }
+    QString battery_string() const { return QString::number(battery()); }
     QObject *storageInfo() const { return m_currentDevice ? m_currentDevice->storageInfo() : nullptr; }
     bool storageSyncing() const { return m_currentDevice ? m_currentDevice->storageSyncing() : false; }
     int storageSyncProgress() const { return m_currentDevice ? m_currentDevice->storageSyncProgress() : 0; }
@@ -175,12 +178,14 @@ signals:
     void wifiSyncEnabledChanged();
     void wifiSyncStatusChanged();
     void softwareChanged();
+    void batteryChanged();
 
 private slots:
     void onDeviceConnected(const QString &udid, uint32_t deviceId, const QString &muxAddress, bool networkConnection);
     void onDeviceDisconnected(const QString &muxAddress, uint32_t deviceId);
     void onDeviceInitDone(iDevice *dev);
     void onDeviceInitFailed(const QString &udid);
+    void onBatteryRead(const QString &udid, const QString &muxKey, quint64 requestId, int capacity);
 
 private:
     struct MuxEndpoint {
@@ -190,6 +195,10 @@ private:
         bool networkConnection = false;
     };
 
+    int batteryFor(const iDevice *device) const;
+    void forgetBattery(const QString &muxKey);
+    void refreshBatteries();
+    void requestBatteryRefresh(iDevice *device, bool force = false);
     void removeDeviceByMuxKey(const QString &key);
     void initEndpoint(const MuxEndpoint &endpoint);
     void connectDeviceSignals(iDevice *dev);
@@ -209,12 +218,19 @@ private:
     bool m_wifiSyncEnabled = true;
 
     NetmuxdManager m_netmuxd;
+    QTimer m_batteryRefreshTimer;
+    QElapsedTimer m_batteryClock;
+    QHash<QString, int> m_batteryValues;
+    QHash<QString, qint64> m_batteryRefreshTimes;
+    QHash<QString, quint64> m_pendingBatteryRefreshes;
+    quint64 m_nextBatteryRefreshId = 0;
 
     QThread m_listenerThread;
     UsbmuxdListener *m_listener = nullptr;
 
     QThread m_workerThread;
     DeviceInitWorker *m_worker = nullptr;
+    BatteryRefreshWorker *m_batteryWorker = nullptr;
 
     // Track mux endpoint key → endpoint for disconnect/fallback handling.
     QHash<QString, MuxEndpoint> m_muxEndpoints;

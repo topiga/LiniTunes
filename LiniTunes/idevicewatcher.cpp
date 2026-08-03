@@ -1,10 +1,12 @@
 #include "idevicewatcher.h"
 #include "usbmuxd_helpers.h"
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
 #include <QDesktopServices>
+#include <QGuiApplication>
 #include <QLocale>
 #include <QRegularExpression>
 #include <QSet>
@@ -40,6 +42,10 @@ static QString muxAddressFromKey(const QString &key, uint32_t *deviceId)
 }
 
 constexpr int kDisconnectDebounceCycles = 3;
+constexpr int kBatterySchedulerIntervalMs = 10 * 1000;
+constexpr qint64 kCurrentBatteryRefreshIntervalMs = 60 * 1000;
+constexpr qint64 kBackgroundBatteryRefreshIntervalMs = 5 * 60 * 1000;
+static_assert(kBackgroundBatteryRefreshIntervalMs > kCurrentBatteryRefreshIntervalMs);
 
 static bool prefersUsbOverNetwork(bool existingNetworkConnection, bool candidateNetworkConnection)
 {
@@ -183,6 +189,7 @@ void DeviceInitWorker::doInit(const QString &udid, uint32_t deviceId, const QStr
 iDeviceWatcher::iDeviceWatcher(QObject *parent)
     : QObject{parent}
 {
+    m_batteryClock.start();
     QSettings settings(QStringLiteral("LiniTunes"), QStringLiteral("LiniTunes"));
     m_backupFolder = settings.value(QStringLiteral("backup_folder")).toString();
     m_wifiSyncEnabled = settings.value(QStringLiteral("wifi_sync_enabled"), true).toBool();
@@ -191,6 +198,17 @@ iDeviceWatcher::iDeviceWatcher(QObject *parent)
 
     connect(&m_netmuxd, &NetmuxdManager::statusChanged,
             this, &iDeviceWatcher::wifiSyncStatusChanged);
+
+    m_batteryRefreshTimer.setInterval(kBatterySchedulerIntervalMs);
+    connect(&m_batteryRefreshTimer, &QTimer::timeout,
+            this, &iDeviceWatcher::refreshBatteries);
+    if (auto *app = qobject_cast<QGuiApplication *>(QCoreApplication::instance())) {
+        connect(app, &QGuiApplication::applicationStateChanged,
+                this, [this](Qt::ApplicationState state) {
+                    if (state == Qt::ApplicationActive)
+                        requestBatteryRefresh(m_currentDevice, true);
+                });
+    }
 
     m_listener = new UsbmuxdListener();
     m_listener->moveToThread(&m_listenerThread);
@@ -210,10 +228,18 @@ iDeviceWatcher::iDeviceWatcher(QObject *parent)
             this, &iDeviceWatcher::onDeviceInitDone);
     connect(m_worker, &DeviceInitWorker::initFailed,
             this, &iDeviceWatcher::onDeviceInitFailed);
+
+    m_batteryWorker = new BatteryRefreshWorker();
+    m_batteryWorker->moveToThread(&m_workerThread);
+    connect(&m_workerThread, &QThread::finished,
+            m_batteryWorker, &QObject::deleteLater);
+    connect(m_batteryWorker, &BatteryRefreshWorker::batteryRead,
+            this, &iDeviceWatcher::onBatteryRead);
 }
 
 iDeviceWatcher::~iDeviceWatcher()
 {
+    m_batteryRefreshTimer.stop();
     m_listenerThread.quit();
     m_listenerThread.wait();
     m_workerThread.quit();
@@ -228,6 +254,7 @@ void iDeviceWatcher::start()
     m_netmuxd.ensureRunning();
     m_listenerThread.start();
     m_workerThread.start();
+    m_batteryRefreshTimer.start();
 }
 
 void iDeviceWatcher::setBackupFolder(const QString &folder)
@@ -255,6 +282,74 @@ void iDeviceWatcher::setWifiSyncEnabled(bool enabled)
     emit wifiSyncEnabledChanged();
 }
 
+int iDeviceWatcher::batteryFor(const iDevice *device) const
+{
+    return device ? m_batteryValues.value(device->muxKey(), device->battery()) : 0;
+}
+
+void iDeviceWatcher::forgetBattery(const QString &muxKey)
+{
+    m_batteryValues.remove(muxKey);
+    m_batteryRefreshTimes.remove(muxKey);
+    m_pendingBatteryRefreshes.remove(muxKey);
+}
+
+void iDeviceWatcher::refreshBatteries()
+{
+    for (iDevice *device : Devices)
+        requestBatteryRefresh(device);
+}
+
+void iDeviceWatcher::requestBatteryRefresh(iDevice *device, bool force)
+{
+    if (!device || !device->device_connected() || !m_batteryWorker
+        || device->backupRunning() || device->storageSyncing())
+        return;
+
+    const QString muxKey = device->muxKey();
+    const MuxEndpoint endpoint = m_muxEndpoints.value(muxKey);
+    if (muxKey.isEmpty() || endpoint.udid != device->udid()
+        || m_pendingBatteryRefreshes.contains(muxKey))
+        return;
+
+    const qint64 now = m_batteryClock.elapsed();
+    const qint64 interval = device == m_currentDevice
+        ? kCurrentBatteryRefreshIntervalMs : kBackgroundBatteryRefreshIntervalMs;
+    if (!force && now - m_batteryRefreshTimes.value(muxKey, now - interval) < interval)
+        return;
+
+    const quint64 requestId = ++m_nextBatteryRefreshId;
+    m_pendingBatteryRefreshes.insert(muxKey, requestId);
+    m_batteryRefreshTimes.insert(muxKey, now);
+    if (!QMetaObject::invokeMethod(m_batteryWorker,
+            [worker = m_batteryWorker, udid = endpoint.udid, deviceId = endpoint.deviceId,
+             muxAddress = endpoint.muxAddress, muxKey, requestId]() {
+                worker->refresh(udid, deviceId, muxAddress, muxKey, requestId);
+            },
+            Qt::QueuedConnection)) {
+        m_pendingBatteryRefreshes.remove(muxKey);
+    }
+}
+
+void iDeviceWatcher::onBatteryRead(const QString &udid, const QString &muxKey,
+                                   quint64 requestId, int capacity)
+{
+    const auto pending = m_pendingBatteryRefreshes.constFind(muxKey);
+    if (pending == m_pendingBatteryRefreshes.cend() || pending.value() != requestId)
+        return;
+    m_pendingBatteryRefreshes.remove(muxKey);
+
+    iDevice *device = deviceForUdid(udid);
+    if (capacity < 0 || capacity > 100 || !device || device->muxKey() != muxKey)
+        return;
+
+    if (batteryFor(device) == capacity)
+        return;
+
+    m_batteryValues.insert(muxKey, capacity);
+    emit batteryChanged();
+}
+
 void iDeviceWatcher::connectDeviceSignals(iDevice *dev)
 {
     dev->ensureSoftwareUpdateManager();
@@ -262,6 +357,12 @@ void iDeviceWatcher::connectDeviceSignals(iDevice *dev)
             this, &iDeviceWatcher::storageSyncChanged);
     connect(dev, &iDevice::backupChanged,
             this, &iDeviceWatcher::backupChanged);
+    connect(dev, &iDevice::batteryRefreshRequested,
+            this, [this](const QString &udid, const QString &muxKey) {
+                iDevice *device = deviceForUdid(udid);
+                if (device && device->muxKey() == muxKey)
+                    requestBatteryRefresh(device, true);
+            });
     connect(dev->softwareUpdateManager(), &SoftwareUpdateManager::changed,
             this, &iDeviceWatcher::softwareChanged);
 }
@@ -310,6 +411,7 @@ void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
                                         dev->build_version(),
                                         true);
 
+    const QString newMuxKey = dev->muxKey();
     for (int i = 0; i < Devices.size(); ++i) {
         if (Devices[i]->udid() != dev->udid())
             continue;
@@ -318,16 +420,26 @@ void iDeviceWatcher::onDeviceInitDone(iDevice *dev)
             return;
         }
 
+        const QString oldMuxKey = Devices[i]->muxKey();
         const bool wasCurrent = m_currentDevice == Devices[i];
         delete Devices[i];
         Devices[i] = dev;
-        if (wasCurrent)
+        if (oldMuxKey != newMuxKey)
+            forgetBattery(oldMuxKey);
+        m_batteryValues.insert(newMuxKey, dev->battery());
+        m_batteryRefreshTimes.insert(newMuxKey, m_batteryClock.elapsed());
+        if (wasCurrent) {
             m_currentDevice = dev;
+            emit currentDeviceChanged();
+            emit batteryChanged();
+        }
         updateLists();
         return;
     }
 
     Devices.append(dev);
+    m_batteryValues.insert(newMuxKey, dev->battery());
+    m_batteryRefreshTimes.insert(newMuxKey, m_batteryClock.elapsed());
     updateLists();
 }
 
@@ -399,6 +511,7 @@ void iDeviceWatcher::removeDeviceByMuxKey(const QString &key)
     const MuxEndpoint removed = m_muxEndpoints.take(key);
     if (removed.udid.isEmpty())
         return;
+    forgetBattery(key);
 
     for (int i = 0; i < Devices.size(); ++i) {
         if (Devices[i]->udid() != removed.udid || Devices[i]->muxKey() != key)
@@ -430,6 +543,7 @@ void iDeviceWatcher::updateLists()
     if (Devices.isEmpty()) {
         m_currentDevice = nullptr;
         emit currentDeviceChanged();
+        emit batteryChanged();
         emit storageSyncChanged();
         emit backupChanged();
         emit softwareChanged();
@@ -447,6 +561,7 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
     if (udid.isEmpty()) {
         m_currentDevice = nullptr;
         emit currentDeviceChanged();
+        emit batteryChanged();
         emit storageSyncChanged();
         emit backupChanged();
         emit softwareChanged();
@@ -457,9 +572,11 @@ void iDeviceWatcher::switchCurrentDevice(const QString &udid)
         if (d->udid() == udid) {
             m_currentDevice = d;
             emit currentDeviceChanged();
+            emit batteryChanged();
             emit storageSyncChanged();
             emit backupChanged();
             emit softwareChanged();
+            requestBatteryRefresh(d);
             checkSoftwareUpdates(true);
             return;
         }
@@ -492,8 +609,8 @@ QVariantList iDeviceWatcher::getModel()
             element["device_class"] = d->device_class();
             element["marketing_name"] = d->marketing_name();
             element["connection_transport"] = d->connectionTransport();
-            element["battery_string"] = QString::number(d->battery());
-            element["battery"] = d->battery();
+            element["battery_string"] = QString::number(batteryFor(d));
+            element["battery"] = batteryFor(d);
             model.prepend(element);
         }
     }

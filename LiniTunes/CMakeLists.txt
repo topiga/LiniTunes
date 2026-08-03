@@ -85,6 +85,7 @@ set(HEADER_FILES
     idevicewatcher.h
     storage_info.h
     storage_sync_worker.h
+    battery_refresh_worker.h
     backup_info.h
     backup_validator.h
     backup_worker.h
@@ -99,6 +100,7 @@ set(SOURCE_FILES
     idevicewatcher.cpp
     storage_info.cpp
     storage_sync_worker.cpp
+    battery_refresh_worker.cpp
     backup_info.cpp
     backup_validator.cpp
     backup_worker.cpp

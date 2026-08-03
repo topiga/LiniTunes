@@ -1146,7 +1146,7 @@ Window {
                         }
                         Connections {
                             target: DeviceWatcher
-                            function onUdidListChanged() {
+                            function refreshModel() {
                                 if (DeviceWatcher.device_connected) {
                                     devices_repeater.model = []
                                     devices_repeater.model = DeviceWatcher.getModel()
@@ -1154,6 +1154,8 @@ Window {
                                     devices_repeater.model = []
                                 }
                             }
+                            function onUdidListChanged() { refreshModel() }
+                            function onBatteryChanged() { refreshModel() }
                         }
                     }
                     Rectangle {

@@ -419,6 +419,7 @@ void iDevice::onStorageSyncData(uint64_t total, uint64_t free,
         m_storageInfo->setSyncResult(total, free, apps, audio, photos, documents, other);
     m_storageSyncProgress = 100;
     emit storageSyncChanged();
+    emit batteryRefreshRequested(m_udid, muxKey());
 }
 
 void iDevice::onStorageSyncFailed(const QString &error)
@@ -427,6 +428,7 @@ void iDevice::onStorageSyncFailed(const QString &error)
     if (m_storageInfo)
         m_storageInfo->setSyncing(false);
     emit storageSyncChanged();
+    emit batteryRefreshRequested(m_udid, muxKey());
 }
 
 void iDevice::startBackup(const QString &path, bool enableEncryption, const QString &password)
@@ -527,22 +529,26 @@ void iDevice::onBackupFinished()
 {
     m_backupInfo->setStatus(BackupInfo::Status::Completed);
     emit backupChanged();
+    emit batteryRefreshRequested(m_udid, muxKey());
 }
 
 void iDevice::onBackupFinishedWithWarnings(const QString &warning)
 {
     m_backupInfo->setWarning(warning);
     emit backupChanged();
+    emit batteryRefreshRequested(m_udid, muxKey());
 }
 
 void iDevice::onBackupFailed(const QString &error)
 {
     m_backupInfo->setError(error);
     emit backupChanged();
+    emit batteryRefreshRequested(m_udid, muxKey());
 }
 
 void iDevice::onBackupCancelled()
 {
     m_backupInfo->setStatus(BackupInfo::Status::Cancelled);
     emit backupChanged();
+    emit batteryRefreshRequested(m_udid, muxKey());
 }
